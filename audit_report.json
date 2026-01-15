@@ -1,0 +1,118 @@
+{
+  "project_root": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller",
+  "app_file_used": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+  "findings": [
+    {
+      "level": "INFO",
+      "code": "APP_AUTO_FOUND",
+      "message": "App.tsx encontrado: App.tsx",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "IMPORT_OK",
+      "message": "Import OK: ./constants -> constants.ts",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "IMPORT_OK",
+      "message": "Import OK: ./types -> types.ts",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "IMPORT_OK",
+      "message": "Import OK: ./components/TableOfContents -> components\\TableOfContents.tsx",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "IMPORT_OK",
+      "message": "Import OK: ./components/ChatInterface -> components\\ChatInterface.tsx",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "IMPORT_OK",
+      "message": "Import OK: ./components/BookViewer -> components\\BookViewer.tsx",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "IMPORT_OK",
+      "message": "Import OK: ./components/GenerationDashboard -> components\\GenerationDashboard.tsx",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "IMPORT_OK",
+      "message": "Import OK: ./components/Icons -> components\\Icons.tsx",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "STRUCTURE_OK",
+      "message": "Todos los imports relativos de App.tsx se resolvieron.",
+      "file": null,
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "TOOLING_DETECTED",
+      "message": "Tooling detectado: vite",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\package.json",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "DEP_OK_GOOGLE_GENAI",
+      "message": "@google/genai presente: ^1.30.0",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\package.json",
+      "pointer": null
+    },
+    {
+      "level": "WARN",
+      "code": "ENV_VAR_VITE_MISMATCH",
+      "message": "Vite detectado pero App.tsx usa process.env.API_KEY. En Vite normalmente es import.meta.env.VITE_API_KEY.",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+      "pointer": "process.env.API_KEY"
+    },
+    {
+      "level": "INFO",
+      "code": "VITE_ENV_NOTE",
+      "message": "Vite detectado. Asegúrate de usar import.meta.env.VITE_* para variables de entorno.",
+      "file": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller\\App.tsx",
+      "pointer": null
+    },
+    {
+      "level": "INFO",
+      "code": "JSON_SCAN_DONE",
+      "message": "JSON escaneados: 358. Outputs tipo engine validados: 0.",
+      "file": null,
+      "pointer": null
+    }
+  ],
+  "summary": {
+    "errors": 0,
+    "warnings": 1,
+    "info": 13,
+    "top_error_codes": [],
+    "top_warn_codes": [
+      {
+        "code": "ENV_VAR_VITE_MISMATCH",
+        "count": 1
+      }
+    ],
+    "most_likely_crash_reason": "Si ves PROPOSAL_MISSING / INTRO_MISSING / OUTLINE_NOT_LIST, tu UI va a crashear al leer .status o al hacer outline_12.forEach.",
+    "next_step": "Corrige el output JSON del engine (si falta status/keys) y/o pon fallbacks en el render: item?.status ?? 'PENDING'."
+  }
+}

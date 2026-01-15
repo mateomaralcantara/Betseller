@@ -1,0 +1,1483 @@
+{
+  "generatedAt": "2026-01-03T23:37:45.325Z",
+  "entryFiles": [
+    "App.tsx",
+    "components\\GenerationDashboard.tsx",
+    "index.html",
+    "index.css"
+  ],
+  "scannedFiles": [
+    "App.tsx",
+    "components\\BookProposalDisplay.tsx",
+    "components\\BookViewer.tsx",
+    "components\\ChatInterface.tsx",
+    "components\\GenerationDashboard.tsx",
+    "components\\TableOfContents.tsx",
+    "index.html"
+  ],
+  "hits": [
+    {
+      "file": "App.tsx",
+      "line": 801,
+      "kind": "className",
+      "classes": "flex h-screen font-sans bg-slate-900 text-slate-100 overflow-hidden",
+      "snippet": "iveProjectId, handleGenerateSection]); return ( <div className=\"flex h-screen font-sans bg-slate-900 text-slate-100 overflow-hidden\"> <aside className=\"w-1/4 h-full bg-slate-800 p-4 border-r border-slate-700 flex flex-col\"> <div className=\"flex items-center g"
+    },
+    {
+      "file": "App.tsx",
+      "line": 802,
+      "kind": "className",
+      "classes": "w-1/4 h-full bg-slate-800 p-4 border-r border-slate-700 flex flex-col",
+      "snippet": "bg-slate-900 text-slate-100 overflow-hidden\"> <aside className=\"w-1/4 h-full bg-slate-800 p-4 border-r border-slate-700 flex flex-col\"> <div className=\"flex items-center gap-3 mb-3\"> <PenSquareIcon className=\"w-8 h-8 text-indigo-400\" /> <div cla"
+    },
+    {
+      "file": "App.tsx",
+      "line": 803,
+      "kind": "className",
+      "classes": "flex items-center gap-3 mb-3",
+      "snippet": "p-4 border-r border-slate-700 flex flex-col\"> <div className=\"flex items-center gap-3 mb-3\"> <PenSquareIcon className=\"w-8 h-8 text-indigo-400\" /> <div className=\"min-w-0\"> <h1 className=\"text-xl font-bold tracking-tight text-white truncat"
+    },
+    {
+      "file": "App.tsx",
+      "line": 804,
+      "kind": "className",
+      "classes": "w-8 h-8 text-indigo-400",
+      "snippet": "me=\"flex items-center gap-3 mb-3\"> <PenSquareIcon className=\"w-8 h-8 text-indigo-400\" /> <div className=\"min-w-0\"> <h1 className=\"text-xl font-bold tracking-tight text-white truncate\">BestSeller AI</h1> <div className=\"text-[10px] text-"
+    },
+    {
+      "file": "App.tsx",
+      "line": 805,
+      "kind": "className",
+      "classes": "min-w-0",
+      "snippet": "eIcon className=\"w-8 h-8 text-indigo-400\" /> <div className=\"min-w-0\"> <h1 className=\"text-xl font-bold tracking-tight text-white truncate\">BestSeller AI</h1> <div className=\"text-[10px] text-slate-500 font-mono truncate\">{BUILD_TAG}</div>"
+    },
+    {
+      "file": "App.tsx",
+      "line": 806,
+      "kind": "className",
+      "classes": "text-xl font-bold tracking-tight text-white truncate",
+      "snippet": "400\" /> <div className=\"min-w-0\"> <h1 className=\"text-xl font-bold tracking-tight text-white truncate\">BestSeller AI</h1> <div className=\"text-[10px] text-slate-500 font-mono truncate\">{BUILD_TAG}</div> </div> </div> <T"
+    },
+    {
+      "file": "App.tsx",
+      "line": 807,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 font-mono truncate",
+      "snippet": "ht text-white truncate\">BestSeller AI</h1> <div className=\"text-[10px] text-slate-500 font-mono truncate\">{BUILD_TAG}</div> </div> </div> <TableOfContents projects={projects} activeProjectId={activeProjectId} on"
+    },
+    {
+      "file": "App.tsx",
+      "line": 831,
+      "kind": "className",
+      "classes": "mt-4 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded p-3",
+      "snippet": "g} /> {!GEMINI_API_KEY && ( <div className=\"mt-4 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded p-3\"> Falta VITE_GEMINI_API_KEY en .env.local. Sin eso, la generación no funciona. </div> )} <"
+    },
+    {
+      "file": "App.tsx",
+      "line": 837,
+      "kind": "className",
+      "classes": "flex-1 flex flex-col h-full overflow-hidden relative",
+      "snippet": "na. </div> )} </aside> <main className=\"flex-1 flex flex-col h-full overflow-hidden relative\"> {activeProject && ( <div className=\"bg-slate-800 border-b border-slate-700 flex\"> <button onClick={() => setVi"
+    },
+    {
+      "file": "App.tsx",
+      "line": 839,
+      "kind": "className",
+      "classes": "bg-slate-800 border-b border-slate-700 flex",
+      "snippet": "idden relative\"> {activeProject && ( <div className=\"bg-slate-800 border-b border-slate-700 flex\"> <button onClick={() => setViewMode('plan')} className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${"
+    },
+    {
+      "file": "App.tsx",
+      "line": 848,
+      "kind": "className",
+      "classes": "w-4 h-4 inline mr-2",
+      "snippet": "' }`} > <RocketIcon className=\"w-4 h-4 inline mr-2\" /> Arquitectura Editorial </button> <button onClick={() => setViewMode('book')} className={`flex-1 py-3 text-sm font-bold border-b-2 tr"
+    },
+    {
+      "file": "App.tsx",
+      "line": 859,
+      "kind": "className",
+      "classes": "w-4 h-4 inline mr-2",
+      "snippet": "}`} > <BookOpenIcon className=\"w-4 h-4 inline mr-2\" /> Documento Maestro </button> </div> )} <div className=\"flex-1 overflow-hidden\"> {activeProject ? ( viewMode === 'plan' ? ("
+    },
+    {
+      "file": "App.tsx",
+      "line": 864,
+      "kind": "className",
+      "classes": "flex-1 overflow-hidden",
+      "snippet": "</button> </div> )} <div className=\"flex-1 overflow-hidden\"> {activeProject ? ( viewMode === 'plan' ? ( <GenerationDashboard project={activeProject} onGenerate={handleGenerateSe"
+    },
+    {
+      "file": "App.tsx",
+      "line": 883,
+      "kind": "className",
+      "classes": "absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-500/15 border border-red-500/30 text-red-200 px-4 py-2 rounded text-sm",
+      "snippet": ")} </div> {error && ( <div className=\"absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-500/15 border border-red-500/30 text-red-200 px-4 py-2 rounded text-sm\"> {error} </div> )} </main> </div> ); }; exp"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 14,
+      "kind": "className",
+      "classes": "flex items-center gap-2 text-lg font-semibold text-slate-100 mb-3",
+      "snippet": "onProps> = ({ title, icon, children }) => ( <div> <h3 className=\"flex items-center gap-2 text-lg font-semibold text-slate-100 mb-3\"> {icon} <span>{title}</span> </h3> <div className=\"text-slate-300 text-sm prose prose-invert prose-sm max-w-none\">{childre"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 18,
+      "kind": "className",
+      "classes": "text-slate-300 text-sm prose prose-invert prose-sm max-w-none",
+      "snippet": "{icon} <span>{title}</span> </h3> <div className=\"text-slate-300 text-sm prose prose-invert prose-sm max-w-none\">{children}</div> </div> ); type InfoCardProps = { title: string; icon: React.ReactNode; children: React.ReactNode; }; const InfoCard: Re"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 29,
+      "kind": "className",
+      "classes": "bg-slate-900/50 p-4 rounded-lg h-full",
+      "snippet": "FC<InfoCardProps> = ({ title, icon, children }) => ( <div className=\"bg-slate-900/50 p-4 rounded-lg h-full\"> <h4 className=\"flex items-center gap-2 text-base font-semibold text-slate-200 mb-2\"> {icon} <span>{title}</span> </h4> <p className=\"text-sm text"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 30,
+      "kind": "className",
+      "classes": "flex items-center gap-2 text-base font-semibold text-slate-200 mb-2",
+      "snippet": "className=\"bg-slate-900/50 p-4 rounded-lg h-full\"> <h4 className=\"flex items-center gap-2 text-base font-semibold text-slate-200 mb-2\"> {icon} <span>{title}</span> </h4> <p className=\"text-sm text-slate-400\">{children}</p> </div> ); const BookProposal"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 34,
+      "kind": "className",
+      "classes": "text-sm text-slate-400",
+      "snippet": "\"> {icon} <span>{title}</span> </h4> <p className=\"text-sm text-slate-400\">{children}</p> </div> ); const BookProposalDisplay: React.FC<{ proposal: BookProposal }> = ({ proposal }) => { return ( <div className=\"p-6 bg-slate-800 h-full\"> <h2 cla"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 41,
+      "kind": "className",
+      "classes": "p-6 bg-slate-800 h-full",
+      "snippet": ": BookProposal }> = ({ proposal }) => { return ( <div className=\"p-6 bg-slate-800 h-full\"> <h2 className=\"text-xl font-bold text-white mb-6 border-b border-slate-700 pb-3\"> Propuesta de Libro </h2> <div className=\"space-y-6\"> <Sectio"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 42,
+      "kind": "className",
+      "classes": "text-xl font-bold text-white mb-6 border-b border-slate-700 pb-3",
+      "snippet": "n ( <div className=\"p-6 bg-slate-800 h-full\"> <h2 className=\"text-xl font-bold text-white mb-6 border-b border-slate-700 pb-3\"> Propuesta de Libro </h2> <div className=\"space-y-6\"> <Section title=\"Resumen de la Idea\" icon={<BookOpenIco"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 46,
+      "kind": "className",
+      "classes": "space-y-6",
+      "snippet": "\"> Propuesta de Libro </h2> <div className=\"space-y-6\"> <Section title=\"Resumen de la Idea\" icon={<BookOpenIcon className=\"w-5 h-5\" />}> <p>{proposal.summary}</p> </Section> <div className=\"grid md:grid-cols-2"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 47,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "<Section title=\"Resumen de la Idea\" icon={<BookOpenIcon className=\"w-5 h-5\" />}> <p>{proposal.summary}</p> </Section> <div className=\"grid md:grid-cols-2 gap-6\"> <Section title=\"Opciones de Título\" icon={<ListIcon className=\"w-5 h-"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 51,
+      "kind": "className",
+      "classes": "grid md:grid-cols-2 gap-6",
+      "snippet": "posal.summary}</p> </Section> <div className=\"grid md:grid-cols-2 gap-6\"> <Section title=\"Opciones de Título\" icon={<ListIcon className=\"w-5 h-5\" />}> <ul className=\"list-none p-0 m-0 space-y-2\"> {proposal.titleOptions."
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 52,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "<Section title=\"Opciones de Título\" icon={<ListIcon className=\"w-5 h-5\" />}> <ul className=\"list-none p-0 m-0 space-y-2\"> {proposal.titleOptions.map((title, i) => ( <li key={`title-${i}`} className=\"flex items-start\">"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 53,
+      "kind": "className",
+      "classes": "list-none p-0 m-0 space-y-2",
+      "snippet": "o\" icon={<ListIcon className=\"w-5 h-5\" />}> <ul className=\"list-none p-0 m-0 space-y-2\"> {proposal.titleOptions.map((title, i) => ( <li key={`title-${i}`} className=\"flex items-start\"> <span className=\"text-indigo-400 mr"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 55,
+      "kind": "className",
+      "classes": "flex items-start",
+      "snippet": ".map((title, i) => ( <li key={`title-${i}`} className=\"flex items-start\"> <span className=\"text-indigo-400 mr-2\">›</span> <span>{title}</span> </li> ))} </ul> </Section>"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 56,
+      "kind": "className",
+      "classes": "text-indigo-400 mr-2",
+      "snippet": "{i}`} className=\"flex items-start\"> <span className=\"text-indigo-400 mr-2\">›</span> <span>{title}</span> </li> ))} </ul> </Section> <Section title=\"Opciones de Subtítulo\" icon={<List"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 62,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "<Section title=\"Opciones de Subtítulo\" icon={<ListIcon className=\"w-5 h-5\" />}> <ul className=\"list-none p-0 m-0 space-y-2\"> {proposal.subtitleOptions.map((subtitle, i) => ( <li key={`subtitle-${i}`} className=\"flex items-start\">"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 63,
+      "kind": "className",
+      "classes": "list-none p-0 m-0 space-y-2",
+      "snippet": "\" icon={<ListIcon className=\"w-5 h-5\" />}> <ul className=\"list-none p-0 m-0 space-y-2\"> {proposal.subtitleOptions.map((subtitle, i) => ( <li key={`subtitle-${i}`} className=\"flex items-start\"> <span className=\"text-indi"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 65,
+      "kind": "className",
+      "classes": "flex items-start",
+      "snippet": "subtitle, i) => ( <li key={`subtitle-${i}`} className=\"flex items-start\"> <span className=\"text-indigo-400 mr-2\">›</span> <span>{subtitle}</span> </li> ))} </ul> </Section>"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 66,
+      "kind": "className",
+      "classes": "text-indigo-400 mr-2",
+      "snippet": "{i}`} className=\"flex items-start\"> <span className=\"text-indigo-400 mr-2\">›</span> <span>{subtitle}</span> </li> ))} </ul> </Section> </div> <div> <h3 className=\""
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 75,
+      "kind": "className",
+      "classes": "flex items-center gap-2 text-lg font-semibold text-slate-100 mb-3",
+      "snippet": "</Section> </div> <div> <h3 className=\"flex items-center gap-2 text-lg font-semibold text-slate-100 mb-3\"> Detalles Clave </h3> <div className=\"grid md:grid-cols-3 gap-4\"> <InfoCard title=\"Público"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 78,
+      "kind": "className",
+      "classes": "grid md:grid-cols-3 gap-4",
+      "snippet": "Detalles Clave </h3> <div className=\"grid md:grid-cols-3 gap-4\"> <InfoCard title=\"Público Objetivo\" icon={<UsersIcon className=\"w-5 h-5\" />}> {proposal.targetAudience} </InfoCard> <InfoCard titl"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 79,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "<InfoCard title=\"Público Objetivo\" icon={<UsersIcon className=\"w-5 h-5\" />}> {proposal.targetAudience} </InfoCard> <InfoCard title=\"Objetivo Principal\" icon={<ClipboardCheckIcon className=\"w-5 h-5\" />}> {proposal.mai"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 82,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "foCard title=\"Objetivo Principal\" icon={<ClipboardCheckIcon className=\"w-5 h-5\" />}> {proposal.mainGoal} </InfoCard> <InfoCard title=\"Tono y Estilo\" icon={<PaletteIcon className=\"w-5 h-5\" />}> {proposal.toneAndStyle}"
+    },
+    {
+      "file": "components\\BookProposalDisplay.tsx",
+      "line": 85,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "<InfoCard title=\"Tono y Estilo\" icon={<PaletteIcon className=\"w-5 h-5\" />}> {proposal.toneAndStyle} </InfoCard> </div> </div> </div> </div> ); }; export default BookProposalDisplay;"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 139,
+      "kind": "className",
+      "classes": "bg-yellow-200/80 text-slate-900 px-0.5 rounded-sm",
+      "snippet": "y={`hit-${idx}-${hitIndex++}`} data-hit=\"1\" className=\"bg-yellow-200/80 text-slate-900 px-0.5 rounded-sm\" > {text.slice(idx, idx + q.length)} </mark> ); i = idx + q.length; } return out; } function highlightChildren(children: Rea"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 544,
+      "kind": "className",
+      "classes": "scroll-mt-24",
+      "snippet": ": `${base}-${n}`; return ( <Tag id={id} className=\"scroll-mt-24\"> {highlightChildren(children ?? null, deferredQuery, false)} </Tag> ); }; return { h1: makeHeading('h1'), h2: makeHeading('h2'), h3: mak"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 577,
+      "kind": "className",
+      "classes": "flex h-full bg-slate-900 overflow-hidden",
+      "snippet": "}, [baseSectionOptions, sectionKey]); return ( <div className=\"flex h-full bg-slate-900 overflow-hidden\"> {/* Sidebar TOC */} <aside className={`h-full border-r border-slate-700 bg-slate-900/60 transition-all ${ tocOpen ? 'w-[320px]' : 'w-0'"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 584,
+      "kind": "className",
+      "classes": "h-full flex flex-col",
+      "snippet": "]' : 'w-0' } overflow-hidden`} > <div className=\"h-full flex flex-col\"> <div className=\"p-4 border-b border-slate-700 bg-slate-800/60\"> <div className=\"flex items-center justify-between gap-2\"> <div className=\"text-xs font"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 585,
+      "kind": "className",
+      "classes": "p-4 border-b border-slate-700 bg-slate-800/60",
+      "snippet": "<div className=\"h-full flex flex-col\"> <div className=\"p-4 border-b border-slate-700 bg-slate-800/60\"> <div className=\"flex items-center justify-between gap-2\"> <div className=\"text-xs font-black tracking-widest uppercase text-indigo-400\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 586,
+      "kind": "className",
+      "classes": "flex items-center justify-between gap-2",
+      "snippet": "order-b border-slate-700 bg-slate-800/60\"> <div className=\"flex items-center justify-between gap-2\"> <div className=\"text-xs font-black tracking-widest uppercase text-indigo-400\">Índice</div> <button onClick={() => setTocOpe"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 587,
+      "kind": "className",
+      "classes": "text-xs font-black tracking-widest uppercase text-indigo-400",
+      "snippet": "lex items-center justify-between gap-2\"> <div className=\"text-xs font-black tracking-widest uppercase text-indigo-400\">Índice</div> <button onClick={() => setTocOpen(false)} className=\"text-xs px-2 py-1 rounded bg-slate-"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 590,
+      "kind": "className",
+      "classes": "text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100",
+      "snippet": "onClick={() => setTocOpen(false)} className=\"text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100\" > Ocultar </button> </div> <div className=\"mt-3\"> <i"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 596,
+      "kind": "className",
+      "classes": "mt-3",
+      "snippet": "</button> </div> <div className=\"mt-3\"> <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder=\"Buscar en esta vista...\" className=\"w-full text"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 601,
+      "kind": "className",
+      "classes": "w-full text-sm px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40",
+      "snippet": "placeholder=\"Buscar en esta vista...\" className=\"w-full text-sm px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40\" /> <div className=\"mt-2 flex items-center justi"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 603,
+      "kind": "className",
+      "classes": "mt-2 flex items-center justify-between text-[11px] text-slate-400",
+      "snippet": "cus:ring-indigo-500/40\" /> <div className=\"mt-2 flex items-center justify-between text-[11px] text-slate-400\"> <span>{hitsTotal ? `${hitsTotal.toLocaleString()} coincidencias` : 'Sin búsqueda'}</span> <div className=\"fle"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 605,
+      "kind": "className",
+      "classes": "flex gap-2",
+      "snippet": "oincidencias` : 'Sin búsqueda'}</span> <div className=\"flex gap-2\"> <button onClick={() => jumpToHit(-1)} disabled={!hitsTotal} className=\"px-2 py-1 rounded bg-slate-800 hover:bg-slate-7"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 609,
+      "kind": "className",
+      "classes": "px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40",
+      "snippet": "disabled={!hitsTotal} className=\"px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40\" > Anterior </button> <button onClick={() =>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 616,
+      "kind": "className",
+      "classes": "px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40",
+      "snippet": "disabled={!hitsTotal} className=\"px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40\" > Siguiente </button> </div> </div> </di"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 624,
+      "kind": "className",
+      "classes": "mt-3",
+      "snippet": "> </div> </div> <div className=\"mt-3\"> <div className=\"text-[10px] font-black tracking-widest uppercase text-slate-400\">Vista</div> <select value={sectionKey} onChange={(e) => setSe"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 625,
+      "kind": "className",
+      "classes": "text-[10px] font-black tracking-widest uppercase text-slate-400",
+      "snippet": "div> <div className=\"mt-3\"> <div className=\"text-[10px] font-black tracking-widest uppercase text-slate-400\">Vista</div> <select value={sectionKey} onChange={(e) => setSectionKey(e.target.value)}"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 629,
+      "kind": "className",
+      "classes": "mt-1 w-full text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600",
+      "snippet": "ange={(e) => setSectionKey(e.target.value)} className=\"mt-1 w-full text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600\" title=\"Ver completo o por secciones/capítulos\" > {"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 639,
+      "kind": "className",
+      "classes": "mt-2 text-[11px] text-amber-300/90",
+      "snippet": "{fullText.length > 220_000 && ( <div className=\"mt-2 text-[11px] text-amber-300/90\"> Tip: para libros largos, rinde mejor “por capítulos”. El render completo puede ponerse pesado. </div> )} </div>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 646,
+      "kind": "className",
+      "classes": "flex-1 overflow-y-auto p-3",
+      "snippet": ")} </div> </div> <div className=\"flex-1 overflow-y-auto p-3\"> {toc.length === 0 ? ( <div className=\"text-sm text-slate-400 p-3\"> No detecté encabezados (#, ##, ###) en esta vista. Si tu contenido vien"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 648,
+      "kind": "className",
+      "classes": "text-sm text-slate-400 p-3",
+      "snippet": "p-3\"> {toc.length === 0 ? ( <div className=\"text-sm text-slate-400 p-3\"> No detecté encabezados (#, ##, ###) en esta vista. Si tu contenido viene sin headings, el índice queda vacío. </div> ) : ( <"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 652,
+      "kind": "className",
+      "classes": "space-y-1",
+      "snippet": "o. </div> ) : ( <ul className=\"space-y-1\"> {toc.map((item) => ( <li key={item.id}> <button onClick={() => scrollToId(item.id)} className={`w-f"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 663,
+      "kind": "className",
+      "classes": "text-sm leading-snug line-clamp-2",
+      "snippet": "em.title} > <span className=\"text-sm leading-snug line-clamp-2\">{item.title}</span> </button> </li> ))} </ul> )} </div> </div> </aside"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 674,
+      "kind": "className",
+      "classes": "flex-1 flex flex-col h-full overflow-hidden",
+      "snippet": "</div> </aside> {/* Main */} <div className=\"flex-1 flex flex-col h-full overflow-hidden\"> {/* Progress bar */} <div className=\"h-1 bg-slate-800\"> <div className=\"h-1 bg-indigo-500\" style={{ inlineSize: `${Math.round(progress *"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 676,
+      "kind": "className",
+      "classes": "h-1 bg-slate-800",
+      "snippet": "overflow-hidden\"> {/* Progress bar */} <div className=\"h-1 bg-slate-800\"> <div className=\"h-1 bg-indigo-500\" style={{ inlineSize: `${Math.round(progress * 100)}%` }} /> </div> <header className=\"bg-slate-800 border-b border-slate-700 p-4"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 677,
+      "kind": "className",
+      "classes": "h-1 bg-indigo-500",
+      "snippet": "} <div className=\"h-1 bg-slate-800\"> <div className=\"h-1 bg-indigo-500\" style={{ inlineSize: `${Math.round(progress * 100)}%` }} /> </div> <header className=\"bg-slate-800 border-b border-slate-700 p-4 flex justify-between items-center shadow-lg"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 680,
+      "kind": "className",
+      "classes": "bg-slate-800 border-b border-slate-700 p-4 flex justify-between items-center shadow-lg z-10",
+      "snippet": "nd(progress * 100)}%` }} /> </div> <header className=\"bg-slate-800 border-b border-slate-700 p-4 flex justify-between items-center shadow-lg z-10\"> <div className=\"flex items-center gap-3 min-w-0\"> {!tocOpen && ( <button"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 681,
+      "kind": "className",
+      "classes": "flex items-center gap-3 min-w-0",
+      "snippet": "ustify-between items-center shadow-lg z-10\"> <div className=\"flex items-center gap-3 min-w-0\"> {!tocOpen && ( <button onClick={() => setTocOpen(true)} className=\"text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 685,
+      "kind": "className",
+      "classes": "text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 shrink-0",
+      "snippet": "onClick={() => setTocOpen(true)} className=\"text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 shrink-0\" > Índice </button> )} <div className=\"flex flex-col mi"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 691,
+      "kind": "className",
+      "classes": "flex flex-col min-w-0",
+      "snippet": "ce </button> )} <div className=\"flex flex-col min-w-0\"> <h2 className=\"text-lg font-bold leading-tight truncate max-w-md text-slate-100\"> {s((project as any)?.state?.book_title, s((project as any)?.title, 'Docum"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 692,
+      "kind": "className",
+      "classes": "text-lg font-bold leading-tight truncate max-w-md text-slate-100",
+      "snippet": "<div className=\"flex flex-col min-w-0\"> <h2 className=\"text-lg font-bold leading-tight truncate max-w-md text-slate-100\"> {s((project as any)?.state?.book_title, s((project as any)?.title, 'Documento'))} </h2> <div class"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 695,
+      "kind": "className",
+      "classes": "flex items-center gap-3 flex-wrap",
+      "snippet": "itle, 'Documento'))} </h2> <div className=\"flex items-center gap-3 flex-wrap\"> <span className=\"text-[10px] text-indigo-400 font-black tracking-widest uppercase\">{sectionLabel}</span> <span className=\"text-[10px] text-sl"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 696,
+      "kind": "className",
+      "classes": "text-[10px] text-indigo-400 font-black tracking-widest uppercase",
+      "snippet": "=\"flex items-center gap-3 flex-wrap\"> <span className=\"text-[10px] text-indigo-400 font-black tracking-widest uppercase\">{sectionLabel}</span> <span className=\"text-[10px] text-slate-500 font-mono\">{wordCount.toLocaleString()} palabras</span>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 697,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 font-mono",
+      "snippet": "dest uppercase\">{sectionLabel}</span> <span className=\"text-[10px] text-slate-500 font-mono\">{wordCount.toLocaleString()} palabras</span> <span className=\"text-[10px] text-slate-500 font-mono\">{Math.round(progress * 100)}% leído</span>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 698,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 font-mono",
+      "snippet": "unt.toLocaleString()} palabras</span> <span className=\"text-[10px] text-slate-500 font-mono\">{Math.round(progress * 100)}% leído</span> </div> </div> </div> <div className=\"flex gap-2 items-center\"> <selec"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 703,
+      "kind": "className",
+      "classes": "flex gap-2 items-center",
+      "snippet": "</div> </div> </div> <div className=\"flex gap-2 items-center\"> <select onChange={(e) => { const id = e.target.value; if (id) scrollToId(id); }} className=\"hidde"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 709,
+      "kind": "className",
+      "classes": "hidden md:block text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600",
+      "snippet": "if (id) scrollToId(id); }} className=\"hidden md:block text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600\" defaultValue=\"\" title=\"Saltar a heading dentro de la vista\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 725,
+      "kind": "className",
+      "classes": "bg-slate-700 hover:bg-slate-600 px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all active:scale-95 text-slate-100",
+      "snippet": "onClick={() => handleDownload('pdf')} className=\"bg-slate-700 hover:bg-slate-600 px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all active:scale-95 text-slate-100\" title=\"Descarga el libro completo (no solo la vista)\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 728,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "o solo la vista)\" > <FileDownIcon className=\"w-4 h-4\" /> PDF </button> <button onClick={() => handleDownload('docx')} className=\"bg-slate-700 hover:bg-slate-600 px-4 py-2 text-xs font-bold rounded-xl fl"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 732,
+      "kind": "className",
+      "classes": "bg-slate-700 hover:bg-slate-600 px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all active:scale-95 text-slate-100",
+      "snippet": "onClick={() => handleDownload('docx')} className=\"bg-slate-700 hover:bg-slate-600 px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all active:scale-95 text-slate-100\" title=\"Descarga el libro completo (no solo la vista)\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 735,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "o solo la vista)\" > <FileDownIcon className=\"w-4 h-4\" /> Word </button> </div> </header> <div ref={scrollRef} className=\"flex-1 overflow-y-auto p-4 md:p-10 bg-slate-950/80 flex justify-center\"> <article cl"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 740,
+      "kind": "className",
+      "classes": "flex-1 overflow-y-auto p-4 md:p-10 bg-slate-950/80 flex justify-center",
+      "snippet": "</div> </header> <div ref={scrollRef} className=\"flex-1 overflow-y-auto p-4 md:p-10 bg-slate-950/80 flex justify-center\"> <article className=\"w-full max-w-[920px] bg-white text-slate-900 shadow-[0_0_100px_rgba(0,0,0,0.45)] p-8 md:p-16 rounded-sm mi"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 741,
+      "kind": "className",
+      "classes": "w-full max-w-[920px] bg-white text-slate-900 shadow-[0_0_100px_rgba(0,0,0,0.45)] p-8 md:p-16 rounded-sm min-h-[80vh] border border-slate-200",
+      "snippet": "10 bg-slate-950/80 flex justify-center\"> <article className=\"w-full max-w-[920px] bg-white text-slate-900 shadow-[0_0_100px_rgba(0,0,0,0.45)] p-8 md:p-16 rounded-sm min-h-[80vh] border border-slate-200\"> <div className=\"prose prose-slate max-w-none selection"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 742,
+      "kind": "className",
+      "classes": "prose prose-slate max-w-none selection:bg-indigo-100 prose-headings:font-black prose-h1:text-4xl prose-h2:text-2xl prose-h2:border-b prose-h2:border-slate-200 prose-h2:pb-2 prose-h2:mt-12 prose-p:text-lg prose-p:leading-relaxed prose-li:text-lg",
+      "snippet": "-sm min-h-[80vh] border border-slate-200\"> <div className=\"prose prose-slate max-w-none selection:bg-indigo-100 prose-headings:font-black prose-h1:text-4xl prose-h2:text-2xl prose-h2:border-b prose-h2:border-slate-200 prose-h2:pb-2 prose-h2:mt-12 prose-p:text-lg prose"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 748,
+      "kind": "className",
+      "classes": "mt-20 pt-10 border-t border-slate-200 text-center",
+      "snippet": "</ReactMarkdown> </div> <div className=\"mt-20 pt-10 border-t border-slate-200 text-center\"> <p className=\"text-slate-400 font-mono text-xs uppercase tracking-[0.35em]\">Fin de la vista</p> </div> </article>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 749,
+      "kind": "className",
+      "classes": "text-slate-400 font-mono text-xs uppercase tracking-[0.35em]",
+      "snippet": "10 border-t border-slate-200 text-center\"> <p className=\"text-slate-400 font-mono text-xs uppercase tracking-[0.35em]\">Fin de la vista</p> </div> </article> </div> </div> </div> ); }; export default BookViewer;"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 44,
+      "kind": "className",
+      "classes": "flex-1 flex flex-col bg-slate-900 overflow-hidden",
+      "snippet": "ult(); handleSend(e); } }; return ( <div className=\"flex-1 flex flex-col bg-slate-900 overflow-hidden\"> <div className=\"flex-1 overflow-y-auto p-6 space-y-6\"> {messages.map((msg) => ( <div key={msg.id} className={"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 45,
+      "kind": "className",
+      "classes": "flex-1 overflow-y-auto p-6 space-y-6",
+      "snippet": "x-1 flex flex-col bg-slate-900 overflow-hidden\"> <div className=\"flex-1 overflow-y-auto p-6 space-y-6\"> {messages.map((msg) => ( <div key={msg.id} className={`flex items-start gap-4 ${ msg.role === 'user' ? 'justify-en"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 54,
+      "kind": "className",
+      "classes": "w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0",
+      "snippet": "> {msg.role === 'model' && ( <div className=\"w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0\"> <BotIcon className=\"w-5 h-5 text-white\" /> </div> )} <div"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 55,
+      "kind": "className",
+      "classes": "w-5 h-5 text-white",
+      "snippet": "ter justify-center flex-shrink-0\"> <BotIcon className=\"w-5 h-5 text-white\" /> </div> )} <div className={`max-w-3xl rounded-xl p-4 ${ msg.role === 'user' ? 'bg-blue-600 text-white"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 65,
+      "kind": "className",
+      "classes": "prose prose-invert prose-sm md:prose-base prose-pre:bg-slate-900/50 prose-pre:p-4 prose-pre:rounded-md",
+      "snippet": "bl-none' }`} > <div className=\"prose prose-invert prose-sm md:prose-base prose-pre:bg-slate-900/50 prose-pre:p-4 prose-pre:rounded-md\"> <ReactMarkdown remarkPlugins={[remarkGfm]}> {msg.content}"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 72,
+      "kind": "className",
+      "classes": "w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0",
+      "snippet": "> {msg.role === 'user' && ( <div className=\"w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0\"> <UserIcon className=\"w-5 h-5 text-slate-300\" /> </div> )} </div> )"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 73,
+      "kind": "className",
+      "classes": "w-5 h-5 text-slate-300",
+      "snippet": "er justify-center flex-shrink-0\"> <UserIcon className=\"w-5 h-5 text-slate-300\" /> </div> )} </div> ))} <div ref={messagesEndRef} /> </div> <div className=\"p-4 border-t border-slate-700 bg-slate-800/5"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 81,
+      "kind": "className",
+      "classes": "p-4 border-t border-slate-700 bg-slate-800/50",
+      "snippet": "<div ref={messagesEndRef} /> </div> <div className=\"p-4 border-t border-slate-700 bg-slate-800/50\"> {error && ( <div className=\"mb-2 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm flex items-center gap-2\">"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 83,
+      "kind": "className",
+      "classes": "mb-2 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm flex items-center gap-2",
+      "snippet": "-700 bg-slate-800/50\"> {error && ( <div className=\"mb-2 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm flex items-center gap-2\"> <AlertTriangleIcon className=\"w-4 h-4\"/> <span>{error}</span>"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 84,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "lex items-center gap-2\"> <AlertTriangleIcon className=\"w-4 h-4\"/> <span>{error}</span> </div> )} <form onSubmit={handleSend} className=\"relative\"> <textarea value={inputText} onChange={("
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 88,
+      "kind": "className",
+      "classes": "relative",
+      "snippet": "</div> )} <form onSubmit={handleSend} className=\"relative\"> <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={handleKeyDown} placeholder=\"Escribe tu comando aquí..."
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 94,
+      "kind": "className",
+      "classes": "w-full bg-slate-700 text-slate-100 rounded-lg p-3 pr-20 resize-none border border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200",
+      "snippet": "o aquí... (ej. NUEVO LIBRO: una guía sobre...)\" className=\"w-full bg-slate-700 text-slate-100 rounded-lg p-3 pr-20 resize-none border border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200\" rows={Math.min(5, inp"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 101,
+      "kind": "className",
+      "classes": "absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors",
+      "snippet": "disabled={isLoading || !inputText.trim()} className=\"absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors\" > {isLoading ?"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 104,
+      "kind": "className",
+      "classes": "w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin",
+      "snippet": "> {isLoading ? ( <div className=\"w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin\"></div> ) : ( <SendIcon className=\"w-5 h-5\" /> )} </button> </form>"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 106,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "te-spin\"></div> ) : ( <SendIcon className=\"w-5 h-5\" /> )} </button> </form> </div> </div> ); }; export default ChatInterface;"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 42,
+      "kind": "className",
+      "classes": "p-12 text-center text-slate-500 animate-pulse",
+      "snippet": "' | 'dossier'>('blueprint'); if (!dashboard) return <div className=\"p-12 text-center text-slate-500 animate-pulse\">Sincronizando Dossier Editorial...</div>; const menuItems = dashboard.menu_items.filter(item => ['PROPOSAL', 'INTRODUCTION', 'CHAPTER'].includes(item.type"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 90,
+      "kind": "className",
+      "classes": "p-6 h-full overflow-y-auto bg-slate-900",
+      "snippet": "d.split('-')[1]}`; return id; }; return ( <div className=\"p-6 h-full overflow-y-auto bg-slate-900\"> <div className=\"max-w-5xl mx-auto space-y-8 pb-20\"> {/* Project Header & Progress Map */} <div className=\"bg-gradient-to-br from-slate-8"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 91,
+      "kind": "className",
+      "classes": "max-w-5xl mx-auto space-y-8 pb-20",
+      "snippet": "sName=\"p-6 h-full overflow-y-auto bg-slate-900\"> <div className=\"max-w-5xl mx-auto space-y-8 pb-20\"> {/* Project Header & Progress Map */} <div className=\"bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 flex"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 94,
+      "kind": "className",
+      "classes": "bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 flex flex-col gap-6 shadow-2xl relative overflow-hidden",
+      "snippet": "{/* Project Header & Progress Map */} <div className=\"bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 flex flex-col gap-6 shadow-2xl relative overflow-hidden\"> <div className=\"absolute top-0 right-0 w-96 h-96 bg-"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 95,
+      "kind": "className",
+      "classes": "absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full -mr-48 -mt-48 blur-3xl",
+      "snippet": "gap-6 shadow-2xl relative overflow-hidden\"> <div className=\"absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full -mr-48 -mt-48 blur-3xl\"></div> <div className=\"relative z-10 flex flex-col md:flex-row justify-between items-start md:items-c"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 97,
+      "kind": "className",
+      "classes": "relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6",
+      "snippet": "ll -mr-48 -mt-48 blur-3xl\"></div> <div className=\"relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6\"> <div className=\"space-y-2\"> <h2 className=\"text-3xl font-black mb-1 tracking-tight text-whi"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 98,
+      "kind": "className",
+      "classes": "space-y-2",
+      "snippet": "etween items-start md:items-center gap-6\"> <div className=\"space-y-2\"> <h2 className=\"text-3xl font-black mb-1 tracking-tight text-white\">{state.book_title}</h2> <p className=\"text-indigo-400 font-medium text-sm tracking-wide italic\">{state"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 99,
+      "kind": "className",
+      "classes": "text-3xl font-black mb-1 tracking-tight text-white",
+      "snippet": "> <div className=\"space-y-2\"> <h2 className=\"text-3xl font-black mb-1 tracking-tight text-white\">{state.book_title}</h2> <p className=\"text-indigo-400 font-medium text-sm tracking-wide italic\">{state.dossier.one_liner}</p> </div"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 100,
+      "kind": "className",
+      "classes": "text-indigo-400 font-medium text-sm tracking-wide italic",
+      "snippet": "-tight text-white\">{state.book_title}</h2> <p className=\"text-indigo-400 font-medium text-sm tracking-wide italic\">{state.dossier.one_liner}</p> </div> <div className=\"relative z-10 flex items-center gap-3 flex-wrap justify-end\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 102,
+      "kind": "className",
+      "classes": "relative z-10 flex items-center gap-3 flex-wrap justify-end",
+      "snippet": ".dossier.one_liner}</p> </div> <div className=\"relative z-10 flex items-center gap-3 flex-wrap justify-end\"> <button onClick={onOpenBookView} className=\"flex items-center gap-3 bg-slate-700 hover:bg-slate-600 p"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 105,
+      "kind": "className",
+      "classes": "flex items-center gap-3 bg-slate-700 hover:bg-slate-600 px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl active:scale-95",
+      "snippet": "on onClick={onOpenBookView} className=\"flex items-center gap-3 bg-slate-700 hover:bg-slate-600 px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl active:scale-95\" title=\"Abre el visor del docu"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 108,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "nto completo\" > <BookOpenIcon className=\"w-5 h-5\" /> Documento Maestro </button> {hasPending && ( <button onClick={onGenerateRemaining} disabled={isGener"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 116,
+      "kind": "className",
+      "classes": "flex items-center gap-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-2xl shadow-indigo-600/30 active:scale-95",
+      "snippet": "disabled={isGeneratingGlobal} className=\"flex items-center gap-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-2xl shadow-indigo"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 118,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "e:scale-95\" > <RocketIcon className=\"w-5 h-5\" /> Auto-Completar Obra </button> )} </div> </div> <div className=\"relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 p"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 125,
+      "kind": "className",
+      "classes": "relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-700/50",
+      "snippet": ")} </div> </div> <div className=\"relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-700/50\"> <div className=\"bg-slate-950/40 px-5 py-5 rounded-2xl border border-slate-700/30 flex flex-col justify-betwee"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 126,
+      "kind": "className",
+      "classes": "bg-slate-950/40 px-5 py-5 rounded-2xl border border-slate-700/30 flex flex-col justify-between",
+      "snippet": "gap-6 pt-6 border-t border-slate-700/50\"> <div className=\"bg-slate-950/40 px-5 py-5 rounded-2xl border border-slate-700/30 flex flex-col justify-between\"> <div> <p className=\"text-[10px] text-slate-500 uppercase font-black tracking-wides"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 128,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1",
+      "snippet": "ol justify-between\"> <div> <p className=\"text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1\">Finalización Estimada</p> <span className=\"text-3xl font-mono text-indigo-400 font-black\">{completionPercentReal}%</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 129,
+      "kind": "className",
+      "classes": "text-3xl font-mono text-indigo-400 font-black",
+      "snippet": "idest mb-1\">Finalización Estimada</p> <span className=\"text-3xl font-mono text-indigo-400 font-black\">{completionPercentReal}%</span> </div> <div className=\"w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mt-4\"> <"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 131,
+      "kind": "className",
+      "classes": "w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mt-4",
+      "snippet": "ercentReal}%</span> </div> <div className=\"w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mt-4\"> <div className=\"h-full bg-indigo-500 transition-all duration-1000\" style={{ width: `${completionPercentReal}%` }}></div>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 132,
+      "kind": "className",
+      "classes": "h-full bg-indigo-500 transition-all duration-1000",
+      "snippet": "00 rounded-full overflow-hidden mt-4\"> <div className=\"h-full bg-indigo-500 transition-all duration-1000\" style={{ width: `${completionPercentReal}%` }}></div> </div> </div> <div className=\"bg-slate-950/40 px-5 py-5 rounded-2"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 136,
+      "kind": "className",
+      "classes": "bg-slate-950/40 px-5 py-5 rounded-2xl border border-slate-700/30 md:col-span-2",
+      "snippet": "> </div> </div> <div className=\"bg-slate-950/40 px-5 py-5 rounded-2xl border border-slate-700/30 md:col-span-2\"> <div className=\"flex justify-between items-center mb-4\"> <p className=\"text-[10px] text-slate-500"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 137,
+      "kind": "className",
+      "classes": "flex justify-between items-center mb-4",
+      "snippet": "rder border-slate-700/30 md:col-span-2\"> <div className=\"flex justify-between items-center mb-4\"> <p className=\"text-[10px] text-slate-500 uppercase font-black tracking-widest\">Monitor de Estado Individual</p> <div className=\"flex ite"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 138,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 uppercase font-black tracking-widest",
+      "snippet": "flex justify-between items-center mb-4\"> <p className=\"text-[10px] text-slate-500 uppercase font-black tracking-widest\">Monitor de Estado Individual</p> <div className=\"flex items-center gap-3\"> <span className=\"text-[10px] text-"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 139,
+      "kind": "className",
+      "classes": "flex items-center gap-3",
+      "snippet": "dest\">Monitor de Estado Individual</p> <div className=\"flex items-center gap-3\"> <span className=\"text-[10px] text-slate-400 font-mono\"> <span className=\"text-white font-bold\">{totalWordsReal.toLocaleString()}</span> palabr"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 140,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-400 font-mono",
+      "snippet": "assName=\"flex items-center gap-3\"> <span className=\"text-[10px] text-slate-400 font-mono\"> <span className=\"text-white font-bold\">{totalWordsReal.toLocaleString()}</span> palabras totales </span> </div>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 141,
+      "kind": "className",
+      "classes": "text-white font-bold",
+      "snippet": "0px] text-slate-400 font-mono\"> <span className=\"text-white font-bold\">{totalWordsReal.toLocaleString()}</span> palabras totales </span> </div> </div> <div className=\"flex flex-wrap gap-2.5\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 145,
+      "kind": "className",
+      "classes": "flex flex-wrap gap-2.5",
+      "snippet": "</div> </div> <div className=\"flex flex-wrap gap-2.5\"> {/* Proposal Block */} <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black text-white transit"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 176,
+      "kind": "className",
+      "classes": "flex gap-4 mt-4",
+      "snippet": "})} </div> <div className=\"flex gap-4 mt-4\"> <div className=\"flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter\"> <div className=\"w-2 h-2 rounded-full bg-green-500\""
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 177,
+      "kind": "className",
+      "classes": "flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter",
+      "snippet": "<div className=\"flex gap-4 mt-4\"> <div className=\"flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter\"> <div className=\"w-2 h-2 rounded-full bg-green-500\"></div> Completado </div>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 178,
+      "kind": "className",
+      "classes": "w-2 h-2 rounded-full bg-green-500",
+      "snippet": "nt-bold uppercase tracking-tighter\"> <div className=\"w-2 h-2 rounded-full bg-green-500\"></div> Completado </div> <div className=\"flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 180,
+      "kind": "className",
+      "classes": "flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter",
+      "snippet": "div> Completado </div> <div className=\"flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter\"> <div className=\"w-2 h-2 rounded-full bg-indigo-500\"></div> Generando </div>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 181,
+      "kind": "className",
+      "classes": "w-2 h-2 rounded-full bg-indigo-500",
+      "snippet": "nt-bold uppercase tracking-tighter\"> <div className=\"w-2 h-2 rounded-full bg-indigo-500\"></div> Generando </div> <div className=\"flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 183,
+      "kind": "className",
+      "classes": "flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter",
+      "snippet": "/div> Generando </div> <div className=\"flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter\"> <div className=\"w-2 h-2 rounded-full bg-slate-700\"></div> Pendiente </div>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 184,
+      "kind": "className",
+      "classes": "w-2 h-2 rounded-full bg-slate-700",
+      "snippet": "nt-bold uppercase tracking-tighter\"> <div className=\"w-2 h-2 rounded-full bg-slate-700\"></div> Pendiente </div> </div> </div> </div> </div> {/* Navigation Tabs */} <div className=\"flex"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 192,
+      "kind": "className",
+      "classes": "flex gap-2 border-b border-slate-800 pb-0 px-2",
+      "snippet": "</div> {/* Navigation Tabs */} <div className=\"flex gap-2 border-b border-slate-800 pb-0 px-2\"> <button onClick={() => setActiveTab('blueprint')} className={`px-6 py-3 text-xs font-black uppercase tracking-widest transit"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 208,
+      "kind": "className",
+      "classes": "grid gap-4",
+      "snippet": "div> {activeTab === 'blueprint' ? ( <div className=\"grid gap-4\"> {/* Proposal & Intro Detailed Status Cards */} <div className=\"grid md:grid-cols-2 gap-4\"> {['proposal', 'intro'].map((id) => { const label ="
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 210,
+      "kind": "className",
+      "classes": "grid md:grid-cols-2 gap-4",
+      "snippet": "Proposal & Intro Detailed Status Cards */} <div className=\"grid md:grid-cols-2 gap-4\"> {['proposal', 'intro'].map((id) => { const label = id === 'proposal' ? 'Propuesta Editorial' : 'Introducción Maestro'; const status = g"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 229,
+      "kind": "className",
+      "classes": "text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-6 mb-2 flex items-center gap-2",
+      "snippet": "{/* Individual Chapter Breakdown */} <h3 className=\"text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-6 mb-2 flex items-center gap-2\"> <ListIcon className=\"w-3 h-3\" /> Secuencia Narrativa Individual </h3>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 230,
+      "kind": "className",
+      "classes": "w-3 h-3",
+      "snippet": "mt-6 mb-2 flex items-center gap-2\"> <ListIcon className=\"w-3 h-3\" /> Secuencia Narrativa Individual </h3> <div className=\"grid grid-cols-1 gap-3\"> {state.outline_12.map((ch) => { const id = `chap-${ch.chapter_num"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 232,
+      "kind": "className",
+      "classes": "grid grid-cols-1 gap-3",
+      "snippet": "cia Narrativa Individual </h3> <div className=\"grid grid-cols-1 gap-3\"> {state.outline_12.map((ch) => { const id = `chap-${ch.chapter_number}`; const status = generation_progress[id] || 'pending';"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 240,
+      "kind": "className",
+      "classes": "flex-1 space-y-2",
+      "snippet": "00/20' : 'border-slate-700/50'}`}> <div className=\"flex-1 space-y-2\"> <div className=\"flex items-center gap-3\"> <span className={`text-xs font-black px-2 py-1 rounded-lg w-10 text-center transition-all ${status ==="
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 241,
+      "kind": "className",
+      "classes": "flex items-center gap-3",
+      "snippet": "iv className=\"flex-1 space-y-2\"> <div className=\"flex items-center gap-3\"> <span className={`text-xs font-black px-2 py-1 rounded-lg w-10 text-center transition-all ${status === 'completed' ? 'bg-green-500/10 text-green-500' : 'bg-ind"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 245,
+      "kind": "className",
+      "classes": "font-bold text-slate-100 text-lg",
+      "snippet": "</span> <h4 className=\"font-bold text-slate-100 text-lg\">{ch.chapter_title}</h4> {status === 'completed' && <CheckCircleIcon className=\"w-4 h-4 text-green-500\" />} </div>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 246,
+      "kind": "className",
+      "classes": "w-4 h-4 text-green-500",
+      "snippet": "{status === 'completed' && <CheckCircleIcon className=\"w-4 h-4 text-green-500\" />} </div> <p className=\"text-xs text-slate-400 line-clamp-1 italic\">{ch.objective}</p> <div className=\"flex flex-wrap"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 248,
+      "kind": "className",
+      "classes": "text-xs text-slate-400 line-clamp-1 italic",
+      "snippet": "\" />} </div> <p className=\"text-xs text-slate-400 line-clamp-1 italic\">{ch.objective}</p> <div className=\"flex flex-wrap gap-2 pt-1\"> {ch.subheads_h2.slice(0, 3).map((h, i) => ("
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 249,
+      "kind": "className",
+      "classes": "flex flex-wrap gap-2 pt-1",
+      "snippet": "amp-1 italic\">{ch.objective}</p> <div className=\"flex flex-wrap gap-2 pt-1\"> {ch.subheads_h2.slice(0, 3).map((h, i) => ( <span key={i} className=\"text-[9px] bg-slate-900/50 px-2 py-0.5 rounded border border-s"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 251,
+      "kind": "className",
+      "classes": "text-[9px] bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/30 text-slate-500",
+      "snippet": "3).map((h, i) => ( <span key={i} className=\"text-[9px] bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/30 text-slate-500\">{h}</span> ))} </div> </div> <di"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 256,
+      "kind": "className",
+      "classes": "flex items-center gap-6 shrink-0 border-t md:border-t-0 md:border-l border-slate-700/50 pt-4 md:pt-0 md:pl-6 min-w-[180px]",
+      "snippet": "</div> </div> <div className=\"flex items-center gap-6 shrink-0 border-t md:border-t-0 md:border-l border-slate-700/50 pt-4 md:pt-0 md:pl-6 min-w-[180px]\"> <div className=\"flex flex-col items-end flex-1\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 257,
+      "kind": "className",
+      "classes": "flex flex-col items-end flex-1",
+      "snippet": "md:pt-0 md:pl-6 min-w-[180px]\"> <div className=\"flex flex-col items-end flex-1\"> <p className=\"text-[10px] text-slate-500 uppercase font-black tracking-tighter mb-1\">Status & Volumen</p> <div className=\"flex"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 258,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 uppercase font-black tracking-tighter mb-1",
+      "snippet": "lex flex-col items-end flex-1\"> <p className=\"text-[10px] text-slate-500 uppercase font-black tracking-tighter mb-1\">Status & Volumen</p> <div className=\"flex flex-col items-end\"> {status === 'completed"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 259,
+      "kind": "className",
+      "classes": "flex flex-col items-end",
+      "snippet": "er mb-1\">Status & Volumen</p> <div className=\"flex flex-col items-end\"> {status === 'completed' ? ( <> <span className=\"text-xs font-black text-green-500\">COMPLETADO"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 262,
+      "kind": "className",
+      "classes": "text-xs font-black text-green-500",
+      "snippet": "<> <span className=\"text-xs font-black text-green-500\">COMPLETADO</span> <span className=\"text-[11px] font-mono text-slate-100 font-bold\">{words.toLocaleString()} palabras</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 263,
+      "kind": "className",
+      "classes": "text-[11px] font-mono text-slate-100 font-bold",
+      "snippet": "00\">COMPLETADO</span> <span className=\"text-[11px] font-mono text-slate-100 font-bold\">{words.toLocaleString()} palabras</span> </> ) : status === 'generating' ? ("
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 267,
+      "kind": "className",
+      "classes": "text-xs font-black text-indigo-400 animate-pulse",
+      "snippet": "<> <span className=\"text-xs font-black text-indigo-400 animate-pulse\">ESCRIBIENDO...</span> <span className=\"text-[10px] text-slate-600 font-mono\">Meta: {ch.target_words}</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 268,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-600 font-mono",
+      "snippet": "ESCRIBIENDO...</span> <span className=\"text-[10px] text-slate-600 font-mono\">Meta: {ch.target_words}</span> </> ) : status === 'error' ? ( <>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 272,
+      "kind": "className",
+      "classes": "text-xs font-black text-red-500 flex items-center gap-1",
+      "snippet": "<> <span className=\"text-xs font-black text-red-500 flex items-center gap-1\"> <AlertTriangleIcon className=\"w-3 h-3\"/> ERROR </span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 273,
+      "kind": "className",
+      "classes": "w-3 h-3",
+      "snippet": "ap-1\"> <AlertTriangleIcon className=\"w-3 h-3\"/> ERROR </span> <span className=\"text-[9px] text-slate-600\">Reintentar generación</span> </>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 275,
+      "kind": "className",
+      "classes": "text-[9px] text-slate-600",
+      "snippet": "</span> <span className=\"text-[9px] text-slate-600\">Reintentar generación</span> </> ) : ( <> <span className=\"tex"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 279,
+      "kind": "className",
+      "classes": "text-xs font-black text-slate-600 uppercase",
+      "snippet": "<> <span className=\"text-xs font-black text-slate-600 uppercase\">PENDIENTE</span> <span className=\"text-[10px] text-slate-700 font-mono\">Meta: {ch.target_words}</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 280,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-700 font-mono",
+      "snippet": "ase\">PENDIENTE</span> <span className=\"text-[10px] text-slate-700 font-mono\">Meta: {ch.target_words}</span> </> )} </div> </div>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 290,
+      "kind": "className",
+      "classes": "w-10 h-10",
+      "snippet": "{status === 'completed' ? <CheckCircleIcon className=\"w-10 h-10\" /> : <PlayCircleIcon className=\"w-10 h-10\" />} </button> </div> </div> ); })} </div> <"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 290,
+      "kind": "className",
+      "classes": "w-10 h-10",
+      "snippet": "<CheckCircleIcon className=\"w-10 h-10\" /> : <PlayCircleIcon className=\"w-10 h-10\" />} </button> </div> </div> ); })} </div> </div> ) : ( <div classNam"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 299,
+      "kind": "className",
+      "classes": "grid grid-cols-1 md:grid-cols-2 gap-6 pb-12",
+      "snippet": "</div> </div> ) : ( <div className=\"grid grid-cols-1 md:grid-cols-2 gap-6 pb-12\"> <DossierItem title=\"Promesa del Lector\" icon={<ClipboardCheckIcon className=\"w-4 h-4\" />} content={state.dossier.promise} /> <DossierItem t"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 300,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "erItem title=\"Promesa del Lector\" icon={<ClipboardCheckIcon className=\"w-4 h-4\" />} content={state.dossier.promise} /> <DossierItem title=\"Resultados Medibles\" icon={<UsersIcon className=\"w-4 h-4\" />} list={state.dossier.reader_outcomes} /> <DossierItem ti"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 301,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<DossierItem title=\"Resultados Medibles\" icon={<UsersIcon className=\"w-4 h-4\" />} list={state.dossier.reader_outcomes} /> <DossierItem title=\"Guía de Estilo\" icon={<PenSquareIcon className=\"w-4 h-4\" />} content={state.dossier.style_guide} /> <DossierItem"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 302,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<DossierItem title=\"Guía de Estilo\" icon={<PenSquareIcon className=\"w-4 h-4\" />} content={state.dossier.style_guide} /> <DossierItem title=\"Reglas del Canon\" icon={<BookIcon className=\"w-4 h-4\" />} list={state.dossier.canon_rules} /> <div className=\"md:"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 303,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<DossierItem title=\"Reglas del Canon\" icon={<BookIcon className=\"w-4 h-4\" />} list={state.dossier.canon_rules} /> <div className=\"md:col-span-2 bg-slate-800/40 p-6 rounded-2xl border border-slate-700/30 shadow-xl\"> <h4 className=\"text-xs font-black"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 304,
+      "kind": "className",
+      "classes": "md:col-span-2 bg-slate-800/40 p-6 rounded-2xl border border-slate-700/30 shadow-xl",
+      "snippet": "4\" />} list={state.dossier.canon_rules} /> <div className=\"md:col-span-2 bg-slate-800/40 p-6 rounded-2xl border border-slate-700/30 shadow-xl\"> <h4 className=\"text-xs font-black uppercase text-indigo-400 tracking-widest mb-4 flex items-center gap-2\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 305,
+      "kind": "className",
+      "classes": "text-xs font-black uppercase text-indigo-400 tracking-widest mb-4 flex items-center gap-2",
+      "snippet": "xl border border-slate-700/30 shadow-xl\"> <h4 className=\"text-xs font-black uppercase text-indigo-400 tracking-widest mb-4 flex items-center gap-2\"> <ListIcon className=\"w-4 h-4\" /> Glosario de Términos Editorial </h4> <di"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 306,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "st mb-4 flex items-center gap-2\"> <ListIcon className=\"w-4 h-4\" /> Glosario de Términos Editorial </h4> <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4\"> {state.dossier.glossary.map((g, i) => ( <d"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 308,
+      "kind": "className",
+      "classes": "grid grid-cols-1 md:grid-cols-3 gap-4",
+      "snippet": "e Términos Editorial </h4> <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4\"> {state.dossier.glossary.map((g, i) => ( <div key={i} className=\"bg-slate-900/40 p-4 rounded-xl border border-slate-700/20 hover:border-"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 310,
+      "kind": "className",
+      "classes": "bg-slate-900/40 p-4 rounded-xl border border-slate-700/20 hover:border-slate-600 transition-colors",
+      "snippet": "ier.glossary.map((g, i) => ( <div key={i} className=\"bg-slate-900/40 p-4 rounded-xl border border-slate-700/20 hover:border-slate-600 transition-colors\"> <p className=\"text-xs font-bold text-slate-100\">{g.term}</p> <p clas"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 311,
+      "kind": "className",
+      "classes": "text-xs font-bold text-slate-100",
+      "snippet": "border-slate-600 transition-colors\"> <p className=\"text-xs font-bold text-slate-100\">{g.term}</p> <p className=\"text-[10px] text-slate-500 leading-relaxed mt-2 italic\">{g.definition}</p> </div> ))}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 312,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 leading-relaxed mt-2 italic",
+      "snippet": "nt-bold text-slate-100\">{g.term}</p> <p className=\"text-[10px] text-slate-500 leading-relaxed mt-2 italic\">{g.definition}</p> </div> ))} </div> </div> </div> )} </div> </di"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 327,
+      "kind": "className",
+      "classes": "font-bold text-slate-100",
+      "snippet": "late-700/50 hover:border-slate-600'}`}> <div> <h4 className=\"font-bold text-slate-100\">{label}</h4> <div className=\"flex flex-col mt-1.5\"> <span className={`text-[10px] font-black tracking-widest uppercase mb-1 ${status === 'completed' ? 'text-green-500' :"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 328,
+      "kind": "className",
+      "classes": "flex flex-col mt-1.5",
+      "snippet": "lassName=\"font-bold text-slate-100\">{label}</h4> <div className=\"flex flex-col mt-1.5\"> <span className={`text-[10px] font-black tracking-widest uppercase mb-1 ${status === 'completed' ? 'text-green-500' : status === 'generating' ? 'text-indigo-400 animate-pulse' :"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 332,
+      "kind": "className",
+      "classes": "text-[11px] font-mono text-white font-bold",
+      "snippet": "'} </span> {status === 'completed' && <span className=\"text-[11px] font-mono text-white font-bold\">{words.toLocaleString()} palabras</span>} </div> </div> <button disabled={status === 'completed' || status === 'generating' || disabled} on"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 340,
+      "kind": "className",
+      "classes": "w-8 h-8",
+      "snippet": "'}`} > {status === 'completed' ? <CheckCircleIcon className=\"w-8 h-8\" /> : <PlayCircleIcon className=\"w-8 h-8\" />} </button> </div> ); const DossierItem = ({ title, icon, content, list }: any) => ( <div className=\"bg-slate-800/40 border border-slate-700/30 p-6"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 340,
+      "kind": "className",
+      "classes": "w-8 h-8",
+      "snippet": "? <CheckCircleIcon className=\"w-8 h-8\" /> : <PlayCircleIcon className=\"w-8 h-8\" />} </button> </div> ); const DossierItem = ({ title, icon, content, list }: any) => ( <div className=\"bg-slate-800/40 border border-slate-700/30 p-6 rounded-2xl space-y-4 shadow-lg hover:bg-"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 346,
+      "kind": "className",
+      "classes": "bg-slate-800/40 border border-slate-700/30 p-6 rounded-2xl space-y-4 shadow-lg hover:bg-slate-800/50 transition-colors",
+      "snippet": "ierItem = ({ title, icon, content, list }: any) => ( <div className=\"bg-slate-800/40 border border-slate-700/30 p-6 rounded-2xl space-y-4 shadow-lg hover:bg-slate-800/50 transition-colors\"> <h4 className=\"text-xs font-black uppercase text-indigo-400 tracking-widest flex ite"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 347,
+      "kind": "className",
+      "classes": "text-xs font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2",
+      "snippet": "shadow-lg hover:bg-slate-800/50 transition-colors\"> <h4 className=\"text-xs font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2\"> {icon} {title} </h4> {content && <p className=\"text-sm text-slate-200 leading-relaxed italic\">{content}</p>}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 350,
+      "kind": "className",
+      "classes": "text-sm text-slate-200 leading-relaxed italic",
+      "snippet": "r gap-2\"> {icon} {title} </h4> {content && <p className=\"text-sm text-slate-200 leading-relaxed italic\">{content}</p>} {list && ( <ul className=\"space-y-2.5\"> {list.map((item: string, i: number) => ( <li key={i} className=\"text-xs text-sl"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 352,
+      "kind": "className",
+      "classes": "space-y-2.5",
+      "snippet": "ing-relaxed italic\">{content}</p>} {list && ( <ul className=\"space-y-2.5\"> {list.map((item: string, i: number) => ( <li key={i} className=\"text-xs text-slate-400 flex items-start gap-2.5\"> <span className=\"text-indigo-500 mt-1 shrink-0\">▸</"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 354,
+      "kind": "className",
+      "classes": "text-xs text-slate-400 flex items-start gap-2.5",
+      "snippet": "st.map((item: string, i: number) => ( <li key={i} className=\"text-xs text-slate-400 flex items-start gap-2.5\"> <span className=\"text-indigo-500 mt-1 shrink-0\">▸</span> <span>{item}</span> </li> ))} </ul> )} </div> );"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 355,
+      "kind": "className",
+      "classes": "text-indigo-500 mt-1 shrink-0",
+      "snippet": "text-slate-400 flex items-start gap-2.5\"> <span className=\"text-indigo-500 mt-1 shrink-0\">▸</span> <span>{item}</span> </li> ))} </ul> )} </div> ); export default GenerationDashboard;"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 42,
+      "kind": "className",
+      "classes": "flex flex-col h-full gap-4",
+      "snippet": "find((p) => p.id === activeProjectId); return ( <div className=\"flex flex-col h-full gap-4\"> <div className=\"space-y-2\"> <button onClick={onCreateNew} className=\"w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-i"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 43,
+      "kind": "className",
+      "classes": "space-y-2",
+      "snippet": "<div className=\"flex flex-col h-full gap-4\"> <div className=\"space-y-2\"> <button onClick={onCreateNew} className=\"w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-black text-xs uppercase t"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 46,
+      "kind": "className",
+      "classes": "w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-black text-xs uppercase tracking-widest transition-colors shadow-lg shadow-indigo-600/20",
+      "snippet": "> <button onClick={onCreateNew} className=\"w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-black text-xs uppercase tracking-widest transition-colors shadow-lg shadow-indigo-600/20\" >"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 48,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "g shadow-indigo-600/20\" > <PlusCircleIcon className=\"w-4 h-4\" /> Crear Nuevo Libro </button> <button onClick={onSave} className=\"w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl fon"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 52,
+      "kind": "className",
+      "classes": "w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xs transition-colors",
+      "snippet": "utton> <button onClick={onSave} className=\"w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xs transition-colors\" > <SaveIcon className=\"w-4 h-4\" /> Guardar Estado </"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 54,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "ld text-xs transition-colors\" > <SaveIcon className=\"w-4 h-4\" /> Guardar Estado </button> </div> <div className=\"flex-1 overflow-y-auto space-y-6 pr-2\"> <section> <h3 className=\"text-[10px] font-black text-slate-500 upperca"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 58,
+      "kind": "className",
+      "classes": "flex-1 overflow-y-auto space-y-6 pr-2",
+      "snippet": "> Guardar Estado </button> </div> <div className=\"flex-1 overflow-y-auto space-y-6 pr-2\"> <section> <h3 className=\"text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2\"> Biblioteca Editorial </h3>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 60,
+      "kind": "className",
+      "classes": "text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2",
+      "snippet": "low-y-auto space-y-6 pr-2\"> <section> <h3 className=\"text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2\"> Biblioteca Editorial </h3> <div className=\"space-y-1\"> {projects.map((p) => {"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 63,
+      "kind": "className",
+      "classes": "space-y-1",
+      "snippet": "Biblioteca Editorial </h3> <div className=\"space-y-1\"> {projects.map((p) => { const totalWords = countWords(getMasterTextForCount(p)); return ( <button key={p.id}"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 76,
+      "kind": "className",
+      "classes": "flex items-center gap-3 w-full",
+      "snippet": "}`} > <div className=\"flex items-center gap-3 w-full\"> <FileTextIcon className=\"w-4 h-4 shrink-0\" /> <span className=\"truncate flex-1 text-left font-bold text-sm\">{p.title}</span>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 77,
+      "kind": "className",
+      "classes": "w-4 h-4 shrink-0",
+      "snippet": "ems-center gap-3 w-full\"> <FileTextIcon className=\"w-4 h-4 shrink-0\" /> <span className=\"truncate flex-1 text-left font-bold text-sm\">{p.title}</span> </div> <div className=\"flex items-center gap-2 ml-7\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 78,
+      "kind": "className",
+      "classes": "truncate flex-1 text-left font-bold text-sm",
+      "snippet": "n className=\"w-4 h-4 shrink-0\" /> <span className=\"truncate flex-1 text-left font-bold text-sm\">{p.title}</span> </div> <div className=\"flex items-center gap-2 ml-7\"> <span className=\"text-[10px] opacity-"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 80,
+      "kind": "className",
+      "classes": "flex items-center gap-2 ml-7",
+      "snippet": "tle}</span> </div> <div className=\"flex items-center gap-2 ml-7\"> <span className=\"text-[10px] opacity-60 font-mono\">{totalWords.toLocaleString()} palabras</span> </div> </button>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 81,
+      "kind": "className",
+      "classes": "text-[10px] opacity-60 font-mono",
+      "snippet": "e=\"flex items-center gap-2 ml-7\"> <span className=\"text-[10px] opacity-60 font-mono\">{totalWords.toLocaleString()} palabras</span> </div> </button> ); })} </div> </section>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 90,
+      "kind": "className",
+      "classes": "border-t border-slate-700 pt-4",
+      "snippet": "&& (activeProject as any).dashboard && ( <section className=\"border-t border-slate-700 pt-4\"> <h3 className=\"text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2\"> Estructura Activa </h3> <div classN"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 91,
+      "kind": "className",
+      "classes": "text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2",
+      "snippet": "className=\"border-t border-slate-700 pt-4\"> <h3 className=\"text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2\"> Estructura Activa </h3> <div className=\"space-y-0.5\"> {(activeProject as any).das"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 94,
+      "kind": "className",
+      "classes": "space-y-0.5",
+      "snippet": "Estructura Activa </h3> <div className=\"space-y-0.5\"> {(activeProject as any).dashboard.menu_items.map((item: any) => { const status = (activeProject as any).generation_progress?.[item.id]; return ("
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 100,
+      "kind": "className",
+      "classes": "flex items-center gap-3 p-2 rounded-lg text-[11px] text-slate-300 hover:bg-slate-700/30 transition-colors",
+      "snippet": "<div key={item.id} className=\"flex items-center gap-3 p-2 rounded-lg text-[11px] text-slate-300 hover:bg-slate-700/30 transition-colors\" > <div className=\"shrink-0\"> {status === '"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 102,
+      "kind": "className",
+      "classes": "shrink-0",
+      "snippet": "sition-colors\" > <div className=\"shrink-0\"> {status === 'completed' ? ( <CheckCircleIcon className=\"w-3.5 h-3.5 text-green-500\" /> ) : ( <CircleIcon c"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 104,
+      "kind": "className",
+      "classes": "w-3.5 h-3.5 text-green-500",
+      "snippet": "== 'completed' ? ( <CheckCircleIcon className=\"w-3.5 h-3.5 text-green-500\" /> ) : ( <CircleIcon className=\"w-3.5 h-3.5 text-slate-600\" /> )} </div>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 106,
+      "kind": "className",
+      "classes": "w-3.5 h-3.5 text-slate-600",
+      "snippet": ") : ( <CircleIcon className=\"w-3.5 h-3.5 text-slate-600\" /> )} </div> <span className={`truncate ${status === 'completed' ? 'text-slate-100 font-medium' : 'text-slate-500'}`}>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 120,
+      "kind": "className",
+      "classes": "bg-slate-900/50 p-4 rounded-2xl border border-slate-700/50 text-[10px] text-slate-500",
+      "snippet": "v> </section> )} </div> <div className=\"bg-slate-900/50 p-4 rounded-2xl border border-slate-700/50 text-[10px] text-slate-500\"> <p className=\"flex items-center gap-2\"> <RocketIcon className=\"w-3 h-3 text-indigo-500\" /> Engine: V3-D"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 121,
+      "kind": "className",
+      "classes": "flex items-center gap-2",
+      "snippet": "border-slate-700/50 text-[10px] text-slate-500\"> <p className=\"flex items-center gap-2\"> <RocketIcon className=\"w-3 h-3 text-indigo-500\" /> Engine: V3-Dossier </p> <p className=\"mt-1\">Modo: Arquitectura Modular</p> {isLoading && <p classN"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 122,
+      "kind": "className",
+      "classes": "w-3 h-3 text-indigo-500",
+      "snippet": "className=\"flex items-center gap-2\"> <RocketIcon className=\"w-3 h-3 text-indigo-500\" /> Engine: V3-Dossier </p> <p className=\"mt-1\">Modo: Arquitectura Modular</p> {isLoading && <p className=\"mt-2 text-indigo-400\">Generando…</p>} </div>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 124,
+      "kind": "className",
+      "classes": "mt-1",
+      "snippet": "t-indigo-500\" /> Engine: V3-Dossier </p> <p className=\"mt-1\">Modo: Arquitectura Modular</p> {isLoading && <p className=\"mt-2 text-indigo-400\">Generando…</p>} </div> </div> ); }; export default TableOfContents;"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 125,
+      "kind": "className",
+      "classes": "mt-2 text-indigo-400",
+      "snippet": "-1\">Modo: Arquitectura Modular</p> {isLoading && <p className=\"mt-2 text-indigo-400\">Generando…</p>} </div> </div> ); }; export default TableOfContents;"
+    },
+    {
+      "file": "index.html",
+      "line": 42,
+      "kind": "class",
+      "classes": "bg-slate-900 text-slate-100",
+      "snippet": "> <link rel=\"stylesheet\" href=\"/index.css\"> </head> <body class=\"bg-slate-900 text-slate-100\"> <div id=\"root\"></div> <script type=\"module\" src=\"/index.tsx\"></script> </body> </html>"
+    }
+  ]
+}

@@ -1,0 +1,389 @@
+﻿FILE: C:\Users\martin\Desktop\APPS\BestSeller\components\ChatInterface.tsx
+LINE: 8
+MATCH: interface ChatInterfaceProps {
+---- PRE ----
+import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import type { ChatMessage } from '../types';
+import { UserIcon, BotIcon, SendIcon, AlertTriangleIcon } from './Icons';
+
+---- POST ----
+  messages: ChatMessage[];
+  isLoading: boolean;
+  onSendMessage: (text: string) => void;
+  error: string | null;
+}
+
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\components\ChatInterface.tsx
+LINE: 15
+MATCH: const ChatInterface: React.FC<ChatInterfaceProps> = ({
+---- PRE ----
+  messages: ChatMessage[];
+  isLoading: boolean;
+  onSendMessage: (text: string) => void;
+  error: string | null;
+}
+
+---- POST ----
+  messages,
+  isLoading,
+  onSendMessage,
+  error,
+}) => {
+  const [inputText, setInputText] = useState('');
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\components\ChatInterface.tsx
+LINE: 115
+MATCH: export default ChatInterface;
+---- PRE ----
+        </form>
+      </div>
+    </div>
+  );
+};
+
+---- POST ----
+
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\components\GenerationDashboard.tsx
+LINE: 28
+MATCH: interface GenerationDashboardProps {
+---- PRE ----
+  if (!t) return 0;
+  return t.split(/\s+/).filter(Boolean).length;
+}
+
+type Status = "pending" | "generating" | "completed" | "error";
+
+---- POST ----
+  project: Project;
+  onGenerate: (action: string, chapterNum?: number) => void;
+  onGenerateRemaining: () => void;
+  onOpenBookView: () => void;
+  isGeneratingGlobal: boolean;
+}
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\components\GenerationDashboard.tsx
+LINE: 307
+MATCH: const GenerationDashboard = function GenerationDashboard({
+---- PRE ----
+  if (key === "proposal") return "Propuesta Editorial";
+  if (key === "intro") return "Introducción Maestro";
+  if (key.startsWith("chap-")) return `Capítulo ${key.replace("chap-", "")}`;
+  return "Sección";
+}
+
+---- POST ----
+  project,
+  onGenerate,
+  onGenerateRemaining,
+  onOpenBookView,
+  isGeneratingGlobal,
+}: GenerationDashboardProps) {
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\components\GenerationDashboard.tsx
+LINE: 313
+MATCH: }: GenerationDashboardProps) {
+---- PRE ----
+const GenerationDashboard = function GenerationDashboard({
+  project,
+  onGenerate,
+  onGenerateRemaining,
+  onOpenBookView,
+  isGeneratingGlobal,
+---- POST ----
+  const { dashboard, state } = project as any;
+
+  const [variant, setVariant] = useState<DashboardVariant>(() =>
+    normalizeVariant(localStorage.getItem("DASH_VARIANT"))
+  );
+  useEffect(() => {
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\components\GenerationDashboard.tsx
+LINE: 642
+MATCH: export default GenerationDashboard;
+---- PRE ----
+        )}
+      </div>
+    </div>
+  );
+};
+
+---- POST ----
+
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 13
+MATCH: import ChatInterface from './components/ChatInterface';
+---- PRE ----
+
+import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { GoogleGenAI } from '@google/genai';
+import { SYSTEM_PROMPT } from './constants';
+import type { Project, ChatMessage, ProjectState } from './types';
+import TableOfContents from './components/TableOfContents';
+---- POST ----
+import BookViewer from './components/BookViewer';
+import GenerationDashboard from './components/GenerationDashboard';
+import { PenSquareIcon, RocketIcon, BookOpenIcon } from './components/Icons';
+
+// ✅ Supabase repo
+import {
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 15
+MATCH: import GenerationDashboard from './components/GenerationDashboard';
+---- PRE ----
+import { GoogleGenAI } from '@google/genai';
+import { SYSTEM_PROMPT } from './constants';
+import type { Project, ChatMessage, ProjectState } from './types';
+import TableOfContents from './components/TableOfContents';
+import ChatInterface from './components/ChatInterface';
+import BookViewer from './components/BookViewer';
+---- POST ----
+import { PenSquareIcon, RocketIcon, BookOpenIcon } from './components/Icons';
+
+// ✅ Supabase repo
+import {
+  signInMagicLink,
+  getSession,
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 463
+MATCH: const [viewMode, setViewMode] = useState<'plan' | 'book'>('plan');
+---- PRE ----
+
+const App: React.FC = () => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([initialWelcomeMessage]);
+  const [isLoading, setIsLoading] = useState(false);
+---- POST ----
+  const [error, setError] = useState<string | null>(null);
+
+  // auth
+  const [session, setSession] = useState<any>(null);
+  const [email, setEmail] = useState('');
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 738
+MATCH: setViewMode('plan');
+---- PRE ----
+    }
+  }, [email]);
+
+  const handleSelectProject = useCallback(
+    async (id: string) => {
+      setActiveProjectId(id);
+---- POST ----
+      setError(null);
+      try {
+        await hydrateProject(id);
+      } catch (e) {
+        setError(normalizeError(e));
+      }
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 816
+MATCH: setViewMode('plan');
+---- PRE ----
+          master_document: { ...(updated as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
+        } as Project;
+        (updatedWithMaster as any).generation_progress = recomputeGenerationProgress(updatedWithMaster);
+
+        setProjects((prev) => [updatedWithMaster, ...prev.filter((p) => p.id !== updatedWithMaster.id)]);
+        setActiveProjectId(updatedWithMaster.id);
+---- POST ----
+
+        const now = Date.now();
+        setMessages((prev) => [
+          ...prev,
+          { id: `user-${now}`, role: 'user', content: idea },
+          {
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1112
+MATCH: onClick={() => setViewMode('plan')}
+---- PRE ----
+        </aside>
+
+        <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-slate-950">
+          {activeProject && (
+            <div className="shrink-0 bg-slate-900 border-b border-slate-800 flex">
+              <button
+---- POST ----
+                className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${
+                  viewMode === 'plan'
+                    ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1114
+MATCH: viewMode === 'plan'
+---- PRE ----
+        <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-slate-950">
+          {activeProject && (
+            <div className="shrink-0 bg-slate-900 border-b border-slate-800 flex">
+              <button
+                onClick={() => setViewMode('plan')}
+                className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${
+---- POST ----
+                    ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <RocketIcon className="w-4 h-4 inline mr-2" /> Arquitectura Editorial
+              </button>
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1123
+MATCH: onClick={() => setViewMode('book')}
+---- PRE ----
+                }`}
+              >
+                <RocketIcon className="w-4 h-4 inline mr-2" /> Arquitectura Editorial
+              </button>
+
+              <button
+---- POST ----
+                className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${
+                  viewMode === 'book'
+                    ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1125
+MATCH: viewMode === 'book'
+---- PRE ----
+                <RocketIcon className="w-4 h-4 inline mr-2" /> Arquitectura Editorial
+              </button>
+
+              <button
+                onClick={() => setViewMode('book')}
+                className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${
+---- POST ----
+                    ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <BookOpenIcon className="w-4 h-4 inline mr-2" /> Documento Maestro
+              </button>
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1136
+MATCH: {activeProject ? (
+---- PRE ----
+                <BookOpenIcon className="w-4 h-4 inline mr-2" /> Documento Maestro
+              </button>
+            </div>
+          )}
+
+          <div className="relative flex-1 min-h-0 overflow-y-auto">
+---- POST ----
+              viewMode === 'plan' ? (
+                <div className="min-h-full bg-slate-950">
+                  <GenerationDashboard
+                    project={activeProject}
+                    onGenerate={handleGenerateSection}
+                    onGenerateRemaining={handleGenerateRemaining}
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1137
+MATCH: viewMode === 'plan' ? (
+---- PRE ----
+              </button>
+            </div>
+          )}
+
+          <div className="relative flex-1 min-h-0 overflow-y-auto">
+            {activeProject ? (
+---- POST ----
+                <div className="min-h-full bg-slate-950">
+                  <GenerationDashboard
+                    project={activeProject}
+                    onGenerate={handleGenerateSection}
+                    onGenerateRemaining={handleGenerateRemaining}
+                    onOpenBookView={() => setViewMode('book')}
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1139
+MATCH: <GenerationDashboard
+---- PRE ----
+          )}
+
+          <div className="relative flex-1 min-h-0 overflow-y-auto">
+            {activeProject ? (
+              viewMode === 'plan' ? (
+                <div className="min-h-full bg-slate-950">
+---- POST ----
+                    project={activeProject}
+                    onGenerate={handleGenerateSection}
+                    onGenerateRemaining={handleGenerateRemaining}
+                    onOpenBookView={() => setViewMode('book')}
+                    isGeneratingGlobal={isLoading || anyGenerating}
+                  />
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1143
+MATCH: onOpenBookView={() => setViewMode('book')}
+---- PRE ----
+              viewMode === 'plan' ? (
+                <div className="min-h-full bg-slate-950">
+                  <GenerationDashboard
+                    project={activeProject}
+                    onGenerate={handleGenerateSection}
+                    onGenerateRemaining={handleGenerateRemaining}
+---- POST ----
+                    isGeneratingGlobal={isLoading || anyGenerating}
+                  />
+                </div>
+              ) : (
+                <div className="min-h-full bg-slate-950">
+                  <BookViewer project={activeProject} onEditSection={handleEditSection as any} />
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1154
+MATCH: <ChatInterface messages={messages} isLoading={isLoading} onSendMessage={handleStartNewBook} error={error} />
+---- PRE ----
+                <div className="min-h-full bg-slate-950">
+                  <BookViewer project={activeProject} onEditSection={handleEditSection as any} />
+                </div>
+              )
+            ) : (
+              <div className="min-h-full bg-slate-950">
+---- POST ----
+              </div>
+            )}
+
+            {error && (
+              <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-500/15 border border-red-500/30 text-red-200 px-4 py-2 rounded text-sm">
+                {error}
+===============================
+

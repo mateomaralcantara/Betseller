@@ -1,0 +1,7 @@
+python fix_env_vite_gemini.py --project . --key "AIzaSyB9qgnJp8qmz4WZ55hBepCHJ1TkbgoOLQ0"
+
+setx GEMINI_API_KEY "AIzaSyB9qgnJp8qmz4WZ55hBepCHJ1TkbgoOLQ0"
+# Cierra y abre PowerShell de nuevo
+python fix_env_vite_gemini.py --project .
+
+https://chatgpt.com/c/695e4a09-c46c-832d-916b-a5f6f8c8eb1e

@@ -1,0 +1,85 @@
+﻿FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 552
+MATCH: if (!activeProjectId && list?.[0]?.id) setActiveProjectId(list[0].id);
+---- PRE ----
+          } as any);
+        }
+      }
+      return next;
+    });
+---- POST ----
+  }, [activeProjectId]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 737
+MATCH: setActiveProjectId(id);
+---- PRE ----
+    }
+  }, [email]);
+
+  const handleSelectProject = useCallback(
+    async (id: string) => {
+---- POST ----
+      setViewMode('plan');
+      setError(null);
+      try {
+        await hydrateProject(id);
+      } catch (e) {
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 756
+MATCH: setActiveProjectId(next[0]?.id ?? null);
+---- PRE ----
+    try {
+      await deleteProject(id);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      if (activeProjectId === id) {
+        const next = projectsRef.current.filter((p) => p.id !== id);
+---- POST ----
+      }
+    } catch (e) {
+      setError(normalizeError(e));
+    }
+  }, [activeProjectId]);
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 815
+MATCH: setActiveProjectId(updatedWithMaster.id);
+---- PRE ----
+          master_document: { ...(updated as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
+        } as Project;
+        (updatedWithMaster as any).generation_progress = recomputeGenerationProgress(updatedWithMaster);
+
+        setProjects((prev) => [updatedWithMaster, ...prev.filter((p) => p.id !== updatedWithMaster.id)]);
+---- POST ----
+        setViewMode('plan');
+
+        const now = Date.now();
+        setMessages((prev) => [
+          ...prev,
+===============================
+
+FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 1092
+MATCH: setActiveProjectId(null);
+---- PRE ----
+              projects={projects}
+              activeProjectId={activeProjectId}
+              onSelectProject={handleSelectProject}
+              onSave={handleSaveSnapshot}
+              onCreateNew={() => {
+---- POST ----
+                setMessages([initialWelcomeMessage]);
+                setError(null);
+              }}
+              onDeleteProject={handleDeleteProject as any}
+              isLoading={isLoading || anyGenerating}
+===============================
+

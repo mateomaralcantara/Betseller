@@ -1,0 +1,23 @@
+﻿FILE: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx
+LINE: 552
+MATCH: if (!activeProjectId && list?.[0]?.id) setActiveProjectId(list[0].id);
+---- PRE ----
+            master_document: { title: row.title, text: '', chunks: [] } as any,
+            dashboard: null,
+            generation_progress: {} as any,
+          } as any);
+        }
+      }
+      return next;
+    });
+---- POST ----
+  }, [activeProjectId]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await getSession();
+        setSession(s);
+        if (s) {
+===============================
+

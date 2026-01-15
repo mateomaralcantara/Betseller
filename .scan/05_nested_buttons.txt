@@ -1,0 +1,5 @@
+﻿
+NESTED <button> FOUND: C:\Users\martin\Desktop\APPS\BestSeller\components\BookViewer.tsx
+NESTED <button> FOUND: C:\Users\martin\Desktop\APPS\BestSeller\components\GenerationDashboard.tsx
+NESTED <button> FOUND: C:\Users\martin\Desktop\APPS\BestSeller\components\TableOfContents.tsx
+NESTED <button> FOUND: C:\Users\martin\Desktop\APPS\BestSeller\App.tsx

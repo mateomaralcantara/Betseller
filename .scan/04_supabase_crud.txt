@@ -1,0 +1,20 @@
+C:\Users\martin\Desktop\APPS\BestSeller\components\BookViewer.tsx:611:      const hits = Array.from(root.querySelectorAll('mark[data-hit="1"]')) as HTMLElement[];
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:6:  const { error } = await supabase.auth.signInWithOtp({ email });
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:11:  const { data, error } = await supabase.auth.getSession();
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:18:    .from('projects')
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:38:    .from('projects')
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:39:    .insert({
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:58:    .from('projects')
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:65:    .from('sections')
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:73:    .from('master_documents')
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:92:    .from('sections')
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:93:    .upsert(
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:109:  const { error } = await supabase.from('section_versions').insert({
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:119:    .from('master_documents')
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:127:  const { error } = await supabase.from('master_documents').insert({
+C:\Users\martin\Desktop\APPS\BestSeller\src\data\repo.ts:138:  const { data, error } = await supabase.rpc('build_master_text', { p_project_id: projectId });
+C:\Users\martin\Desktop\APPS\BestSeller\src\lib\supabase.ts:3:const url = import.meta.env.VITE_SUPABASE_URL!;
+C:\Users\martin\Desktop\APPS\BestSeller\src\lib\supabase.ts:4:const anon = import.meta.env.VITE_SUPABASE_ANON_KEY!;
+C:\Users\martin\Desktop\APPS\BestSeller\src\lib\supabase.ts:6:export const supabase = createClient(url, anon);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:399:  merged.outline_12 = Array.from(outlineByNum.values()).sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:431:  merged.chapters = Array.from(byNum.values())

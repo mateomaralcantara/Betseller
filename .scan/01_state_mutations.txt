@@ -1,0 +1,23 @@
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:258:function buildMasterFromState(state: ProjectState, title?: string): string {
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:286:function normalizeProjectState(input: unknown): ProjectState {
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:376:function mergeProjectState(prev: ProjectState | undefined, next: ProjectState): ProjectState {
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:477:  const state = normalizeProjectState(raw?.state);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:482:    buildMasterFromState(state, raw?.title);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:666:    const run = () => setProjects((prev) => prev.map((p) => (p.id === projectId ? updater(p) : p)));
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:673:      updateProjectById(projectId, (p) => ({
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:710:      const nextState = normalizeProjectState(result.project_state_updated);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:744:      const mergedState = mergeProjectState(currentProject?.state as any, nextState);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:747:      const stateMaster = buildMasterFromState(mergedState, ensureString(dashboard.book_title, currentProject?.title)).trim();
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:798:        const newProject = processResponse(result);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:800:        setProjects((prev) => [...prev, newProject]);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:837:      setSectionProgress(proj.id, sectionId, 'generating');
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:861:        const updatedProj = processResponse(result, proj, { action, chapterNum });
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:862:        updateProjectById(proj.id, () => updatedProj);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:864:        setSectionProgress(proj.id, sectionId, 'completed');
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:870:        setSectionProgress(proj.id, sectionId, 'error');
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:891:      const st1 = normalizeProjectState((current as any).state);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:893:        const ok = await handleGenerateSection('GENERATE_PROPOSAL');
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:901:      const st2 = normalizeProjectState((current as any).state);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:903:        const ok = await handleGenerateSection('GENERATE_INTRODUCTION');
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:911:      const st3 = normalizeProjectState((current as any).state);
+C:\Users\martin\Desktop\APPS\BestSeller\App.tsx:917:        const ok = await handleGenerateSection('GENERATE_CHAPTER', item.chapter_number);

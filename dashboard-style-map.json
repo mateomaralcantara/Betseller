@@ -1,0 +1,1411 @@
+{
+  "generatedAt": "2026-01-03T23:14:14.002Z",
+  "entryFiles": [
+    "App.tsx",
+    "components\\GenerationDashboard.tsx",
+    "index.html",
+    "index.css"
+  ],
+  "scannedFiles": [
+    "App.tsx",
+    "components\\BookViewer.tsx",
+    "components\\ChatInterface.tsx",
+    "components\\GenerationDashboard.tsx",
+    "components\\Icons.tsx",
+    "components\\TableOfContents.tsx",
+    "constants.ts",
+    "index.css",
+    "index.html",
+    "types.ts",
+    "utils\\download.ts",
+    "utils\\helpers.ts"
+  ],
+  "hits": [
+    {
+      "file": "index.html",
+      "line": 42,
+      "kind": "class",
+      "classes": "bg-slate-900 text-slate-100",
+      "snippet": "<body class=\"bg-slate-900 text-slate-100\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 42,
+      "kind": "className",
+      "classes": "p-12 text-center text-slate-500 animate-pulse",
+      "snippet": "if (!dashboard) return <div className=\"p-12 text-center text-slate-500 animate-pulse\">Sincronizando Dossier Editorial...</div>;"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 90,
+      "kind": "className",
+      "classes": "p-6 h-full overflow-y-auto bg-slate-900",
+      "snippet": "<div className=\"p-6 h-full overflow-y-auto bg-slate-900\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 91,
+      "kind": "className",
+      "classes": "max-w-5xl mx-auto space-y-8 pb-20",
+      "snippet": "<div className=\"max-w-5xl mx-auto space-y-8 pb-20\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 94,
+      "kind": "className",
+      "classes": "bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 flex flex-col gap-6 shadow-2xl relative overflow-hidden",
+      "snippet": "<div className=\"bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 border border-slate-700/50 flex flex-col gap-6 shadow-2xl relative overflow-hidden\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 95,
+      "kind": "className",
+      "classes": "absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full -mr-48 -mt-48 blur-3xl",
+      "snippet": "<div className=\"absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full -mr-48 -mt-48 blur-3xl\"></div>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 97,
+      "kind": "className",
+      "classes": "relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6",
+      "snippet": "<div className=\"relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 98,
+      "kind": "className",
+      "classes": "space-y-2",
+      "snippet": "<div className=\"space-y-2\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 99,
+      "kind": "className",
+      "classes": "text-3xl font-black mb-1 tracking-tight text-white",
+      "snippet": "<h2 className=\"text-3xl font-black mb-1 tracking-tight text-white\">{state.book_title}</h2>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 100,
+      "kind": "className",
+      "classes": "text-indigo-400 font-medium text-sm tracking-wide italic",
+      "snippet": "<p className=\"text-indigo-400 font-medium text-sm tracking-wide italic\">{state.dossier.one_liner}</p>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 102,
+      "kind": "className",
+      "classes": "relative z-10 flex items-center gap-3 flex-wrap justify-end",
+      "snippet": "<div className=\"relative z-10 flex items-center gap-3 flex-wrap justify-end\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 105,
+      "kind": "className",
+      "classes": "flex items-center gap-3 bg-slate-700 hover:bg-slate-600 px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl active:scale-95",
+      "snippet": "className=\"flex items-center gap-3 bg-slate-700 hover:bg-slate-600 px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl active:scale-95\""
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 108,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "<BookOpenIcon className=\"w-5 h-5\" />"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 116,
+      "kind": "className",
+      "classes": "flex items-center gap-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-2xl shadow-indigo-600/30 active:scale-95",
+      "snippet": "className=\"flex items-center gap-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-2xl shadow-indigo-600/30 active:scale"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 118,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "<RocketIcon className=\"w-5 h-5\" />"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 125,
+      "kind": "className",
+      "classes": "relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-700/50",
+      "snippet": "<div className=\"relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-700/50\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 126,
+      "kind": "className",
+      "classes": "bg-slate-950/40 px-5 py-5 rounded-2xl border border-slate-700/30 flex flex-col justify-between",
+      "snippet": "<div className=\"bg-slate-950/40 px-5 py-5 rounded-2xl border border-slate-700/30 flex flex-col justify-between\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 128,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1",
+      "snippet": "<p className=\"text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1\">Finalización Estimada</p>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 129,
+      "kind": "className",
+      "classes": "text-3xl font-mono text-indigo-400 font-black",
+      "snippet": "<span className=\"text-3xl font-mono text-indigo-400 font-black\">{completionPercentReal}%</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 131,
+      "kind": "className",
+      "classes": "w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mt-4",
+      "snippet": "<div className=\"w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mt-4\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 132,
+      "kind": "className",
+      "classes": "h-full bg-indigo-500 transition-all duration-1000",
+      "snippet": "<div className=\"h-full bg-indigo-500 transition-all duration-1000\" style={{ width: `${completionPercentReal}%` }}></div>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 136,
+      "kind": "className",
+      "classes": "bg-slate-950/40 px-5 py-5 rounded-2xl border border-slate-700/30 md:col-span-2",
+      "snippet": "<div className=\"bg-slate-950/40 px-5 py-5 rounded-2xl border border-slate-700/30 md:col-span-2\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 137,
+      "kind": "className",
+      "classes": "flex justify-between items-center mb-4",
+      "snippet": "<div className=\"flex justify-between items-center mb-4\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 138,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 uppercase font-black tracking-widest",
+      "snippet": "<p className=\"text-[10px] text-slate-500 uppercase font-black tracking-widest\">Monitor de Estado Individual</p>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 139,
+      "kind": "className",
+      "classes": "flex items-center gap-3",
+      "snippet": "<div className=\"flex items-center gap-3\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 140,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-400 font-mono",
+      "snippet": "<span className=\"text-[10px] text-slate-400 font-mono\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 141,
+      "kind": "className",
+      "classes": "text-white font-bold",
+      "snippet": "<span className=\"text-white font-bold\">{totalWordsReal.toLocaleString()}</span> palabras totales"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 145,
+      "kind": "className",
+      "classes": "flex flex-wrap gap-2.5",
+      "snippet": "<div className=\"flex flex-wrap gap-2.5\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 148,
+      "kind": "className",
+      "classes": "w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black text-white transition-all duration-500 cursor-help ${getStatusColor('proposal')}",
+      "snippet": "className={`w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black text-white transition-all duration-500 cursor-help ${getStatusColor('proposal')}`}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 155,
+      "kind": "className",
+      "classes": "w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black text-white transition-all duration-500 cursor-help ${getStatusColor('intro')}",
+      "snippet": "className={`w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black text-white transition-all duration-500 cursor-help ${getStatusColor('intro')}`}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 168,
+      "kind": "className",
+      "classes": "w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black text-white transition-all duration-500 cursor-help ${getStatusColor(id)}",
+      "snippet": "className={`w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black text-white transition-all duration-500 cursor-help ${getStatusColor(id)}`}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 176,
+      "kind": "className",
+      "classes": "flex gap-4 mt-4",
+      "snippet": "<div className=\"flex gap-4 mt-4\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 177,
+      "kind": "className",
+      "classes": "flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter",
+      "snippet": "<div className=\"flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 178,
+      "kind": "className",
+      "classes": "w-2 h-2 rounded-full bg-green-500",
+      "snippet": "<div className=\"w-2 h-2 rounded-full bg-green-500\"></div> Completado"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 180,
+      "kind": "className",
+      "classes": "flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter",
+      "snippet": "<div className=\"flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 181,
+      "kind": "className",
+      "classes": "w-2 h-2 rounded-full bg-indigo-500",
+      "snippet": "<div className=\"w-2 h-2 rounded-full bg-indigo-500\"></div> Generando"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 183,
+      "kind": "className",
+      "classes": "flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter",
+      "snippet": "<div className=\"flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-tighter\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 184,
+      "kind": "className",
+      "classes": "w-2 h-2 rounded-full bg-slate-700",
+      "snippet": "<div className=\"w-2 h-2 rounded-full bg-slate-700\"></div> Pendiente"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 192,
+      "kind": "className",
+      "classes": "flex gap-2 border-b border-slate-800 pb-0 px-2",
+      "snippet": "<div className=\"flex gap-2 border-b border-slate-800 pb-0 px-2\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 195,
+      "kind": "className",
+      "classes": "px-6 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'blueprint' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : 'text-slate-500 hover:text-slate-300'}",
+      "snippet": "className={`px-6 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'blueprint' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : 'text-slate-500 hover:text-slate-300'}`}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 201,
+      "kind": "className",
+      "classes": "px-6 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'dossier' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : 'text-slate-500 hover:text-slate-300'}",
+      "snippet": "className={`px-6 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'dossier' ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : 'text-slate-500 hover:text-slate-300'}`}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 208,
+      "kind": "className",
+      "classes": "grid gap-4",
+      "snippet": "<div className=\"grid gap-4\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 210,
+      "kind": "className",
+      "classes": "grid md:grid-cols-2 gap-4",
+      "snippet": "<div className=\"grid md:grid-cols-2 gap-4\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 229,
+      "kind": "className",
+      "classes": "text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-6 mb-2 flex items-center gap-2",
+      "snippet": "<h3 className=\"text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-6 mb-2 flex items-center gap-2\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 230,
+      "kind": "className",
+      "classes": "w-3 h-3",
+      "snippet": "<ListIcon className=\"w-3 h-3\" /> Secuencia Narrativa Individual"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 232,
+      "kind": "className",
+      "classes": "grid grid-cols-1 gap-3",
+      "snippet": "<div className=\"grid grid-cols-1 gap-3\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 239,
+      "kind": "className",
+      "classes": "bg-slate-800/60 backdrop-blur border rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4 transition-all hover:bg-slate-800 ${status === 'generating' ? 'border-indigo-500 ring-1 ring-indigo-500/20' : 'border-slate-700/50'}",
+      "snippet": "<div key={id} className={`bg-slate-800/60 backdrop-blur border rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4 transition-all hover:bg-slate-800 ${status === 'generating' ? 'border-indigo-500 ring-1 ring-indigo-500/20' : 'bo"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 240,
+      "kind": "className",
+      "classes": "flex-1 space-y-2",
+      "snippet": "<div className=\"flex-1 space-y-2\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 241,
+      "kind": "className",
+      "classes": "flex items-center gap-3",
+      "snippet": "<div className=\"flex items-center gap-3\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 242,
+      "kind": "className",
+      "classes": "text-xs font-black px-2 py-1 rounded-lg w-10 text-center transition-all ${status === 'completed' ? 'bg-green-500/10 text-green-500' : 'bg-indigo-500/10 text-indigo-400'}",
+      "snippet": "<span className={`text-xs font-black px-2 py-1 rounded-lg w-10 text-center transition-all ${status === 'completed' ? 'bg-green-500/10 text-green-500' : 'bg-indigo-500/10 text-indigo-400'}`}>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 245,
+      "kind": "className",
+      "classes": "font-bold text-slate-100 text-lg",
+      "snippet": "<h4 className=\"font-bold text-slate-100 text-lg\">{ch.chapter_title}</h4>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 246,
+      "kind": "className",
+      "classes": "w-4 h-4 text-green-500",
+      "snippet": "{status === 'completed' && <CheckCircleIcon className=\"w-4 h-4 text-green-500\" />}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 248,
+      "kind": "className",
+      "classes": "text-xs text-slate-400 line-clamp-1 italic",
+      "snippet": "<p className=\"text-xs text-slate-400 line-clamp-1 italic\">{ch.objective}</p>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 249,
+      "kind": "className",
+      "classes": "flex flex-wrap gap-2 pt-1",
+      "snippet": "<div className=\"flex flex-wrap gap-2 pt-1\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 251,
+      "kind": "className",
+      "classes": "text-[9px] bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/30 text-slate-500",
+      "snippet": "<span key={i} className=\"text-[9px] bg-slate-900/50 px-2 py-0.5 rounded border border-slate-700/30 text-slate-500\">{h}</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 256,
+      "kind": "className",
+      "classes": "flex items-center gap-6 shrink-0 border-t md:border-t-0 md:border-l border-slate-700/50 pt-4 md:pt-0 md:pl-6 min-w-[180px]",
+      "snippet": "<div className=\"flex items-center gap-6 shrink-0 border-t md:border-t-0 md:border-l border-slate-700/50 pt-4 md:pt-0 md:pl-6 min-w-[180px]\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 257,
+      "kind": "className",
+      "classes": "flex flex-col items-end flex-1",
+      "snippet": "<div className=\"flex flex-col items-end flex-1\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 258,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 uppercase font-black tracking-tighter mb-1",
+      "snippet": "<p className=\"text-[10px] text-slate-500 uppercase font-black tracking-tighter mb-1\">Status & Volumen</p>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 259,
+      "kind": "className",
+      "classes": "flex flex-col items-end",
+      "snippet": "<div className=\"flex flex-col items-end\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 262,
+      "kind": "className",
+      "classes": "text-xs font-black text-green-500",
+      "snippet": "<span className=\"text-xs font-black text-green-500\">COMPLETADO</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 263,
+      "kind": "className",
+      "classes": "text-[11px] font-mono text-slate-100 font-bold",
+      "snippet": "<span className=\"text-[11px] font-mono text-slate-100 font-bold\">{words.toLocaleString()} palabras</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 267,
+      "kind": "className",
+      "classes": "text-xs font-black text-indigo-400 animate-pulse",
+      "snippet": "<span className=\"text-xs font-black text-indigo-400 animate-pulse\">ESCRIBIENDO...</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 268,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-600 font-mono",
+      "snippet": "<span className=\"text-[10px] text-slate-600 font-mono\">Meta: {ch.target_words}</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 272,
+      "kind": "className",
+      "classes": "text-xs font-black text-red-500 flex items-center gap-1",
+      "snippet": "<span className=\"text-xs font-black text-red-500 flex items-center gap-1\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 273,
+      "kind": "className",
+      "classes": "w-3 h-3",
+      "snippet": "<AlertTriangleIcon className=\"w-3 h-3\"/> ERROR"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 275,
+      "kind": "className",
+      "classes": "text-[9px] text-slate-600",
+      "snippet": "<span className=\"text-[9px] text-slate-600\">Reintentar generación</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 279,
+      "kind": "className",
+      "classes": "text-xs font-black text-slate-600 uppercase",
+      "snippet": "<span className=\"text-xs font-black text-slate-600 uppercase\">PENDIENTE</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 280,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-700 font-mono",
+      "snippet": "<span className=\"text-[10px] text-slate-700 font-mono\">Meta: {ch.target_words}</span>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 288,
+      "kind": "className",
+      "classes": "p-3 rounded-xl transition-all ${status === 'completed' ? 'text-green-500 bg-green-500/5 cursor-default' : 'text-indigo-400 bg-slate-950/50 hover:bg-indigo-500/20 active:scale-90 disabled:opacity-20 shadow-inner'}",
+      "snippet": "className={`p-3 rounded-xl transition-all ${status === 'completed' ? 'text-green-500 bg-green-500/5 cursor-default' : 'text-indigo-400 bg-slate-950/50 hover:bg-indigo-500/20 active:scale-90 disabled:opacity-20 shadow-inner'}`}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 290,
+      "kind": "className",
+      "classes": "w-10 h-10",
+      "snippet": "{status === 'completed' ? <CheckCircleIcon className=\"w-10 h-10\" /> : <PlayCircleIcon className=\"w-10 h-10\" />}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 290,
+      "kind": "className",
+      "classes": "w-10 h-10",
+      "snippet": "{status === 'completed' ? <CheckCircleIcon className=\"w-10 h-10\" /> : <PlayCircleIcon className=\"w-10 h-10\" />}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 299,
+      "kind": "className",
+      "classes": "grid grid-cols-1 md:grid-cols-2 gap-6 pb-12",
+      "snippet": "<div className=\"grid grid-cols-1 md:grid-cols-2 gap-6 pb-12\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 300,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<DossierItem title=\"Promesa del Lector\" icon={<ClipboardCheckIcon className=\"w-4 h-4\" />} content={state.dossier.promise} />"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 301,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<DossierItem title=\"Resultados Medibles\" icon={<UsersIcon className=\"w-4 h-4\" />} list={state.dossier.reader_outcomes} />"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 302,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<DossierItem title=\"Guía de Estilo\" icon={<PenSquareIcon className=\"w-4 h-4\" />} content={state.dossier.style_guide} />"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 303,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<DossierItem title=\"Reglas del Canon\" icon={<BookIcon className=\"w-4 h-4\" />} list={state.dossier.canon_rules} />"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 304,
+      "kind": "className",
+      "classes": "md:col-span-2 bg-slate-800/40 p-6 rounded-2xl border border-slate-700/30 shadow-xl",
+      "snippet": "<div className=\"md:col-span-2 bg-slate-800/40 p-6 rounded-2xl border border-slate-700/30 shadow-xl\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 305,
+      "kind": "className",
+      "classes": "text-xs font-black uppercase text-indigo-400 tracking-widest mb-4 flex items-center gap-2",
+      "snippet": "<h4 className=\"text-xs font-black uppercase text-indigo-400 tracking-widest mb-4 flex items-center gap-2\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 306,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<ListIcon className=\"w-4 h-4\" /> Glosario de Términos Editorial"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 308,
+      "kind": "className",
+      "classes": "grid grid-cols-1 md:grid-cols-3 gap-4",
+      "snippet": "<div className=\"grid grid-cols-1 md:grid-cols-3 gap-4\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 310,
+      "kind": "className",
+      "classes": "bg-slate-900/40 p-4 rounded-xl border border-slate-700/20 hover:border-slate-600 transition-colors",
+      "snippet": "<div key={i} className=\"bg-slate-900/40 p-4 rounded-xl border border-slate-700/20 hover:border-slate-600 transition-colors\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 311,
+      "kind": "className",
+      "classes": "text-xs font-bold text-slate-100",
+      "snippet": "<p className=\"text-xs font-bold text-slate-100\">{g.term}</p>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 312,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 leading-relaxed mt-2 italic",
+      "snippet": "<p className=\"text-[10px] text-slate-500 leading-relaxed mt-2 italic\">{g.definition}</p>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 325,
+      "kind": "className",
+      "classes": "bg-slate-800/80 p-5 rounded-2xl border flex items-center justify-between transition-all ${status === 'generating' ? 'border-indigo-500 shadow-indigo-500/20 shadow-lg' : 'border-slate-700/50 hover:border-slate-600'}",
+      "snippet": "<div className={`bg-slate-800/80 p-5 rounded-2xl border flex items-center justify-between transition-all ${status === 'generating' ? 'border-indigo-500 shadow-indigo-500/20 shadow-lg' : 'border-slate-700/50 hover:border-slate-600'}`}>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 327,
+      "kind": "className",
+      "classes": "font-bold text-slate-100",
+      "snippet": "<h4 className=\"font-bold text-slate-100\">{label}</h4>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 328,
+      "kind": "className",
+      "classes": "flex flex-col mt-1.5",
+      "snippet": "<div className=\"flex flex-col mt-1.5\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 329,
+      "kind": "className",
+      "classes": "text-[10px] font-black tracking-widest uppercase mb-1 ${status === 'completed' ? 'text-green-500' : status === 'generating' ? 'text-indigo-400 animate-pulse' : 'text-slate-500'}",
+      "snippet": "<span className={`text-[10px] font-black tracking-widest uppercase mb-1 ${status === 'completed' ? 'text-green-500' : status === 'generating' ? 'text-indigo-400 animate-pulse' : 'text-slate-500'}`}>"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 332,
+      "kind": "className",
+      "classes": "text-[11px] font-mono text-white font-bold",
+      "snippet": "{status === 'completed' && <span className=\"text-[11px] font-mono text-white font-bold\">{words.toLocaleString()} palabras</span>}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 338,
+      "kind": "className",
+      "classes": "p-2.5 rounded-xl transition-all ${status === 'completed' ? 'text-green-500 bg-green-500/10' : 'text-indigo-400 hover:bg-indigo-500/10 disabled:opacity-30'}",
+      "snippet": "className={`p-2.5 rounded-xl transition-all ${status === 'completed' ? 'text-green-500 bg-green-500/10' : 'text-indigo-400 hover:bg-indigo-500/10 disabled:opacity-30'}`}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 340,
+      "kind": "className",
+      "classes": "w-8 h-8",
+      "snippet": "{status === 'completed' ? <CheckCircleIcon className=\"w-8 h-8\" /> : <PlayCircleIcon className=\"w-8 h-8\" />}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 340,
+      "kind": "className",
+      "classes": "w-8 h-8",
+      "snippet": "{status === 'completed' ? <CheckCircleIcon className=\"w-8 h-8\" /> : <PlayCircleIcon className=\"w-8 h-8\" />}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 346,
+      "kind": "className",
+      "classes": "bg-slate-800/40 border border-slate-700/30 p-6 rounded-2xl space-y-4 shadow-lg hover:bg-slate-800/50 transition-colors",
+      "snippet": "<div className=\"bg-slate-800/40 border border-slate-700/30 p-6 rounded-2xl space-y-4 shadow-lg hover:bg-slate-800/50 transition-colors\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 347,
+      "kind": "className",
+      "classes": "text-xs font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2",
+      "snippet": "<h4 className=\"text-xs font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 350,
+      "kind": "className",
+      "classes": "text-sm text-slate-200 leading-relaxed italic",
+      "snippet": "{content && <p className=\"text-sm text-slate-200 leading-relaxed italic\">{content}</p>}"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 352,
+      "kind": "className",
+      "classes": "space-y-2.5",
+      "snippet": "<ul className=\"space-y-2.5\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 354,
+      "kind": "className",
+      "classes": "text-xs text-slate-400 flex items-start gap-2.5",
+      "snippet": "<li key={i} className=\"text-xs text-slate-400 flex items-start gap-2.5\">"
+    },
+    {
+      "file": "components\\GenerationDashboard.tsx",
+      "line": 355,
+      "kind": "className",
+      "classes": "text-indigo-500 mt-1 shrink-0",
+      "snippet": "<span className=\"text-indigo-500 mt-1 shrink-0\">▸</span>"
+    },
+    {
+      "file": "App.tsx",
+      "line": 801,
+      "kind": "className",
+      "classes": "flex h-screen font-sans bg-slate-900 text-slate-100 overflow-hidden",
+      "snippet": "<div className=\"flex h-screen font-sans bg-slate-900 text-slate-100 overflow-hidden\">"
+    },
+    {
+      "file": "App.tsx",
+      "line": 802,
+      "kind": "className",
+      "classes": "w-1/4 h-full bg-slate-800 p-4 border-r border-slate-700 flex flex-col",
+      "snippet": "<aside className=\"w-1/4 h-full bg-slate-800 p-4 border-r border-slate-700 flex flex-col\">"
+    },
+    {
+      "file": "App.tsx",
+      "line": 803,
+      "kind": "className",
+      "classes": "flex items-center gap-3 mb-3",
+      "snippet": "<div className=\"flex items-center gap-3 mb-3\">"
+    },
+    {
+      "file": "App.tsx",
+      "line": 804,
+      "kind": "className",
+      "classes": "w-8 h-8 text-indigo-400",
+      "snippet": "<PenSquareIcon className=\"w-8 h-8 text-indigo-400\" />"
+    },
+    {
+      "file": "App.tsx",
+      "line": 805,
+      "kind": "className",
+      "classes": "min-w-0",
+      "snippet": "<div className=\"min-w-0\">"
+    },
+    {
+      "file": "App.tsx",
+      "line": 806,
+      "kind": "className",
+      "classes": "text-xl font-bold tracking-tight text-white truncate",
+      "snippet": "<h1 className=\"text-xl font-bold tracking-tight text-white truncate\">BestSeller AI</h1>"
+    },
+    {
+      "file": "App.tsx",
+      "line": 807,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 font-mono truncate",
+      "snippet": "<div className=\"text-[10px] text-slate-500 font-mono truncate\">{BUILD_TAG}</div>"
+    },
+    {
+      "file": "App.tsx",
+      "line": 831,
+      "kind": "className",
+      "classes": "mt-4 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded p-3",
+      "snippet": "<div className=\"mt-4 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded p-3\">"
+    },
+    {
+      "file": "App.tsx",
+      "line": 837,
+      "kind": "className",
+      "classes": "flex-1 flex flex-col h-full overflow-hidden relative",
+      "snippet": "<main className=\"flex-1 flex flex-col h-full overflow-hidden relative\">"
+    },
+    {
+      "file": "App.tsx",
+      "line": 839,
+      "kind": "className",
+      "classes": "bg-slate-800 border-b border-slate-700 flex",
+      "snippet": "<div className=\"bg-slate-800 border-b border-slate-700 flex\">"
+    },
+    {
+      "file": "App.tsx",
+      "line": 848,
+      "kind": "className",
+      "classes": "w-4 h-4 inline mr-2",
+      "snippet": "<RocketIcon className=\"w-4 h-4 inline mr-2\" /> Arquitectura Editorial"
+    },
+    {
+      "file": "App.tsx",
+      "line": 859,
+      "kind": "className",
+      "classes": "w-4 h-4 inline mr-2",
+      "snippet": "<BookOpenIcon className=\"w-4 h-4 inline mr-2\" /> Documento Maestro"
+    },
+    {
+      "file": "App.tsx",
+      "line": 864,
+      "kind": "className",
+      "classes": "flex-1 overflow-hidden",
+      "snippet": "<div className=\"flex-1 overflow-hidden\">"
+    },
+    {
+      "file": "App.tsx",
+      "line": 883,
+      "kind": "className",
+      "classes": "absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-500/15 border border-red-500/30 text-red-200 px-4 py-2 rounded text-sm",
+      "snippet": "<div className=\"absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-500/15 border border-red-500/30 text-red-200 px-4 py-2 rounded text-sm\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 139,
+      "kind": "className",
+      "classes": "bg-yellow-200/80 text-slate-900 px-0.5 rounded-sm",
+      "snippet": "className=\"bg-yellow-200/80 text-slate-900 px-0.5 rounded-sm\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 544,
+      "kind": "className",
+      "classes": "scroll-mt-24",
+      "snippet": "<Tag id={id} className=\"scroll-mt-24\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 577,
+      "kind": "className",
+      "classes": "flex h-full bg-slate-900 overflow-hidden",
+      "snippet": "<div className=\"flex h-full bg-slate-900 overflow-hidden\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 584,
+      "kind": "className",
+      "classes": "h-full flex flex-col",
+      "snippet": "<div className=\"h-full flex flex-col\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 585,
+      "kind": "className",
+      "classes": "p-4 border-b border-slate-700 bg-slate-800/60",
+      "snippet": "<div className=\"p-4 border-b border-slate-700 bg-slate-800/60\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 586,
+      "kind": "className",
+      "classes": "flex items-center justify-between gap-2",
+      "snippet": "<div className=\"flex items-center justify-between gap-2\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 587,
+      "kind": "className",
+      "classes": "text-xs font-black tracking-widest uppercase text-indigo-400",
+      "snippet": "<div className=\"text-xs font-black tracking-widest uppercase text-indigo-400\">Índice</div>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 590,
+      "kind": "className",
+      "classes": "text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100",
+      "snippet": "className=\"text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 596,
+      "kind": "className",
+      "classes": "mt-3",
+      "snippet": "<div className=\"mt-3\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 601,
+      "kind": "className",
+      "classes": "w-full text-sm px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40",
+      "snippet": "className=\"w-full text-sm px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 603,
+      "kind": "className",
+      "classes": "mt-2 flex items-center justify-between text-[11px] text-slate-400",
+      "snippet": "<div className=\"mt-2 flex items-center justify-between text-[11px] text-slate-400\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 605,
+      "kind": "className",
+      "classes": "flex gap-2",
+      "snippet": "<div className=\"flex gap-2\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 609,
+      "kind": "className",
+      "classes": "px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40",
+      "snippet": "className=\"px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 616,
+      "kind": "className",
+      "classes": "px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40",
+      "snippet": "className=\"px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 624,
+      "kind": "className",
+      "classes": "mt-3",
+      "snippet": "<div className=\"mt-3\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 625,
+      "kind": "className",
+      "classes": "text-[10px] font-black tracking-widest uppercase text-slate-400",
+      "snippet": "<div className=\"text-[10px] font-black tracking-widest uppercase text-slate-400\">Vista</div>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 629,
+      "kind": "className",
+      "classes": "mt-1 w-full text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600",
+      "snippet": "className=\"mt-1 w-full text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 639,
+      "kind": "className",
+      "classes": "mt-2 text-[11px] text-amber-300/90",
+      "snippet": "<div className=\"mt-2 text-[11px] text-amber-300/90\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 646,
+      "kind": "className",
+      "classes": "flex-1 overflow-y-auto p-3",
+      "snippet": "<div className=\"flex-1 overflow-y-auto p-3\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 648,
+      "kind": "className",
+      "classes": "text-sm text-slate-400 p-3",
+      "snippet": "<div className=\"text-sm text-slate-400 p-3\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 652,
+      "kind": "className",
+      "classes": "space-y-1",
+      "snippet": "<ul className=\"space-y-1\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 663,
+      "kind": "className",
+      "classes": "text-sm leading-snug line-clamp-2",
+      "snippet": "<span className=\"text-sm leading-snug line-clamp-2\">{item.title}</span>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 674,
+      "kind": "className",
+      "classes": "flex-1 flex flex-col h-full overflow-hidden",
+      "snippet": "<div className=\"flex-1 flex flex-col h-full overflow-hidden\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 676,
+      "kind": "className",
+      "classes": "h-1 bg-slate-800",
+      "snippet": "<div className=\"h-1 bg-slate-800\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 677,
+      "kind": "className",
+      "classes": "h-1 bg-indigo-500",
+      "snippet": "<div className=\"h-1 bg-indigo-500\" style={{ inlineSize: `${Math.round(progress * 100)}%` }} />"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 680,
+      "kind": "className",
+      "classes": "bg-slate-800 border-b border-slate-700 p-4 flex justify-between items-center shadow-lg z-10",
+      "snippet": "<header className=\"bg-slate-800 border-b border-slate-700 p-4 flex justify-between items-center shadow-lg z-10\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 681,
+      "kind": "className",
+      "classes": "flex items-center gap-3 min-w-0",
+      "snippet": "<div className=\"flex items-center gap-3 min-w-0\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 685,
+      "kind": "className",
+      "classes": "text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 shrink-0",
+      "snippet": "className=\"text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 shrink-0\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 691,
+      "kind": "className",
+      "classes": "flex flex-col min-w-0",
+      "snippet": "<div className=\"flex flex-col min-w-0\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 692,
+      "kind": "className",
+      "classes": "text-lg font-bold leading-tight truncate max-w-md text-slate-100",
+      "snippet": "<h2 className=\"text-lg font-bold leading-tight truncate max-w-md text-slate-100\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 695,
+      "kind": "className",
+      "classes": "flex items-center gap-3 flex-wrap",
+      "snippet": "<div className=\"flex items-center gap-3 flex-wrap\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 696,
+      "kind": "className",
+      "classes": "text-[10px] text-indigo-400 font-black tracking-widest uppercase",
+      "snippet": "<span className=\"text-[10px] text-indigo-400 font-black tracking-widest uppercase\">{sectionLabel}</span>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 697,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 font-mono",
+      "snippet": "<span className=\"text-[10px] text-slate-500 font-mono\">{wordCount.toLocaleString()} palabras</span>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 698,
+      "kind": "className",
+      "classes": "text-[10px] text-slate-500 font-mono",
+      "snippet": "<span className=\"text-[10px] text-slate-500 font-mono\">{Math.round(progress * 100)}% leído</span>"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 703,
+      "kind": "className",
+      "classes": "flex gap-2 items-center",
+      "snippet": "<div className=\"flex gap-2 items-center\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 709,
+      "kind": "className",
+      "classes": "hidden md:block text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600",
+      "snippet": "className=\"hidden md:block text-xs px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 725,
+      "kind": "className",
+      "classes": "bg-slate-700 hover:bg-slate-600 px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all active:scale-95 text-slate-100",
+      "snippet": "className=\"bg-slate-700 hover:bg-slate-600 px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all active:scale-95 text-slate-100\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 728,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<FileDownIcon className=\"w-4 h-4\" /> PDF"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 732,
+      "kind": "className",
+      "classes": "bg-slate-700 hover:bg-slate-600 px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all active:scale-95 text-slate-100",
+      "snippet": "className=\"bg-slate-700 hover:bg-slate-600 px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all active:scale-95 text-slate-100\""
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 735,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<FileDownIcon className=\"w-4 h-4\" /> Word"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 740,
+      "kind": "className",
+      "classes": "flex-1 overflow-y-auto p-4 md:p-10 bg-slate-950/80 flex justify-center",
+      "snippet": "<div ref={scrollRef} className=\"flex-1 overflow-y-auto p-4 md:p-10 bg-slate-950/80 flex justify-center\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 741,
+      "kind": "className",
+      "classes": "w-full max-w-[920px] bg-white text-slate-900 shadow-[0_0_100px_rgba(0,0,0,0.45)] p-8 md:p-16 rounded-sm min-h-[80vh] border border-slate-200",
+      "snippet": "<article className=\"w-full max-w-[920px] bg-white text-slate-900 shadow-[0_0_100px_rgba(0,0,0,0.45)] p-8 md:p-16 rounded-sm min-h-[80vh] border border-slate-200\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 742,
+      "kind": "className",
+      "classes": "prose prose-slate max-w-none selection:bg-indigo-100 prose-headings:font-black prose-h1:text-4xl prose-h2:text-2xl prose-h2:border-b prose-h2:border-slate-200 prose-h2:pb-2 prose-h2:mt-12 prose-p:text-lg prose-p:leading-relaxed prose-li:text-lg",
+      "snippet": "<div className=\"prose prose-slate max-w-none selection:bg-indigo-100 prose-headings:font-black prose-h1:text-4xl prose-h2:text-2xl prose-h2:border-b prose-h2:border-slate-200 prose-h2:pb-2 prose-h2:mt-12 prose-p:text-lg prose-p:leading-rela"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 748,
+      "kind": "className",
+      "classes": "mt-20 pt-10 border-t border-slate-200 text-center",
+      "snippet": "<div className=\"mt-20 pt-10 border-t border-slate-200 text-center\">"
+    },
+    {
+      "file": "components\\BookViewer.tsx",
+      "line": 749,
+      "kind": "className",
+      "classes": "text-slate-400 font-mono text-xs uppercase tracking-[0.35em]",
+      "snippet": "<p className=\"text-slate-400 font-mono text-xs uppercase tracking-[0.35em]\">Fin de la vista</p>"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 44,
+      "kind": "className",
+      "classes": "flex-1 flex flex-col bg-slate-900 overflow-hidden",
+      "snippet": "<div className=\"flex-1 flex flex-col bg-slate-900 overflow-hidden\">"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 45,
+      "kind": "className",
+      "classes": "flex-1 overflow-y-auto p-6 space-y-6",
+      "snippet": "<div className=\"flex-1 overflow-y-auto p-6 space-y-6\">"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 54,
+      "kind": "className",
+      "classes": "w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0",
+      "snippet": "<div className=\"w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0\">"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 55,
+      "kind": "className",
+      "classes": "w-5 h-5 text-white",
+      "snippet": "<BotIcon className=\"w-5 h-5 text-white\" />"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 65,
+      "kind": "className",
+      "classes": "prose prose-invert prose-sm md:prose-base prose-pre:bg-slate-900/50 prose-pre:p-4 prose-pre:rounded-md",
+      "snippet": "<div className=\"prose prose-invert prose-sm md:prose-base prose-pre:bg-slate-900/50 prose-pre:p-4 prose-pre:rounded-md\">"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 72,
+      "kind": "className",
+      "classes": "w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0",
+      "snippet": "<div className=\"w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0\">"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 73,
+      "kind": "className",
+      "classes": "w-5 h-5 text-slate-300",
+      "snippet": "<UserIcon className=\"w-5 h-5 text-slate-300\" />"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 81,
+      "kind": "className",
+      "classes": "p-4 border-t border-slate-700 bg-slate-800/50",
+      "snippet": "<div className=\"p-4 border-t border-slate-700 bg-slate-800/50\">"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 83,
+      "kind": "className",
+      "classes": "mb-2 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm flex items-center gap-2",
+      "snippet": "<div className=\"mb-2 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm flex items-center gap-2\">"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 84,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<AlertTriangleIcon className=\"w-4 h-4\"/>"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 88,
+      "kind": "className",
+      "classes": "relative",
+      "snippet": "<form onSubmit={handleSend} className=\"relative\">"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 94,
+      "kind": "className",
+      "classes": "w-full bg-slate-700 text-slate-100 rounded-lg p-3 pr-20 resize-none border border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200",
+      "snippet": "className=\"w-full bg-slate-700 text-slate-100 rounded-lg p-3 pr-20 resize-none border border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200\""
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 101,
+      "kind": "className",
+      "classes": "absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors",
+      "snippet": "className=\"absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors\""
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 104,
+      "kind": "className",
+      "classes": "w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin",
+      "snippet": "<div className=\"w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin\"></div>"
+    },
+    {
+      "file": "components\\ChatInterface.tsx",
+      "line": 106,
+      "kind": "className",
+      "classes": "w-5 h-5",
+      "snippet": "<SendIcon className=\"w-5 h-5\" />"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 42,
+      "kind": "className",
+      "classes": "flex flex-col h-full gap-4",
+      "snippet": "<div className=\"flex flex-col h-full gap-4\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 43,
+      "kind": "className",
+      "classes": "space-y-2",
+      "snippet": "<div className=\"space-y-2\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 46,
+      "kind": "className",
+      "classes": "w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-black text-xs uppercase tracking-widest transition-colors shadow-lg shadow-indigo-600/20",
+      "snippet": "className=\"w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-black text-xs uppercase tracking-widest transition-colors shadow-lg shadow-indigo-600/20\""
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 48,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<PlusCircleIcon className=\"w-4 h-4\" /> Crear Nuevo Libro"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 52,
+      "kind": "className",
+      "classes": "w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xs transition-colors",
+      "snippet": "className=\"w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xs transition-colors\""
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 54,
+      "kind": "className",
+      "classes": "w-4 h-4",
+      "snippet": "<SaveIcon className=\"w-4 h-4\" /> Guardar Estado"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 58,
+      "kind": "className",
+      "classes": "flex-1 overflow-y-auto space-y-6 pr-2",
+      "snippet": "<div className=\"flex-1 overflow-y-auto space-y-6 pr-2\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 60,
+      "kind": "className",
+      "classes": "text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2",
+      "snippet": "<h3 className=\"text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 63,
+      "kind": "className",
+      "classes": "space-y-1",
+      "snippet": "<div className=\"space-y-1\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 76,
+      "kind": "className",
+      "classes": "flex items-center gap-3 w-full",
+      "snippet": "<div className=\"flex items-center gap-3 w-full\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 77,
+      "kind": "className",
+      "classes": "w-4 h-4 shrink-0",
+      "snippet": "<FileTextIcon className=\"w-4 h-4 shrink-0\" />"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 78,
+      "kind": "className",
+      "classes": "truncate flex-1 text-left font-bold text-sm",
+      "snippet": "<span className=\"truncate flex-1 text-left font-bold text-sm\">{p.title}</span>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 80,
+      "kind": "className",
+      "classes": "flex items-center gap-2 ml-7",
+      "snippet": "<div className=\"flex items-center gap-2 ml-7\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 81,
+      "kind": "className",
+      "classes": "text-[10px] opacity-60 font-mono",
+      "snippet": "<span className=\"text-[10px] opacity-60 font-mono\">{totalWords.toLocaleString()} palabras</span>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 90,
+      "kind": "className",
+      "classes": "border-t border-slate-700 pt-4",
+      "snippet": "<section className=\"border-t border-slate-700 pt-4\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 91,
+      "kind": "className",
+      "classes": "text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2",
+      "snippet": "<h3 className=\"text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 94,
+      "kind": "className",
+      "classes": "space-y-0.5",
+      "snippet": "<div className=\"space-y-0.5\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 100,
+      "kind": "className",
+      "classes": "flex items-center gap-3 p-2 rounded-lg text-[11px] text-slate-300 hover:bg-slate-700/30 transition-colors",
+      "snippet": "className=\"flex items-center gap-3 p-2 rounded-lg text-[11px] text-slate-300 hover:bg-slate-700/30 transition-colors\""
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 102,
+      "kind": "className",
+      "classes": "shrink-0",
+      "snippet": "<div className=\"shrink-0\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 104,
+      "kind": "className",
+      "classes": "w-3.5 h-3.5 text-green-500",
+      "snippet": "<CheckCircleIcon className=\"w-3.5 h-3.5 text-green-500\" />"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 106,
+      "kind": "className",
+      "classes": "w-3.5 h-3.5 text-slate-600",
+      "snippet": "<CircleIcon className=\"w-3.5 h-3.5 text-slate-600\" />"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 109,
+      "kind": "className",
+      "classes": "truncate ${status === 'completed' ? 'text-slate-100 font-medium' : 'text-slate-500'}",
+      "snippet": "<span className={`truncate ${status === 'completed' ? 'text-slate-100 font-medium' : 'text-slate-500'}`}>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 120,
+      "kind": "className",
+      "classes": "bg-slate-900/50 p-4 rounded-2xl border border-slate-700/50 text-[10px] text-slate-500",
+      "snippet": "<div className=\"bg-slate-900/50 p-4 rounded-2xl border border-slate-700/50 text-[10px] text-slate-500\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 121,
+      "kind": "className",
+      "classes": "flex items-center gap-2",
+      "snippet": "<p className=\"flex items-center gap-2\">"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 122,
+      "kind": "className",
+      "classes": "w-3 h-3 text-indigo-500",
+      "snippet": "<RocketIcon className=\"w-3 h-3 text-indigo-500\" /> Engine: V3-Dossier"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 124,
+      "kind": "className",
+      "classes": "mt-1",
+      "snippet": "<p className=\"mt-1\">Modo: Arquitectura Modular</p>"
+    },
+    {
+      "file": "components\\TableOfContents.tsx",
+      "line": 125,
+      "kind": "className",
+      "classes": "mt-2 text-indigo-400",
+      "snippet": "{isLoading && <p className=\"mt-2 text-indigo-400\">Generando…</p>}"
+    }
+  ]
+}
