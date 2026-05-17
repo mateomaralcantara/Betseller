@@ -1,7 +1,16 @@
-python fix_env_vite_gemini.py --project . --key "AIzaSyB9qgnJp8qmz4WZ55hBepCHJ1TkbgoOLQ0"
+Valor del mercado
+https://chatgpt.com/c/69c4bbb9-46a0-832b-8e6a-2ac53fda5d01
 
-setx GEMINI_API_KEY "AIzaSyB9qgnJp8qmz4WZ55hBepCHJ1TkbgoOLQ0"
-# Cierra y abre PowerShell de nuevo
-python fix_env_vite_gemini.py --project .
+Nombre plataforma
+https://chatgpt.com/c/69bb719e-de4c-832b-a2dc-2aa5a02793fb
 
 https://chatgpt.com/c/695e4a09-c46c-832d-916b-a5f6f8c8eb1e
+
+https://supabase.com/dashboard/project/mnlvjvlruploxqmjbuvs/editor/17523
+
+arajuezraulina
+arajuezraulina@gmail.com
+
+
+
+

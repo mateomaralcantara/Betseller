@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { Project } from '../types';
 import { countWords } from '../utils/helpers';
 import { FileTextIcon, PlusCircleIcon, SaveIcon, CheckCircleIcon, CircleIcon, RocketIcon } from './Icons';
@@ -29,7 +29,6 @@ function getMasterTextForCount(p: Project): string {
     .trim();
 }
 
-
 function normalizeProgressKeyFromMenuItem(item: any): string {
   const rawId = String(item?.id ?? '').trim();
   const id = rawId.toLowerCase();
@@ -54,6 +53,24 @@ function normalizeProgressKeyFromMenuItem(item: any): string {
   return rawId || '';
 }
 
+function buildFallbackMenuItemsFromState(project: Project): Array<{ id: string; label: string }> {
+  const st: any = (project as any)?.state ?? {};
+  const outline = Array.isArray(st?.outline_12) ? st.outline_12 : [];
+
+  const chapters = outline.map((o: any, idx: number) => {
+    const n = Number(o?.chapter_number ?? (idx + 1)) || (idx + 1);
+    const title = String(o?.chapter_title ?? o?.title ?? `Capítulo ${n}`).trim();
+    // Mantén label legible sin duplicar "Capítulo"
+    const label = title.toLowerCase().startsWith('capítulo') ? title : `Capítulo ${n}: ${title}`;
+    return { id: `chap-${n}`, label };
+  });
+
+  return [
+    { id: 'proposal', label: 'Propuesta editorial' },
+    { id: 'intro', label: 'Introducción' },
+    ...chapters,
+  ];
+}
 
 const TableOfContents: React.FC<SidebarProps> = ({
   projects,
@@ -64,7 +81,33 @@ const TableOfContents: React.FC<SidebarProps> = ({
   onDeleteProject,
   isLoading,
 }) => {
-  const activeProject = projects.find((p) => p.id === activeProjectId);
+  const safeProjects = Array.isArray(projects) ? projects : [];
+
+  const activeProject = useMemo(
+    () => safeProjects.find((p) => p.id === activeProjectId) ?? null,
+    [safeProjects, activeProjectId]
+  );
+
+  // Optimización: calcula palabras una sola vez por render de lista
+  const wordsByProjectId = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of safeProjects) {
+      m.set(p.id, countWords(getMasterTextForCount(p)));
+    }
+    return m;
+  }, [safeProjects]);
+
+  const activeMenuItems = useMemo(() => {
+    if (!activeProject) return [];
+
+    const dash: any = (activeProject as any)?.dashboard ?? null;
+    const dashItems = Array.isArray(dash?.menu_items) ? dash.menu_items : [];
+
+    // Fix: si no hay menu_items, construimos el menú desde el state (outline_12)
+    if (dashItems.length) return dashItems;
+
+    return buildFallbackMenuItemsFromState(activeProject);
+  }, [activeProject]);
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -75,6 +118,7 @@ const TableOfContents: React.FC<SidebarProps> = ({
         >
           <PlusCircleIcon className="w-4 h-4" /> Crear Nuevo Libro
         </button>
+
         <button
           onClick={onSave}
           className="w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xs transition-colors"
@@ -88,9 +132,11 @@ const TableOfContents: React.FC<SidebarProps> = ({
           <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2">
             Biblioteca Editorial
           </h3>
+
           <div className="space-y-1">
-            {projects.map((p) => {
-              const totalWords = countWords(getMasterTextForCount(p));
+            {safeProjects.map((p) => {
+              const totalWords = wordsByProjectId.get(p.id) ?? 0;
+
               return (
                 <div
                   key={p.id}
@@ -105,13 +151,14 @@ const TableOfContents: React.FC<SidebarProps> = ({
                     onClick={() => onSelectProject(p.id)}
                     className="flex-1 min-w-0 flex flex-col items-start gap-1 text-left"
                   >
-                  <div className="flex items-center gap-3 w-full">
-                    <FileTextIcon className="w-4 h-4 shrink-0" />
-                    <span className="truncate flex-1 text-left font-bold text-sm">{p.title}</span>
-                  </div>
-                  <div className="flex items-center gap-2 ml-7">
-                    <span className="text-[10px] opacity-60 font-mono">{totalWords.toLocaleString()} palabras</span>
-                  </div>
+                    <div className="flex items-center gap-3 w-full">
+                      <FileTextIcon className="w-4 h-4 shrink-0" />
+                      <span className="truncate flex-1 text-left font-bold text-sm">{p.title}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 ml-7">
+                      <span className="text-[10px] opacity-60 font-mono">{totalWords.toLocaleString()} palabras</span>
+                    </div>
                   </button>
 
                   {onDeleteProject && (
@@ -130,22 +177,27 @@ const TableOfContents: React.FC<SidebarProps> = ({
           </div>
         </section>
 
-        {activeProject && (activeProject as any).dashboard && (
+        {activeProject && activeMenuItems.length > 0 && (
           <section className="border-t border-slate-700 pt-4">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2">
               Estructura Activa
             </h3>
+
             <div className="space-y-0.5">
-              {(activeProject as any).dashboard.menu_items.map((item: any) => {
-const key = normalizeProgressKeyFromMenuItem(item);
-const status = (((activeProject as any).generation_progress?.[key] ?? 'pending') as
-  | 'pending'
-  | 'generating'
-  | 'completed'
-  | 'error');
+              {activeMenuItems.map((item: any, idx: number) => {
+                const key = normalizeProgressKeyFromMenuItem(item) || `item-${idx}`;
+                const status = (((activeProject as any).generation_progress?.[key] ?? 'pending') as
+                  | 'pending'
+                  | 'generating'
+                  | 'completed'
+                  | 'error');
+
+                const safeKey = String(item?.id ?? key ?? idx);
+                const label = String(item?.label ?? item?.title ?? key).trim();
+
                 return (
                   <div
-                    key={item.id}
+                    key={safeKey}
                     className="flex items-center gap-3 p-2 rounded-lg text-[11px] text-slate-300 hover:bg-slate-700/30 transition-colors"
                   >
                     <div className="shrink-0">
@@ -159,8 +211,19 @@ const status = (((activeProject as any).generation_progress?.[key] ?? 'pending')
                         <CircleIcon className="w-3.5 h-3.5 text-slate-600" />
                       )}
                     </div>
-                    <span className={`truncate ${status === 'generating' ? 'text-slate-400' : status === 'error' ? 'text-red-300' : status === 'completed' ? 'text-slate-100 font-medium' : 'text-slate-200'}`}>
-                      {item.label}
+
+                    <span
+                      className={`truncate ${
+                        status === 'generating'
+                          ? 'text-slate-400'
+                          : status === 'error'
+                            ? 'text-red-300'
+                            : status === 'completed'
+                              ? 'text-slate-100 font-medium'
+                              : 'text-slate-200'
+                      }`}
+                    >
+                      {label}
                     </span>
                   </div>
                 );

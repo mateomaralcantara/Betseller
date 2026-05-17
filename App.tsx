@@ -6,8 +6,6 @@
 // - Single-flight global: solo 1 generación a la vez (incluye proyectos “anteriores”)
 
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
-import { SYSTEM_PROMPT } from './constants';
 import type { Project, ChatMessage, ProjectState } from './types';
 import TableOfContents from './components/TableOfContents';
 import ChatInterface from './components/ChatInterface';
@@ -34,10 +32,8 @@ import {
 /**
  * BUILD TAG (sanity check)
  */
-const BUILD_TAG = 'App.supabase.tsx v1.0.0 (2026-01-07)';
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? '';
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3-pro-preview';
+const BUILD_TAG = 'App.supabase.tsx v1.1.0 (2026-05-17)';
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3-flash-preview';
 
 // Para no reventar tokens/latencia: recortamos el master antes de mandarlo al modelo.
 const MAX_MASTER_CHARS_TO_SEND = 35_000;
@@ -477,13 +473,6 @@ const App: React.FC = () => {
   // Single-flight global: solo 1 generación a la vez
   const globalGenLockRef = useRef(false);
   const requestSeqRef = useRef<Record<string, number>>({});
-
-  // Gemini client estable
-  const aiClientRef = useRef<GoogleGenAI | null>(null);
-  useEffect(() => {
-    aiClientRef.current = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
-  }, [GEMINI_API_KEY]);
-
   const activeProject = useMemo(
     () => projects.find((p) => p.id === activeProjectId) ?? null,
     [projects, activeProjectId]
@@ -674,27 +663,47 @@ const App: React.FC = () => {
 
   /* ------------------------------ composer calls ------------------------------ */
 
-  const callComposer = useCallback(async (task: ComposerTask, state: AnyRecord): Promise<EngineResult> => {
-    const client = aiClientRef.current;
-    if (!client) throw new Error('Falta la API Key. Revisa .env.local (VITE_GEMINI_API_KEY) y reinicia Vite.');
-
-    const prompt = `TASK:\n${JSON.stringify(task)}\n\nPROJECT_STATE:\n${JSON.stringify(state)}`;
-
-    const response = await client.models.generateContent({
+  
+const callComposer = useCallback(async (task: ComposerTask, state: AnyRecord): Promise<EngineResult> => {
+  // ✅ Gemini corre en backend (Vercel Function /api/composer). La API Key vive allí como GEMINI_API_KEY (privada).
+  const r = await fetch('/api/composer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      task,
+      state,
       model: GEMINI_MODEL,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: 'application/json',
-      },
-    });
+    }),
+  });
 
-    const rawText = response.text || '';
-    const parsed = safeJsonParse(rawText);
-    return validateEngineResult(parsed);
-  }, []);
+  const raw = await r.text();
 
-  const processResponse = useCallback(
+  let data: any;
+  try {
+    data = safeJsonParse(raw);
+  } catch {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      data = { ok: false, error: raw || `HTTP ${r.status}` };
+    }
+  }
+
+  if (!r.ok) {
+    const msg =
+      ensureString(data?.error?.message, '') ||
+      ensureString(data?.error, '') ||
+      ensureString(data?.message, '') ||
+      `Error HTTP ${r.status}`;
+    // Mensaje más útil para rate limits
+    if (r.status === 429) throw new Error(`Rate limit / cuota: ${msg}`);
+    throw new Error(msg);
+  }
+
+  return validateEngineResult(data);
+}, []);
+
+const processResponse = useCallback(
     (result: EngineResult, currentProject?: Project, ctx?: { action?: string; chapterNum?: number }): Project => {
       const dashboard = isRecord(result.dashboard) ? (result.dashboard as AnyRecord) : {};
       const nextState = normalizeProjectState(result.project_state_updated);
@@ -1124,13 +1133,13 @@ const App: React.FC = () => {
               onDeleteProject={handleDeleteProject as any}
               isLoading={isLoading || anyGenerating}
             />
+          
 
-            {!GEMINI_API_KEY && (
-              <div className="mt-4 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded p-3">
-                Falta VITE_GEMINI_API_KEY en .env.local. Sin eso, la generación no funciona.
-              </div>
-            )}
-          </div>
+<div className="mt-4 text-[11px] text-slate-400 bg-slate-950/40 border border-slate-800 rounded p-3 leading-relaxed">
+  Gemini corre en backend: <span className="font-mono">POST /api/composer</span>. En Vercel configura{' '}
+  <span className="font-mono">GEMINI_API_KEY</span> (privada, sin <span className="font-mono">VITE_</span>).
+</div>
+</div>
         </aside>
 
         <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-slate-950">

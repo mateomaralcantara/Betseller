@@ -1,0 +1,1168 @@
+{
+  "root": "C:\\Users\\martin\\Desktop\\APPS\\BestSeller",
+  "scannedFiles": [
+    "App.tsx",
+    "components/BookProposalDisplay.tsx",
+    "components/BookViewer.tsx",
+    "components/ChatInterface.tsx",
+    "components/GenerationDashboard.tsx",
+    "components/Icons.tsx",
+    "components/TableOfContents.tsx",
+    "index.tsx"
+  ],
+  "totals": {
+    "files": 8,
+    "components": 33,
+    "declaredComponents": 31,
+    "importedOnlyComponents": 1,
+    "unresolvedComponents": 1
+  },
+  "components": [
+    {
+      "name": "AlertTriangleIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/ChatInterface.tsx",
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 2,
+      "unresolved": false
+    },
+    {
+      "name": "App",
+      "declaredIn": [
+        "App.tsx"
+      ],
+      "importedFrom": [
+        "./App.tsx"
+      ],
+      "usedIn": [
+        "index.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "BookIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [],
+      "usedIn": [],
+      "usageCount": 0,
+      "unresolved": false
+    },
+    {
+      "name": "BookOpenIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./components/Icons",
+        "./Icons"
+      ],
+      "usedIn": [
+        "App.tsx",
+        "components/BookProposalDisplay.tsx",
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 3,
+      "unresolved": false
+    },
+    {
+      "name": "BookProposalDisplay",
+      "declaredIn": [
+        "components/BookProposalDisplay.tsx"
+      ],
+      "importedFrom": [],
+      "usedIn": [],
+      "usageCount": 0,
+      "unresolved": false
+    },
+    {
+      "name": "BookViewer",
+      "declaredIn": [
+        "components/BookViewer.tsx"
+      ],
+      "importedFrom": [
+        "./components/BookViewer"
+      ],
+      "usedIn": [
+        "App.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "BotIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/ChatInterface.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "ChapterRow",
+      "declaredIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "importedFrom": [],
+      "usedIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "ChatInterface",
+      "declaredIn": [
+        "components/ChatInterface.tsx"
+      ],
+      "importedFrom": [
+        "./components/ChatInterface"
+      ],
+      "usedIn": [
+        "App.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "CheckCircleIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/GenerationDashboard.tsx",
+        "components/TableOfContents.tsx"
+      ],
+      "usageCount": 2,
+      "unresolved": false
+    },
+    {
+      "name": "CircleIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/GenerationDashboard.tsx",
+        "components/TableOfContents.tsx"
+      ],
+      "usageCount": 3,
+      "unresolved": false
+    },
+    {
+      "name": "ClipboardCheckIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/BookProposalDisplay.tsx",
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 4,
+      "unresolved": false
+    },
+    {
+      "name": "DossierItem",
+      "declaredIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "importedFrom": [],
+      "usedIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 5,
+      "unresolved": false
+    },
+    {
+      "name": "FileDownIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/BookViewer.tsx"
+      ],
+      "usageCount": 2,
+      "unresolved": false
+    },
+    {
+      "name": "FileTextIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/TableOfContents.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "GenerationDashboard",
+      "declaredIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "importedFrom": [
+        "./components/GenerationDashboard"
+      ],
+      "usedIn": [
+        "App.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "InfoCard",
+      "declaredIn": [
+        "components/BookProposalDisplay.tsx"
+      ],
+      "importedFrom": [],
+      "usedIn": [
+        "components/BookProposalDisplay.tsx"
+      ],
+      "usageCount": 3,
+      "unresolved": false
+    },
+    {
+      "name": "ListIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/BookProposalDisplay.tsx",
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 5,
+      "unresolved": false
+    },
+    {
+      "name": "PaletteIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/BookProposalDisplay.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "PenSquareIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./components/Icons",
+        "./Icons"
+      ],
+      "usedIn": [
+        "App.tsx",
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 4,
+      "unresolved": false
+    },
+    {
+      "name": "PlayCircleIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 3,
+      "unresolved": false
+    },
+    {
+      "name": "PlusCircleIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/TableOfContents.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "ReactMarkdown",
+      "declaredIn": [],
+      "importedFrom": [
+        "react-markdown"
+      ],
+      "usedIn": [
+        "components/BookViewer.tsx",
+        "components/ChatInterface.tsx"
+      ],
+      "usageCount": 2,
+      "unresolved": false
+    },
+    {
+      "name": "RocketIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./components/Icons",
+        "./Icons"
+      ],
+      "usedIn": [
+        "App.tsx",
+        "components/GenerationDashboard.tsx",
+        "components/TableOfContents.tsx"
+      ],
+      "usageCount": 5,
+      "unresolved": false
+    },
+    {
+      "name": "SaveIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/TableOfContents.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "Section",
+      "declaredIn": [
+        "components/BookProposalDisplay.tsx"
+      ],
+      "importedFrom": [],
+      "usedIn": [
+        "components/BookProposalDisplay.tsx"
+      ],
+      "usageCount": 3,
+      "unresolved": false
+    },
+    {
+      "name": "SectionCard",
+      "declaredIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "importedFrom": [],
+      "usedIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 2,
+      "unresolved": false
+    },
+    {
+      "name": "SendIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/ChatInterface.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "StatusPill",
+      "declaredIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "importedFrom": [],
+      "usedIn": [
+        "components/GenerationDashboard.tsx"
+      ],
+      "usageCount": 2,
+      "unresolved": false
+    },
+    {
+      "name": "TableOfContents",
+      "declaredIn": [
+        "components/TableOfContents.tsx"
+      ],
+      "importedFrom": [
+        "./components/TableOfContents"
+      ],
+      "usedIn": [
+        "App.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "Tag",
+      "declaredIn": [],
+      "importedFrom": [],
+      "usedIn": [
+        "components/BookViewer.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": true
+    },
+    {
+      "name": "UserIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/ChatInterface.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    },
+    {
+      "name": "UsersIcon",
+      "declaredIn": [
+        "components/Icons.tsx"
+      ],
+      "importedFrom": [
+        "./Icons"
+      ],
+      "usedIn": [
+        "components/BookProposalDisplay.tsx"
+      ],
+      "usageCount": 1,
+      "unresolved": false
+    }
+  ],
+  "perFile": [
+    {
+      "file": "App.tsx",
+      "localComponents": [
+        {
+          "name": "App",
+          "kind": "variable",
+          "exported": false
+        }
+      ],
+      "usedComponents": [
+        {
+          "name": "BookOpenIcon",
+          "count": 1
+        },
+        {
+          "name": "BookViewer",
+          "count": 1
+        },
+        {
+          "name": "ChatInterface",
+          "count": 1
+        },
+        {
+          "name": "GenerationDashboard",
+          "count": 1
+        },
+        {
+          "name": "PenSquareIcon",
+          "count": 2
+        },
+        {
+          "name": "RocketIcon",
+          "count": 1
+        },
+        {
+          "name": "TableOfContents",
+          "count": 1
+        }
+      ],
+      "importedComponentsUsedAsJsx": [
+        {
+          "name": "TableOfContents",
+          "source": "./components/TableOfContents",
+          "kind": "default"
+        },
+        {
+          "name": "ChatInterface",
+          "source": "./components/ChatInterface",
+          "kind": "default"
+        },
+        {
+          "name": "BookViewer",
+          "source": "./components/BookViewer",
+          "kind": "default"
+        },
+        {
+          "name": "GenerationDashboard",
+          "source": "./components/GenerationDashboard",
+          "kind": "default"
+        },
+        {
+          "name": "PenSquareIcon",
+          "source": "./components/Icons",
+          "kind": "named",
+          "importedAs": "PenSquareIcon"
+        },
+        {
+          "name": "RocketIcon",
+          "source": "./components/Icons",
+          "kind": "named",
+          "importedAs": "RocketIcon"
+        },
+        {
+          "name": "BookOpenIcon",
+          "source": "./components/Icons",
+          "kind": "named",
+          "importedAs": "BookOpenIcon"
+        }
+      ],
+      "unresolvedUsedComponents": [],
+      "uppercaseImportsNotUsedAsJsx": [
+        {
+          "name": "React",
+          "source": "react",
+          "kind": "default"
+        },
+        {
+          "name": "GoogleGenAI",
+          "source": "@google/genai",
+          "kind": "named",
+          "importedAs": "GoogleGenAI"
+        },
+        {
+          "name": "SYSTEM_PROMPT",
+          "source": "./constants",
+          "kind": "named",
+          "importedAs": "SYSTEM_PROMPT"
+        }
+      ],
+      "namespacedJsxTags": []
+    },
+    {
+      "file": "components/BookProposalDisplay.tsx",
+      "localComponents": [
+        {
+          "name": "Section",
+          "kind": "variable",
+          "exported": false
+        },
+        {
+          "name": "InfoCard",
+          "kind": "variable",
+          "exported": false
+        },
+        {
+          "name": "BookProposalDisplay",
+          "kind": "variable",
+          "exported": false
+        }
+      ],
+      "usedComponents": [
+        {
+          "name": "BookOpenIcon",
+          "count": 1
+        },
+        {
+          "name": "ClipboardCheckIcon",
+          "count": 1
+        },
+        {
+          "name": "InfoCard",
+          "count": 3
+        },
+        {
+          "name": "ListIcon",
+          "count": 2
+        },
+        {
+          "name": "PaletteIcon",
+          "count": 1
+        },
+        {
+          "name": "Section",
+          "count": 3
+        },
+        {
+          "name": "UsersIcon",
+          "count": 1
+        }
+      ],
+      "importedComponentsUsedAsJsx": [
+        {
+          "name": "BookOpenIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "BookOpenIcon"
+        },
+        {
+          "name": "ListIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "ListIcon"
+        },
+        {
+          "name": "UsersIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "UsersIcon"
+        },
+        {
+          "name": "ClipboardCheckIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "ClipboardCheckIcon"
+        },
+        {
+          "name": "PaletteIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "PaletteIcon"
+        }
+      ],
+      "unresolvedUsedComponents": [],
+      "uppercaseImportsNotUsedAsJsx": [
+        {
+          "name": "React",
+          "source": "react",
+          "kind": "default"
+        }
+      ],
+      "namespacedJsxTags": []
+    },
+    {
+      "file": "components/BookViewer.tsx",
+      "localComponents": [
+        {
+          "name": "BookViewer",
+          "kind": "variable",
+          "exported": false
+        }
+      ],
+      "usedComponents": [
+        {
+          "name": "FileDownIcon",
+          "count": 2
+        },
+        {
+          "name": "ReactMarkdown",
+          "count": 1
+        },
+        {
+          "name": "Tag",
+          "count": 1
+        }
+      ],
+      "importedComponentsUsedAsJsx": [
+        {
+          "name": "ReactMarkdown",
+          "source": "react-markdown",
+          "kind": "default"
+        },
+        {
+          "name": "FileDownIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "FileDownIcon"
+        }
+      ],
+      "unresolvedUsedComponents": [
+        {
+          "name": "Tag",
+          "count": 1
+        }
+      ],
+      "uppercaseImportsNotUsedAsJsx": [
+        {
+          "name": "React",
+          "source": "react",
+          "kind": "default"
+        }
+      ],
+      "namespacedJsxTags": []
+    },
+    {
+      "file": "components/ChatInterface.tsx",
+      "localComponents": [
+        {
+          "name": "ChatInterface",
+          "kind": "variable",
+          "exported": false
+        }
+      ],
+      "usedComponents": [
+        {
+          "name": "AlertTriangleIcon",
+          "count": 1
+        },
+        {
+          "name": "BotIcon",
+          "count": 1
+        },
+        {
+          "name": "ReactMarkdown",
+          "count": 1
+        },
+        {
+          "name": "SendIcon",
+          "count": 1
+        },
+        {
+          "name": "UserIcon",
+          "count": 1
+        }
+      ],
+      "importedComponentsUsedAsJsx": [
+        {
+          "name": "ReactMarkdown",
+          "source": "react-markdown",
+          "kind": "default"
+        },
+        {
+          "name": "UserIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "UserIcon"
+        },
+        {
+          "name": "BotIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "BotIcon"
+        },
+        {
+          "name": "SendIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "SendIcon"
+        },
+        {
+          "name": "AlertTriangleIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "AlertTriangleIcon"
+        }
+      ],
+      "unresolvedUsedComponents": [],
+      "uppercaseImportsNotUsedAsJsx": [
+        {
+          "name": "React",
+          "source": "react",
+          "kind": "default"
+        }
+      ],
+      "namespacedJsxTags": []
+    },
+    {
+      "file": "components/GenerationDashboard.tsx",
+      "localComponents": [
+        {
+          "name": "StatusPill",
+          "kind": "variable",
+          "exported": false
+        },
+        {
+          "name": "SectionCard",
+          "kind": "variable",
+          "exported": false
+        },
+        {
+          "name": "ChapterRow",
+          "kind": "variable",
+          "exported": false
+        },
+        {
+          "name": "DossierItem",
+          "kind": "variable",
+          "exported": false
+        },
+        {
+          "name": "GenerationDashboard",
+          "kind": "variable",
+          "exported": false
+        }
+      ],
+      "usedComponents": [
+        {
+          "name": "AlertTriangleIcon",
+          "count": 1
+        },
+        {
+          "name": "BookOpenIcon",
+          "count": 1
+        },
+        {
+          "name": "ChapterRow",
+          "count": 1
+        },
+        {
+          "name": "CheckCircleIcon",
+          "count": 1
+        },
+        {
+          "name": "CircleIcon",
+          "count": 1
+        },
+        {
+          "name": "ClipboardCheckIcon",
+          "count": 3
+        },
+        {
+          "name": "DossierItem",
+          "count": 5
+        },
+        {
+          "name": "ListIcon",
+          "count": 3
+        },
+        {
+          "name": "PenSquareIcon",
+          "count": 2
+        },
+        {
+          "name": "PlayCircleIcon",
+          "count": 3
+        },
+        {
+          "name": "RocketIcon",
+          "count": 2
+        },
+        {
+          "name": "SectionCard",
+          "count": 2
+        },
+        {
+          "name": "StatusPill",
+          "count": 2
+        }
+      ],
+      "importedComponentsUsedAsJsx": [
+        {
+          "name": "PlayCircleIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "PlayCircleIcon"
+        },
+        {
+          "name": "CheckCircleIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "CheckCircleIcon"
+        },
+        {
+          "name": "AlertTriangleIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "AlertTriangleIcon"
+        },
+        {
+          "name": "RocketIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "RocketIcon"
+        },
+        {
+          "name": "ClipboardCheckIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "ClipboardCheckIcon"
+        },
+        {
+          "name": "BookOpenIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "BookOpenIcon"
+        },
+        {
+          "name": "ListIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "ListIcon"
+        },
+        {
+          "name": "PenSquareIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "PenSquareIcon"
+        },
+        {
+          "name": "CircleIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "CircleIcon"
+        }
+      ],
+      "unresolvedUsedComponents": [],
+      "uppercaseImportsNotUsedAsJsx": [
+        {
+          "name": "React",
+          "source": "react",
+          "kind": "default"
+        }
+      ],
+      "namespacedJsxTags": []
+    },
+    {
+      "file": "components/Icons.tsx",
+      "localComponents": [
+        {
+          "name": "PenSquareIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "BookIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "CheckCircleIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "CircleIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "UserIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "BotIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "SendIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "AlertTriangleIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "BookOpenIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "ListIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "UsersIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "ClipboardCheckIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "PaletteIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "PlayCircleIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "PlusCircleIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "SaveIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "FileTextIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "FileDownIcon",
+          "kind": "variable",
+          "exported": true
+        },
+        {
+          "name": "RocketIcon",
+          "kind": "variable",
+          "exported": true
+        }
+      ],
+      "usedComponents": [],
+      "importedComponentsUsedAsJsx": [],
+      "unresolvedUsedComponents": [],
+      "uppercaseImportsNotUsedAsJsx": [
+        {
+          "name": "React",
+          "source": "react",
+          "kind": "default"
+        }
+      ],
+      "namespacedJsxTags": []
+    },
+    {
+      "file": "components/TableOfContents.tsx",
+      "localComponents": [
+        {
+          "name": "TableOfContents",
+          "kind": "variable",
+          "exported": false
+        }
+      ],
+      "usedComponents": [
+        {
+          "name": "CheckCircleIcon",
+          "count": 1
+        },
+        {
+          "name": "CircleIcon",
+          "count": 2
+        },
+        {
+          "name": "FileTextIcon",
+          "count": 1
+        },
+        {
+          "name": "PlusCircleIcon",
+          "count": 1
+        },
+        {
+          "name": "RocketIcon",
+          "count": 2
+        },
+        {
+          "name": "SaveIcon",
+          "count": 1
+        }
+      ],
+      "importedComponentsUsedAsJsx": [
+        {
+          "name": "FileTextIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "FileTextIcon"
+        },
+        {
+          "name": "PlusCircleIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "PlusCircleIcon"
+        },
+        {
+          "name": "SaveIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "SaveIcon"
+        },
+        {
+          "name": "CheckCircleIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "CheckCircleIcon"
+        },
+        {
+          "name": "CircleIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "CircleIcon"
+        },
+        {
+          "name": "RocketIcon",
+          "source": "./Icons",
+          "kind": "named",
+          "importedAs": "RocketIcon"
+        }
+      ],
+      "unresolvedUsedComponents": [],
+      "uppercaseImportsNotUsedAsJsx": [
+        {
+          "name": "React",
+          "source": "react",
+          "kind": "default"
+        }
+      ],
+      "namespacedJsxTags": []
+    },
+    {
+      "file": "index.tsx",
+      "localComponents": [],
+      "usedComponents": [
+        {
+          "name": "App",
+          "count": 1
+        }
+      ],
+      "importedComponentsUsedAsJsx": [
+        {
+          "name": "App",
+          "source": "./App.tsx",
+          "kind": "default"
+        }
+      ],
+      "unresolvedUsedComponents": [],
+      "uppercaseImportsNotUsedAsJsx": [
+        {
+          "name": "React",
+          "source": "react",
+          "kind": "default"
+        },
+        {
+          "name": "ReactDOM",
+          "source": "react-dom/client",
+          "kind": "default"
+        }
+      ],
+      "namespacedJsxTags": [
+        {
+          "name": "React.StrictMode",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}
