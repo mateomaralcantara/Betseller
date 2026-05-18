@@ -26,3 +26,4 @@ dist-ssr
 *.sw?
 .health/
 datos.txt
+device_session_gate.sql
