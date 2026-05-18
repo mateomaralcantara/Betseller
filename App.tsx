@@ -1,21 +1,18 @@
 // App.tsx
-// ✅ Persistencia 100% en Supabase (sin localStorage para proyectos/libros)
-// - Carga/selección de proyectos desde DB
-// - Guardado de secciones (propuesta/intro/capítulos) en `sections`
-// - Snapshot del master en `master_documents` vía RPC `build_master_text`
-// - Single-flight global: solo 1 generación a la vez (incluye proyectos “anteriores”)
+// ✅ Refactor "así": App pequeño, helpers en src/lib/editor.ts y src/lib/gemini.ts, UI auth en src/components/AuthGate.tsx
+// Mantiene TODO: Supabase-first + aprobación manual + generación 1 a la vez + targets globales + turbo capítulos DEV.
 
-import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Project, ChatMessage, ProjectState } from './types';
-import TableOfContents from './components/TableOfContents';
-import ChatInterface from './components/ChatInterface';
-import BookViewer from './components/BookViewer';
-import GenerationDashboard from './components/GenerationDashboard';
-import { PenSquareIcon, RocketIcon, BookOpenIcon } from './components/Icons';
+import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Project, ChatMessage, ProjectState } from "./types";
 
-// ✅ Supabase repo
+import TableOfContents from "./components/TableOfContents";
+import ChatInterface from "./components/ChatInterface";
+import BookViewer from "./components/BookViewer";
+import GenerationDashboard from "./components/GenerationDashboard";
+import { PenSquareIcon, RocketIcon, BookOpenIcon } from "./components/Icons";
+
+import { supabase } from "./src/lib/supabase";
 import {
-  signInMagicLink,
   getSession,
   listProjects,
   createProject,
@@ -24,770 +21,379 @@ import {
   insertSectionVersion,
   buildMasterServer,
   insertMasterSnapshot,
-  // Nota: agrega estas funciones en repo.ts (te dejo el snippet en la respuesta)
   updateProject,
   deleteProject,
   getUserSettings,
   upsertUserSettings,
-} from './src/data/repo.ts';
+} from "./src/data/repo";
 
-/**import { getUserSettings, upsertUserSettings } from './src/data/repo.ts';
- * BUILD TAG (sanity check)
- */
-const BUILD_TAG = 'App.supabase.tsx v1.2.0 TURBO (2026-05-18)';
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3.1-flash-lite';
-const DEV_GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? '';
-const DEV_SYSTEM_PROMPT = `Eres BOOK_DOSSIER_CANVAS_ENGINE, un motor editorial.
+import {
+  AnyRecord,
+  GenerationStatus,
+  GenerationProgress,
+  ensureArray,
+  ensureString,
+  normalizeError,
+  normalizeProjectState,
+  compactStateForComposer,
+  mapDbFullToProject,
+  buildMasterFromState,
+  recomputeGenerationProgress,
+  processEngineResult,
+} from "./src/lib/editor";
 
-IDIOMA: Español neutro.
-FORMATO: Responde SIEMPRE con JSON válido (sin Markdown, sin texto fuera del JSON).
+import { callComposer, autoExtendChapterDev } from "./src/lib/gemini";
+import type { ComposerTask } from "./src/lib/types.local";
+import { AuthScreen, AuthMode } from "./components/AuthGate";
 
-ESQUEMA OBLIGATORIO:
-{
-  "ok": true,
-  "dashboard": {
-    "project_id": string,
-    "book_title": string,
-    "menu_items": [{"id": string, "label": string}] // incluye proposal, intro y chap-1..chap-12
-  },
-  "project_state_updated": {
-    "project_id": string,
-    "book_title": string,
-    "book_topic": string,
-    "audience": string,
-    "tone_style": string,
-    "outline_12": [ { "chapter_number": number, "chapter_title": string, "target_words": number, "objective": string, "key_points": string[] } ],
-    "proposal": { "id": "sec_proposal", "text": string, "status": "PENDING"|"COMPLETED", "words": number },
-    "introduction": { "id": "sec_introduction", "text": string, "status": "PENDING"|"COMPLETED", "words": number },
-    "chapters": [ { "chapter_number": number, "title": string, "text": string, "status": "PENDING"|"COMPLETED", "words": number } ],
-    "continuity_pack": object
-  },
-  "master_document": { "title": string, "text": string },
-  "needs_input": { "message": string } // opcional
-}
+const BUILD_TAG = "App.tsx v3.2.0 (gate-safe + device-session + idle-timeout) 2026-05-18";
+
+// Gemini
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL ?? "gemini-3.1-flash-lite";
+const DEV_GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? "";
+const MAX_MASTER_CHARS_TO_SEND = 35_000;
+
+const DEV_SYSTEM_PROMPT = `Eres BOOK_DOSSIER_CANVAS_ENGINE.
+Responde SIEMPRE con JSON válido (sin Markdown) con:
+{ ok, dashboard, project_state_updated, master_document, needs_input? }.
 
 REGLAS:
 - Nunca devuelvas placeholders ("..." o texto vacío) como contenido final.
-- Si la TASK es GENERATE_PROPOSAL: actualiza SOLO proposal (y lo demás déjalo intacto o como patch mínimo).
-- Si la TASK es GENERATE_INTRODUCTION: actualiza SOLO introduction.
-- Si la TASK es GENERATE_CHAPTER con chapter_number=N: devuelve SOLO ese capítulo (chapter_number=N) con aproximadamente TASK.target_length_words palabras (mínimo 100% del target (>= TASK.target_length_words)), en Markdown, con subtítulos H2/H3 y cierre.
-- Si falta información crítica, responde { "ok": false, "needs_input": { "message": "..." } } en vez de inventar.
-- master_document.text debe incluir Propuesta, Introducción y capítulos disponibles (Markdown).`.trim();
-
-
-// Para no reventar tokens/latencia: recortamos el master antes de mandarlo al modelo.
-const MAX_MASTER_CHARS_TO_SEND = 35_000;
-
-type GenerationStatus = 'pending' | 'generating' | 'completed' | 'error';
-type GenerationProgress = Record<string, GenerationStatus>;
-
-type ComposerTask = {
-  action:
-    | 'BUILD_FULL_DOSSIER'
-    | 'GENERATE_PROPOSAL'
-    | 'GENERATE_INTRODUCTION'
-    | 'GENERATE_CHAPTER'
-    | 'REVISE_SECTION'
-    | 'REBUILD_MASTER';
-  chapter_number?: number;
-  target_length_words?: number;
-  active_view?: 'MASTER' | 'DOSSIER' | 'OUTLINE' | 'PROPOSAL' | 'INTRODUCTION' | 'CHAPTER';
-};
-
-type EngineResult = {
-  ok: boolean;
-  dashboard?: unknown;
-  project_state_updated?: unknown;
-  master_document?: unknown;
-  needs_input?: { message?: string };
-};
-
-type AnyRecord = Record<string, unknown>;
+- Si TASK=GENERATE_CHAPTER con chapter_number=N:
+  - devuelve SOLO ese capítulo N
+  - el texto debe tener >= TASK.target_length_words palabras
+- master_document.text debe ser Markdown con secciones.`.trim();
 
 const initialWelcomeMessage: ChatMessage = {
-  id: 'welcome-0',
-  role: 'model',
+  id: "welcome-0",
+  role: "model",
   content:
-    '¡Bienvenido! Soy **BOOK_DOSSIER_CANVAS_ENGINE**. Para empezar, cuéntame de qué quieres que trate tu libro o simplemente dime un título para generar el expediente completo.',
+    "¡Bienvenido! Soy **BOOK_DOSSIER_CANVAS_ENGINE**. Para empezar, cuéntame de qué quieres que trate tu libro o dime un título.",
 };
 
-/* ----------------------------- tiny helpers ----------------------------- */
+type AccessProfile = {
+  email: string;
+  has_access: boolean;
+  full_name?: string | null;
+  phone?: string | null;
+};
 
-function isRecord(v: unknown): v is AnyRecord {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
+type AccessRequest = {
+  id: string;
+  status: string;
+  created_at?: string;
+};
+
+type AccessProcessingScreenProps = {
+  email: string;
+  busy?: boolean;
+  requestStatus?: string;
+  error?: string | null;
+  onRefresh: () => void;
+  onSignOut: () => void;
+};
+
+const AccessProcessingScreen: React.FC<AccessProcessingScreenProps> = ({
+  email,
+  busy,
+  requestStatus,
+  error,
+  onRefresh,
+  onSignOut,
+}) => {
+  const statusLabel = requestStatus || "PENDING";
+
+  return (
+    <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-2xl">
+        <div className="text-center">
+          <h1 className="text-5xl md:text-6xl font-black tracking-tight text-white">BestSeller</h1>
+          <p className="mt-3 text-sm text-slate-300">
+            Tu cuenta <span className="font-mono text-indigo-200">{email}</span> está en revisión.
+          </p>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-center">
+          <div className="text-amber-200 text-sm font-bold">
+            ⏳ Procesando. Nos pondremos en contacto lo antes posible.
+          </div>
+          <div className="mt-2 text-xs text-amber-100/80">
+            Gate activo: el usuario entra y solo pasa cuando <span className="font-mono">profiles.has_access = true</span>.
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/50 p-4">
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <span className="text-slate-400 font-black uppercase tracking-widest">Estado de solicitud</span>
+            <span
+              className={`rounded-full px-3 py-1 font-black ${
+                statusLabel === "APPROVED"
+                  ? "bg-emerald-500/15 text-emerald-200 border border-emerald-500/25"
+                  : statusLabel === "REJECTED"
+                    ? "bg-red-500/15 text-red-200 border border-red-500/25"
+                    : "bg-amber-500/15 text-amber-200 border border-amber-500/25"
+              }`}
+            >
+              {statusLabel}
+            </span>
+          </div>
+
+          {statusLabel === "APPROVED" && (
+            <p className="mt-3 text-xs text-emerald-200">
+              La solicitud aparece como aprobada. Si aún ves esta pantalla, confirma que <span className="font-mono">profiles.has_access</span> esté en <span className="font-mono">true</span> y presiona “Revisar acceso”.
+            </p>
+          )}
+
+          {error && (
+            <p className="mt-3 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-200">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            disabled={Boolean(busy)}
+            onClick={onRefresh}
+            className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-indigo-500 disabled:opacity-60"
+          >
+            {busy ? "Revisando…" : "Revisar acceso"}
+          </button>
+
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="w-full rounded-xl bg-slate-800 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-100 transition hover:bg-slate-700"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+const DEVICE_STORAGE_KEY = "bestseller_device_id";
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+const HEARTBEAT_MS = 60 * 1000;
+
+type DeviceConflictInfo = {
+  active_device_label?: string | null;
+  active_last_seen_at?: string | null;
+};
+
+type DeviceSessionScreenProps = {
+  email: string;
+  busy?: boolean;
+  error?: string | null;
+  notice?: string | null;
+  otherDevice?: DeviceConflictInfo | null;
+  onEnterHere: () => void;
+  onRefresh: () => void;
+  onSignOut: () => void;
+};
+
+function createFallbackDeviceId(): string {
+  return `dev_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
 }
 
-function ensureArray<T>(v: unknown, fallback: T[] = []): T[] {
-  return Array.isArray(v) ? (v as T[]) : fallback;
+function getOrCreateDeviceId(): string {
+  if (typeof window === "undefined") return createFallbackDeviceId();
+
+  const existing = window.localStorage.getItem(DEVICE_STORAGE_KEY);
+  if (existing && existing.trim().length >= 8) return existing;
+
+  const next =
+    typeof window.crypto?.randomUUID === "function"
+      ? window.crypto.randomUUID()
+      : createFallbackDeviceId();
+
+  window.localStorage.setItem(DEVICE_STORAGE_KEY, next);
+  return next;
 }
 
-function ensureString(v: unknown, fallback = ''): string {
-  return typeof v === 'string' ? v : fallback;
+function getDeviceLabel(): string {
+  if (typeof navigator === "undefined") return "Dispositivo";
+  const platform = navigator.platform || "Dispositivo";
+  const language = navigator.language || "";
+  return language ? `${platform} · ${language}` : platform;
 }
 
-function normalizeError(e: unknown): string {
-  if (typeof e === 'string') return e;
-  if (isRecord(e) && 'message' in e) return String((e as AnyRecord).message);
-  return 'Error desconocido';
-}
-
-/* ----------------------- dev resiliency + long chapters ----------------------- */
-
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-function isRetriableGeminiError(e: unknown): boolean {
-  const msg = String((e as any)?.message ?? e ?? '');
-  return /503|UNAVAILABLE|Service Unavailable|RESOURCE_EXHAUSTED|quota|rate limit|429|ETIMEDOUT|ECONNRESET|fetch failed/i.test(msg);
-}
-
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  opts?: { attempts?: number; baseMs?: number; maxMs?: number }
-): Promise<T> {
-  const attempts = opts?.attempts ?? 5;
-  const baseMs = opts?.baseMs ?? 900;
-  const maxMs = opts?.maxMs ?? 20_000;
-
-  let lastErr: any = null;
-
-  for (let i = 0; i < attempts; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      lastErr = e;
-      if (!isRetriableGeminiError(e) || i === attempts - 1) throw e;
-      const jitter = Math.floor(Math.random() * 250);
-      const wait = Math.min(maxMs, Math.floor(baseMs * Math.pow(2, i)) + jitter);
-      // eslint-disable-next-line no-console
-      console.warn(`Gemini retry ${i + 1}/${attempts} in ${wait}ms`, (e as any)?.message ?? e);
-      await sleep(wait);
-    }
-  }
-
-  throw lastErr;
-}
-
-function trimOverlap(existing: string, addition: string): string {
-  const a = (existing ?? '').trim();
-  const b = (addition ?? '').trim();
-  if (!a) return b;
-  if (!b) return '';
-  const aTail = a.slice(-1600);
-
-  // Busca el mayor sufijo del tail que sea prefijo del nuevo texto
-  for (let k = Math.min(1200, aTail.length); k >= 120; k -= 40) {
-    const suffix = aTail.slice(-k);
-    if (b.startsWith(suffix)) return b.slice(k).trimStart();
-  }
-  return b;
-}
-
-function getChapterTextFromProject(p: Project, chapterNum: number): { idx: number; text: string; title: string } {
-  const st: any = (p as any).state ?? {};
-  const chs = ensureArray<any>(st?.chapters, []);
-  const idx = chs.findIndex((c: any) => Number(c?.chapter_number ?? 0) === chapterNum);
-  const ch = idx >= 0 ? chs[idx] : null;
-  const text = ensureString(ch?.text, '');
-  const title = ensureString(ch?.title, `Capítulo ${chapterNum}`);
-  return { idx, text, title };
-}
-
-function setChapterTextOnProject(
-  p: Project,
-  chapterNum: number,
-  title: string,
-  text: string,
-  status: 'PENDING' | 'COMPLETED'
-): Project {
-  const st: any = JSON.parse(JSON.stringify((p as any).state ?? {}));
-  const chs = ensureArray<any>(st?.chapters, []);
-  const idx = chs.findIndex((c: any) => Number(c?.chapter_number ?? 0) === chapterNum);
-
-  const updated = {
-    ...(idx >= 0 ? chs[idx] : {}),
-    chapter_number: chapterNum,
-    title,
-    text,
-    status,
-    words: countWordsQuick(text),
-  };
-
-  if (idx >= 0) chs[idx] = updated;
-  else chs.push(updated);
-
-  st.chapters = chs;
-  const merged = normalizeProjectState(st);
-
-  const masterLocal = buildMasterFromState(merged, (p as any).title);
-  const out: Project = {
-    ...(p as any),
-    state: merged,
-    master_document: {
-      ...((p as any).master_document ?? {}),
-      title: ensureString((p as any).master_document?.title, (p as any).title),
-      text: masterLocal,
-      chunks: [{ index: 1, total: 1, text: masterLocal }],
-    } as any,
-  } as any;
-
-  (out as any).generation_progress = recomputeGenerationProgress(out);
-  return out;
-}
-
-async function autoExtendChapterDev(params: {
-  project: Project;
-  chapterNum: number;
-  targetWords: number;
-  model: string;
-  apiKey: string;
-}): Promise<Project> {
-  const { project, chapterNum, targetWords, model, apiKey } = params;
-
-  // Solo corre en DEV (Gemini directo)
-  if (!import.meta.env.DEV) return project;
-  if (!apiKey) return project;
-
-  const target = Math.max(0, Math.floor(targetWords || 0));
-  if (!target) return project;
-
-  let current = project;
-  let { text: chapterText, title } = getChapterTextFromProject(current, chapterNum);
-
-  // ✅ si ya llegamos, no hacemos nada
-  if (countWordsQuick(chapterText) >= target) {
-    return setChapterTextOnProject(current, chapterNum, title, chapterText, 'COMPLETED');
-  }
-
-  const st: any = (current as any).state ?? {};
-  const outline = ensureArray<any>(st?.outline_12, []);
-  const o = outline.find((x: any) => Number(x?.chapter_number ?? 0) === chapterNum);
-
-  const objective = ensureString(o?.objective, '');
-  const keyPoints = ensureArray<any>(o?.key_points, []).slice(0, 12).filter(Boolean);
-  const subheads = ensureArray<any>(o?.subheads_h2, []).slice(0, 12).filter(Boolean);
-
-  // Dynamic import para evitar bundling extra
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
-
-  // ✅ loops dinámicos: 3k–6k normalmente se completan en 2–4, pero dejamos margen
-  const maxSteps = Math.max(2, Math.min(8, Math.ceil(target / 2400) + 1));
-
-  for (let step = 1; step <= maxSteps; step++) {
-    const wcNow = countWordsQuick(chapterText);
-    if (wcNow >= target) break;
-
-    const remaining = Math.max(0, target - wcNow);
-
-    // chunk deseado por iteración: grande al inicio, más fino al final
-    const chunkWords =
-      remaining >= 3600 ? 2600 :
-      remaining >= 2400 ? 2000 :
-      remaining >= 1600 ? 1600 :
-      Math.max(900, remaining + 220);
-
-    // tokens de salida (aprox 1 palabra ~ 1.3 tokens, dejamos holgura)
-    const maxOut = Math.min(32_000, Math.max(12_000, Math.floor(chunkWords * 3.0)));
-
-    const tail = chapterText.slice(-2800);
-
-    const userPrompt = `
-CONTINÚA el Capítulo ${chapterNum} SIN REESCRIBIR lo ya escrito.
-Devuelve SOLO el texto NUEVO a añadir (Markdown). NO incluyas JSON.
-
-OBJETIVO DEL CAPÍTULO:
-${objective || '(no especificado)'}
-
-PUNTOS CLAVE (si aplica):
-${keyPoints.length ? '- ' + keyPoints.join('\n- ') : '(no especificado)'}
-
-SUBTÍTULOS SUGERIDOS (si aplica):
-${subheads.length ? '- ' + subheads.join('\n- ') : '(no especificado)'}
-
-REQUISITOS (DURÍSIMOS):
-- Añade un bloque SUSTANCIAL: objetivo ~${chunkWords} palabras (mínimo 1200 si faltan >2000).
-- NO repitas el final. NO resumas lo ya dicho. No metas “Capítulo X”.
-- Cierra con una frase completa (no cortar a medias).
-- Vamos a seguir iterando hasta llegar a ${target} palabras totales.
-
-ÚLTIMO CONTEXTO (NO REPETIR):
-<<<CONTEXT
-${tail}
-CONTEXT
-`.trim();
-
-    const resp = await withRetry(
-      () =>
-        ai.models.generateContent({
-          model,
-          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          config: {
-            maxOutputTokens: maxOut,
-            temperature: 0.85,
-          } as any,
-        }),
-      { attempts: 6, baseMs: 900, maxMs: 20_000 }
-    );
-
-    const addRaw = ensureString((resp as any)?.text, '').trim();
-    const add = trimOverlap(chapterText, addRaw);
-
-    // si salió corto, reintenta en la siguiente vuelta (no guardamos basura)
-    if (countWordsQuick(add) < 500) continue;
-
-    chapterText = (chapterText.trim() ? chapterText.trim() + '\n\n' : '') + add.trim();
-
-    // actualiza en memoria en cada iteración (y mantiene master coherente)
-    current = setChapterTextOnProject(current, chapterNum, title, chapterText, 'PENDING');
-  }
-
-  const finalWords = countWordsQuick(chapterText);
-  const done = finalWords >= target;
-
-  current = setChapterTextOnProject(current, chapterNum, title, chapterText, done ? 'COMPLETED' : 'PENDING');
-
-  if (!done) {
-    throw new Error(`Capítulo quedó corto: ${finalWords} palabras. Objetivo: ${target}. Vuelve a intentar (el servicio puede estar devolviendo respuestas cortas/503).`);
-  }
-
-  return current;
-}
-
-
-
-
-
-/* ----------------------------- engine parse ----------------------------- */
-
-function safeJsonParse(text: string): unknown {
-  const t = (text ?? '').trim();
-  if (!t) throw new Error('Respuesta vacía.');
+function formatSessionDate(value?: string | null): string {
+  if (!value) return "reciente";
   try {
-    return JSON.parse(t);
+    return new Intl.DateTimeFormat("es", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(value));
   } catch {
-    const first = t.indexOf('{');
-    const last = t.lastIndexOf('}');
-    if (first >= 0 && last > first) return JSON.parse(t.slice(first, last + 1));
-    throw new Error('No se pudo parsear JSON.');
+    return value;
   }
 }
 
-function validateEngineResult(raw: unknown): EngineResult {
-  if (!isRecord(raw)) throw new Error('Respuesta no es JSON object.');
-  if ((raw as AnyRecord).ok !== true) {
-    const needs = (raw as AnyRecord).needs_input;
-    const msg = isRecord(needs) ? ensureString(needs.message, '') : '';
-    throw new Error(msg || 'Error del motor editorial.');
-  }
-  if (!('project_state_updated' in raw)) throw new Error('Respuesta inválida: falta project_state_updated.');
-  if (!('master_document' in raw)) throw new Error('Respuesta inválida: falta master_document.');
-  if (!('dashboard' in raw)) throw new Error('Respuesta inválida: falta dashboard.');
-  return raw as EngineResult;
-}
+const DeviceSessionScreen: React.FC<DeviceSessionScreenProps> = ({
+  email,
+  busy,
+  error,
+  notice,
+  otherDevice,
+  onEnterHere,
+  onRefresh,
+  onSignOut,
+}) => {
+  const hasOtherDevice = Boolean(otherDevice);
 
-/* ------------------- word count + placeholder detection ------------------- */
+  return (
+    <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-2xl">
+        <div className="text-center">
+          <h1 className="text-5xl md:text-6xl font-black tracking-tight text-white">BestSeller</h1>
+          <p className="mt-3 text-sm text-slate-300">
+            Sesión aprobada para <span className="font-mono text-indigo-200">{email}</span>.
+          </p>
+        </div>
 
-const WORD_RE = /\S+/g;
-function countWordsQuick(text: string): number {
-  const t = (text ?? '').trim();
-  if (!t) return 0;
-  const m = t.match(WORD_RE);
-  return m ? m.length : 0;
-}
+        <div
+          className={`mt-6 rounded-2xl border p-4 text-center ${
+            hasOtherDevice
+              ? "border-amber-500/25 bg-amber-500/10"
+              : "border-indigo-500/25 bg-indigo-500/10"
+          }`}
+        >
+          <div className={`text-sm font-bold ${hasOtherDevice ? "text-amber-200" : "text-indigo-200"}`}>
+            {hasOtherDevice
+              ? "⚠️ Ya tienes una sesión activa en otro dispositivo."
+              : busy
+                ? "🔐 Validando este dispositivo…"
+                : "🔐 Este dispositivo necesita activar sesión."}
+          </div>
 
-function isPlaceholderText(text: string): boolean {
-  const t = (text ?? '').trim();
-  if (!t) return true;
-  const compact = t.replace(/\s+/g, '');
-  if (compact === '...' || compact === '…') return true;
-  const dots = (t.match(/\.\.\./g) ?? []).length;
-  const wc = countWordsQuick(t);
-  if (dots >= 2 && wc < 120) return true;
-  if (wc > 0 && wc < 40 && /\.\.\.|…/.test(t)) return true;
-  return false;
-}
+          <div className="mt-2 text-xs text-slate-300">
+            La sesión se cierra automáticamente después de <span className="font-mono">30 minutos</span> sin actividad.
+          </div>
+        </div>
 
-function chapterIsComplete(chText: string, targetWords?: number): boolean {
-  const wc = countWordsQuick(chText);
-  if (!wc) return false;
-  if (isPlaceholderText(chText)) return false;
+        {hasOtherDevice && (
+          <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/50 p-4 text-xs text-slate-300">
+            <div className="font-black uppercase tracking-widest text-slate-400">Dispositivo activo</div>
+            <div className="mt-2">
+              <span className="text-slate-400">Nombre:</span>{" "}
+              <span className="font-mono text-slate-100">{otherDevice?.active_device_label || "Otro dispositivo"}</span>
+            </div>
+            <div className="mt-1">
+              <span className="text-slate-400">Última actividad:</span>{" "}
+              <span className="font-mono text-slate-100">{formatSessionDate(otherDevice?.active_last_seen_at)}</span>
+            </div>
+            <p className="mt-3 text-amber-100/80">
+              Puedes cerrar la sesión anterior y continuar aquí. Esto evita que una misma cuenta quede abierta en dos sitios a la vez.
+            </p>
+          </div>
+        )}
 
-  const target = typeof targetWords === 'number' && Number.isFinite(targetWords) ? Math.floor(targetWords) : 0;
+        {notice && (
+          <p className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-xs text-emerald-200">
+            {notice}
+          </p>
+        )}
 
-  // ✅ Para tus libros largos: “completo” significa llegar (o pasar) el target.
-  // Si no hay target, usamos un mínimo razonable.
-  const minWords = target > 0 ? Math.max(400, target) : 400;
+        {error && (
+          <p className="mt-4 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-200">
+            {error}
+          </p>
+        )}
 
-  return wc >= minWords;
-}
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            disabled={Boolean(busy)}
+            onClick={hasOtherDevice ? onEnterHere : onRefresh}
+            className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-indigo-500 disabled:opacity-60"
+          >
+            {busy ? "Procesando…" : hasOtherDevice ? "Cerrar anterior y entrar" : "Activar dispositivo"}
+          </button>
 
-
-function assertGeneratedContentNonEmpty(updated: Project, action: string, chapterNum?: number, expectedTargetWords?: number) {
-  const st: any = (updated as any).state ?? {};
-  if (action === 'GENERATE_PROPOSAL') {
-    const t = ensureString(st?.proposal?.text, '').trim();
-    if (!t || isPlaceholderText(t) || countWordsQuick(t) < 120) throw new Error('El modelo devolvió una propuesta vacía o insuficiente.');
-  }
-  if (action === 'GENERATE_INTRODUCTION') {
-    const t = ensureString(st?.introduction?.text, '').trim();
-    if (!t || isPlaceholderText(t) || countWordsQuick(t) < 120) throw new Error('El modelo devolvió una introducción vacía o insuficiente.');
-  }
-  if (action === 'GENERATE_CHAPTER') {
-    const n = Number(chapterNum ?? 0) || 0;
-    const chs = ensureArray<any>(st?.chapters, []);
-    const ch = chs.find((c: any) => Number(c?.chapter_number ?? 0) === n);
-    const t = ensureString(ch?.text, '').trim();
-
-    const outline = ensureArray<any>(st?.outline_12, []);
-    const o = outline.find((x: any) => Number(x?.chapter_number ?? 0) === n);
-    const target = Number(expectedTargetWords ?? o?.target_words ?? 0) || 0;
-    const minWords = target > 0 ? Math.max(900, target) : 900;
-
-    if (!t || isPlaceholderText(t) || countWordsQuick(t) < minWords) {
-      throw new Error(
-        `El modelo devolvió un capítulo vacío/insuficiente (${countWordsQuick(t)} palabras). Objetivo: ${target || 'N/A'}.`
-      );
-    }
-  }
-}
-
-/* ----------------------- progress computed from text ----------------------- */
-
-function recomputeGenerationProgress(project: Project): GenerationProgress {
-  const prev = ((project as any).generation_progress as AnyRecord) || {};
-  const progress: GenerationProgress = { ...(prev as GenerationProgress) };
-  const st = ((project as any).state as AnyRecord) || {};
-
-  const proposalText = ensureString((st as any).proposal?.text, '');
-  const introText = ensureString((st as any).introduction?.text, '');
-
-  const proposalDone =
-    (ensureString((st as any).proposal?.status, '') === 'COMPLETED' || countWordsQuick(proposalText) >= 200) &&
-    !isPlaceholderText(proposalText);
-
-  const introDone =
-    (ensureString((st as any).introduction?.status, '') === 'COMPLETED' || countWordsQuick(introText) >= 200) &&
-    !isPlaceholderText(introText);
-
-  if (progress.proposal !== 'generating') progress.proposal = proposalDone ? 'completed' : 'pending';
-  if (progress.intro !== 'generating') progress.intro = introDone ? 'completed' : 'pending';
-
-  const outline = ensureArray<any>((st as any).outline_12, []);
-  const chapters = ensureArray<any>((st as any).chapters, []);
-
-  const byNum = new Map<number, any>();
-  for (const c of chapters) {
-    const cn = Number(c?.chapter_number ?? c?.chapterNumber ?? 0) || 0;
-    if (cn > 0) byNum.set(cn, c);
-  }
-
-  for (const o of outline) {
-    const n = Number(o?.chapter_number ?? 0) || 0;
-    if (!n) continue;
-    const id = `chap-${n}`;
-    if (progress[id] === 'generating') continue;
-    const ch = byNum.get(n);
-    const text = ensureString(ch?.text, '');
-    progress[id] = chapterIsComplete(text, o?.target_words) ? 'completed' : 'pending';
-  }
-
-  return progress;
-}
-
-/* -------------------------- master doc reconstruction -------------------------- */
-
-function buildMasterFromState(state: ProjectState, title?: string): string {
-  const parts: string[] = [];
-  const bookTitle = (title || (state as any).book_title || 'Documento maestro').trim();
-  parts.push(`# ${bookTitle}\n`);
-
-  const proposalText = ensureString((state as any).proposal?.text, '').trim();
-  if (proposalText) parts.push(`## Propuesta editorial\n\n${proposalText}`);
-
-  const introText = ensureString((state as any).introduction?.text, '').trim();
-  if (introText) parts.push(`## Introducción\n\n${introText}`);
-
-  const chapters = ensureArray<any>((state as any).chapters, [])
-    .slice()
-    .sort((a, b) => (Number(a?.chapter_number ?? 0) || 0) - (Number(b?.chapter_number ?? 0) || 0));
-
-  for (const ch of chapters) {
-    const t = ensureString(ch?.text, '').trim();
-    if (!t) continue;
-    const n = ch?.chapter_number ?? '';
-    const chTitle = ensureString(ch?.title, n ? `Capítulo ${n}` : 'Capítulo').trim();
-    parts.push(`## ${chTitle}\n\n${t}`);
-  }
-
-  return parts.join('\n\n---\n\n').trim() + '\n';
-}
-
-/* -------------------------- normalize / merge state -------------------------- */
-
-function normalizeProjectState(input: unknown): ProjectState {
-  const state: AnyRecord = isRecord(input) ? { ...(input as AnyRecord) } : {};
-
-  const proposal = isRecord((state as any).proposal) ? { ...((state as any).proposal as AnyRecord) } : {};
-  (proposal as any).id = ensureString((proposal as any).id, 'sec_proposal');
-  (proposal as any).text = ensureString((proposal as any).text, '');
-  (proposal as any).status = (proposal as any).status === 'COMPLETED' ? 'COMPLETED' : 'PENDING';
-  (proposal as any).words = typeof (proposal as any).words === 'number' ? (proposal as any).words : 0;
-  (state as any).proposal = proposal;
-
-  const introduction = isRecord((state as any).introduction)
-    ? { ...((state as any).introduction as AnyRecord) }
-    : {};
-  (introduction as any).id = ensureString((introduction as any).id, 'sec_introduction');
-  (introduction as any).text = ensureString((introduction as any).text, '');
-  (introduction as any).status = (introduction as any).status === 'COMPLETED' ? 'COMPLETED' : 'PENDING';
-  (introduction as any).words = typeof (introduction as any).words === 'number' ? (introduction as any).words : 0;
-  (state as any).introduction = introduction;
-
-  (state as any).outline_12 = ensureArray<any>((state as any).outline_12, []).map((o: any, idx: number) => {
-    const chapterNum = typeof o?.chapter_number === 'number' ? o.chapter_number : idx + 1;
-    const normalized: AnyRecord = isRecord(o) ? { ...(o as AnyRecord) } : {};
-    (normalized as any).id = ensureString((normalized as any).id, `outline_${String(chapterNum).padStart(2, '0')}`);
-    (normalized as any).chapter_number = chapterNum;
-    (normalized as any).chapter_title = ensureString(
-      (normalized as any).chapter_title,
-      ensureString((normalized as any).title, `Capítulo ${chapterNum}`)
-    );
-    (normalized as any).status =
-      (normalized as any).status === 'COMPLETED' || (normalized as any).status === 'DRAFTED'
-        ? (normalized as any).status
-        : 'PENDING';
-    (normalized as any).target_words = typeof (normalized as any).target_words === 'number' ? (normalized as any).target_words : 0;
-    return normalized;
-  });
-
-  (state as any).chapters = ensureArray<any>((state as any).chapters, []).map((c: any, idx: number) => {
-    const cn = Number(c?.chapter_number ?? c?.chapterNumber ?? idx + 1) || (idx + 1);
-    const normalized: AnyRecord = isRecord(c) ? { ...(c as AnyRecord) } : {};
-    (normalized as any).chapter_number = cn;
-    (normalized as any).id = ensureString((normalized as any).id, `sec_chapter_${String(cn).padStart(2, '0')}`);
-    (normalized as any).title = ensureString((normalized as any).title, `Capítulo ${cn}`).trim();
-    (normalized as any).text = ensureString((normalized as any).text, '');
-    (normalized as any).status = (normalized as any).status === 'COMPLETED' ? 'COMPLETED' : 'PENDING';
-    (normalized as any).words = typeof (normalized as any).words === 'number' ? (normalized as any).words : 0;
-    return normalized;
-  });
-
-  const continuity = isRecord((state as any).continuity_pack) ? { ...((state as any).continuity_pack as AnyRecord) } : {};
-  (continuity as any).style_guide = ensureString((continuity as any).style_guide, '');
-  (continuity as any).canon = ensureString((continuity as any).canon, '');
-  (continuity as any).outline_progress = ensureString((continuity as any).outline_progress, '');
-  (continuity as any).open_loops = ensureArray((continuity as any).open_loops, []);
-  (continuity as any).chapter_summaries = ensureArray((continuity as any).chapter_summaries, []);
-  (continuity as any).next_chapter_plan = ensureArray((continuity as any).next_chapter_plan, []);
-  (state as any).continuity_pack = continuity;
-
-  (state as any).project_id = ensureString((state as any).project_id, ensureString((state as any).projectId, `proj_${Date.now()}`));
-  (state as any).book_title = ensureString((state as any).book_title, ensureString((state as any).bookTitle, 'Libro sin título'));
-  (state as any).book_topic = ensureString((state as any).book_topic, ensureString((state as any).bookTopic, ''));
-  (state as any).audience = ensureString((state as any).audience, '');
-  (state as any).tone_style = ensureString((state as any).tone_style, '');
-
-  return state as unknown as ProjectState;
-}
-
-function shouldPreservePrevText(prevText: string, nextText: string): boolean {
-  const prev = (prevText ?? '').trim();
-  const next = (nextText ?? '').trim();
-  if (!prev) return false;
-  if (!next) return true;
-  if (isPlaceholderText(next)) return true;
-  if (next.length < Math.max(160, Math.floor(prev.length * 0.7))) return true;
-  const prevW = countWordsQuick(prev);
-  const nextW = countWordsQuick(next);
-  if (prevW >= 220 && nextW < Math.max(80, Math.floor(prevW * 0.6))) return true;
-  return false;
-}
-
-function mergeProjectState(prev: ProjectState | undefined, next: ProjectState): ProjectState {
-  if (!prev) return next;
-
-  const merged: AnyRecord = { ...(prev as any), ...(next as any) };
-
-  merged.proposal = { ...(prev as any).proposal, ...(next as any).proposal };
-  if (!ensureString((merged.proposal as any)?.text, '').trim() && ensureString((prev as any).proposal?.text, '').trim()) {
-    merged.proposal = { ...(prev as any).proposal };
-  }
-
-  merged.introduction = { ...(prev as any).introduction, ...(next as any).introduction };
-  if (
-    !ensureString((merged.introduction as any)?.text, '').trim() &&
-    ensureString((prev as any).introduction?.text, '').trim()
-  ) {
-    merged.introduction = { ...(prev as any).introduction };
-  }
-
-  const prevOutline = ensureArray<any>((prev as any).outline_12, []);
-  const nextOutline = ensureArray<any>((next as any).outline_12, []);
-  const outlineByNum = new Map<number, any>();
-  for (const o of prevOutline) outlineByNum.set(o.chapter_number, o);
-  for (const o of nextOutline) outlineByNum.set(o.chapter_number, { ...outlineByNum.get(o.chapter_number), ...o });
-  merged.outline_12 = Array.from(outlineByNum.values()).sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
-
-  const prevCh = ensureArray<any>((prev as any).chapters, []);
-  const nextCh = ensureArray<any>((next as any).chapters, []);
-  const byNum = new Map<number, any>();
-  for (const c of prevCh) {
-    const cn = Number(c?.chapter_number ?? 0) || 0;
-    if (cn > 0) byNum.set(cn, c);
-  }
-
-  for (const c of nextCh) {
-    const cn = Number(c?.chapter_number ?? 0) || 0;
-    if (!cn) continue;
-    const existing = byNum.get(cn);
-    const prevText = ensureString(existing?.text, '');
-    const nextText = ensureString(c?.text, '');
-    const mergedC = { ...(existing || {}), ...c, chapter_number: cn };
-    if (existing && shouldPreservePrevText(prevText, nextText)) {
-      mergedC.text = existing.text;
-      mergedC.status = existing.status;
-      mergedC.words = existing.words;
-    }
-    byNum.set(cn, mergedC);
-  }
-
-  merged.chapters = Array.from(byNum.values()).sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
-
-  merged.continuity_pack = { ...(prev as any).continuity_pack, ...(next as any).continuity_pack };
-  for (const k of ['style_guide', 'canon', 'outline_progress'] as const) {
-    if (
-      !ensureString((merged.continuity_pack as any)?.[k], '').trim() &&
-      ensureString((prev as any).continuity_pack?.[k], '').trim()
-    ) {
-      (merged.continuity_pack as any)[k] = (prev as any).continuity_pack[k];
-    }
-  }
-
-  return merged as unknown as ProjectState;
-}
-
-/* ----------------------- composer state compaction ----------------------- */
-
-function clipText(s: string, maxChars: number): string {
-  const t = (s ?? '').trim();
-  if (!t) return '';
-  if (t.length <= maxChars) return t;
-  return `[[CLIPPED ${t.length - maxChars} chars]]\n` + t.slice(t.length - maxChars);
-}
-
-function compactStateForComposer(project: Project): AnyRecord {
-  const st = ((project as any).state as AnyRecord) ?? {};
-  const dash = ((project as any).dashboard as AnyRecord) ?? {};
-  const md = ((project as any).master_document as AnyRecord) ?? {};
-
-  return {
-    ...st,
-    dashboard: dash,
-    master_document: {
-      title: ensureString((md as any).title, ''),
-      text: clipText(ensureString((md as any).text, ''), MAX_MASTER_CHARS_TO_SEND),
-    },
-  };
-}
-
-/* ----------------------- Supabase <-> UI mapping ----------------------- */
-
-function mapDbFullToProject(db: any, sections: any[], masterLatest: any): Project {
-  const proposal = sections.find((s: any) => s?.type === 'PROPOSAL');
-  const intro = sections.find((s: any) => s?.type === 'INTRODUCTION');
-  const chapters = sections
-    .filter((s: any) => s?.type === 'CHAPTER')
-    .slice()
-    .sort((a: any, b: any) => (a?.chapter_number ?? 0) - (b?.chapter_number ?? 0))
-    .map((s: any) => ({
-      chapter_number: s?.chapter_number ?? 0,
-      title: ensureString(s?.title, s?.chapter_number ? `Capítulo ${s.chapter_number}` : 'Capítulo'),
-      text: ensureString(s?.content, ''),
-      status: s?.status === 'COMPLETED' ? 'COMPLETED' : 'PENDING',
-      words: countWordsQuick(ensureString(s?.content, '')),
-    }));
-
-  const stateInput: AnyRecord = {
-    project_id: ensureString(db?.id, ''),
-    book_title: ensureString(db?.title, 'Libro sin título'),
-    book_topic: ensureString(db?.topic, ''),
-    audience: ensureString(db?.audience, ''),
-    tone_style: ensureString(db?.tone_style, ''),
-    outline_12: ensureArray<any>(db?.outline_12, []),
-    continuity_pack: (db?.continuity_pack ?? {}) as any,
-    proposal: {
-      id: 'sec_proposal',
-      text: ensureString(proposal?.content, ''),
-      status: proposal?.status === 'COMPLETED' ? 'COMPLETED' : 'PENDING',
-      words: countWordsQuick(ensureString(proposal?.content, '')),
-    },
-    introduction: {
-      id: 'sec_introduction',
-      text: ensureString(intro?.content, ''),
-      status: intro?.status === 'COMPLETED' ? 'COMPLETED' : 'PENDING',
-      words: countWordsQuick(ensureString(intro?.content, '')),
-    },
-    chapters,
-  };
-
-  const state = normalizeProjectState(stateInput);
-  const masterText = ensureString(masterLatest?.content, '').trim() || buildMasterFromState(state, ensureString(db?.title, '')).trim();
-
-  const p: Project = {
-    id: ensureString(db?.id, ''),
-    title: ensureString(db?.title, 'Libro sin título'),
-    state,
-    dashboard: db?.dossier ?? null,
-    master_document: {
-      title: ensureString(masterLatest?.title, ensureString(db?.title, 'Documento maestro')),
-      text: masterText,
-      chunks: masterText ? [{ index: 1, total: 1, text: masterText }] : [],
-    } as any,
-    generation_progress: {} as any,
-  } as Project;
-
-  (p as any).generation_progress = recomputeGenerationProgress(p);
-  return p;
-}
-
-/* ----------------------------------- App ----------------------------------- */
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="w-full rounded-xl bg-slate-800 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-100 transition hover:bg-slate-700"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const App: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([initialWelcomeMessage]);
   const [isLoading, setIsLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'plan' | 'book'>('plan');
+  const [viewMode, setViewMode] = useState<"plan" | "book">("plan");
   const [error, setError] = useState<string | null>(null);
 
   // auth
   const [session, setSession] = useState<any>(null);
-  const [email, setEmail] = useState('');
+  const [authMode, setAuthMode] = useState<AuthMode>("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // intake (signup)
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const [authBusy, setAuthBusy] = useState(false);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
 
-  // global chapter length (aplica a TODOS los libros)
+  // approval gate
+  const [profile, setProfile] = useState<AccessProfile | null>(null);
+  const [request, setRequest] = useState<AccessRequest | null>(null);
+  const [gateBusy, setGateBusy] = useState(false);
+
+  // device/session gate
+  const [deviceId, setDeviceId] = useState("");
+  const [deviceAllowed, setDeviceAllowed] = useState(false);
+  const [deviceBusy, setDeviceBusy] = useState(false);
+  const [deviceNotice, setDeviceNotice] = useState<string | null>(null);
+  const [deviceError, setDeviceError] = useState<string | null>(null);
+  const [otherDevice, setOtherDevice] = useState<DeviceConflictInfo | null>(null);
+
+  // global chapter setting
   const [defaultChapterWords, setDefaultChapterWords] = useState<number>(3000);
   const [savingSettings, setSavingSettings] = useState(false);
 
-  // Ref sync: evita closures viejas
+  // refs
   const projectsRef = useRef<Project[]>(projects);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const deviceAutoClaimAttemptedRef = useRef(false);
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
 
-  // Single-flight global: solo 1 generación a la vez
+  // single-flight generation
   const globalGenLockRef = useRef(false);
   const requestSeqRef = useRef<Record<string, number>>({});
+
   const activeProject = useMemo(
     () => projects.find((p) => p.id === activeProjectId) ?? null,
     [projects, activeProjectId]
   );
 
+  const anyGenerating = useMemo(() => {
+    for (const p of projects) {
+      const gp: GenerationProgress = ((p as any).generation_progress as any) || {};
+      if (Object.values(gp).some((v) => v === "generating")) return true;
+    }
+    return false;
+  }, [projects]);
+
   const updateProjectById = useCallback((projectId: string, updater: (p: Project) => Project) => {
     const run = () => setProjects((prev) => prev.map((p) => (p.id === projectId ? updater(p) : p)));
-    if (typeof startTransition === 'function') startTransition(run);
+    if (typeof startTransition === "function") startTransition(run);
     else run();
   }, []);
 
@@ -801,15 +407,180 @@ const App: React.FC = () => {
     [updateProjectById]
   );
 
-  const anyGenerating = useMemo(() => {
-    for (const p of projects) {
-      const gp = (p as any).generation_progress || {};
-      if (Object.values(gp).some((v) => v === 'generating')) return true;
-    }
-    return false;
-  }, [projects]);
+  /* -------------------------- session sync -------------------------- */
 
-  /* --------------------------- Supabase loading --------------------------- */
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await getSession();
+        setSession(s);
+      } catch (e) {
+        setError(normalizeError(e));
+      }
+    })();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+
+      if (!newSession) {
+        setProfile(null);
+        setRequest(null);
+        deviceAutoClaimAttemptedRef.current = false;
+        setDeviceAllowed(false);
+        setDeviceBusy(false);
+        setDeviceNotice(null);
+        setDeviceError(null);
+        setOtherDevice(null);
+        setProjects([]);
+        setActiveProjectId(null);
+        setMessages([initialWelcomeMessage]);
+        setError(null);
+        setAuthNotice(null);
+      }
+    });
+
+    return () => {
+      sub?.subscription?.unsubscribe();
+    };
+  }, []);
+
+  /* -------------------------- approval gate -------------------------- */
+
+  const refreshApprovalStatus = useCallback(async () => {
+    const uid = session?.user?.id ?? null;
+    const em = session?.user?.email ?? "";
+    if (!uid) return;
+
+    setGateBusy(true);
+    try {
+      // IMPORTANTE:
+      // El cliente NO debe hacer upsert con has_access:false cuando el profile ya existe.
+      // Si lo hace, puede pisar o bloquear una aprobación manual.
+      let { data: pData, error: pErr } = await supabase
+        .from("profiles")
+        .select("email,has_access,full_name,phone")
+        .eq("user_id", uid)
+        .maybeSingle();
+
+      if (pErr) throw pErr;
+
+      if (!pData) {
+        const { error: insertProfileErr } = await supabase.from("profiles").insert({
+          user_id: uid,
+          email: em,
+          full_name: fullName.trim() || null,
+          phone: phone.trim() || null,
+          // NO mandamos has_access desde el cliente.
+          // La DB lo deja en false por default y solo el admin/backend lo cambia a true.
+        });
+
+        if (insertProfileErr) throw insertProfileErr;
+
+        const refreshed = await supabase
+          .from("profiles")
+          .select("email,has_access,full_name,phone")
+          .eq("user_id", uid)
+          .maybeSingle();
+
+        if (refreshed.error) throw refreshed.error;
+        pData = refreshed.data;
+      } else {
+        const profilePatch: Record<string, string | null> = {};
+
+        if (em && em !== (pData as any).email) profilePatch.email = em;
+        if (fullName.trim() && fullName.trim() !== ((pData as any).full_name ?? "")) profilePatch.full_name = fullName.trim();
+        if (phone.trim() && phone.trim() !== ((pData as any).phone ?? "")) profilePatch.phone = phone.trim();
+
+        if (Object.keys(profilePatch).length > 0) {
+          const { error: updateProfileErr } = await supabase
+            .from("profiles")
+            .update(profilePatch)
+            .eq("user_id", uid);
+
+          if (updateProfileErr) throw updateProfileErr;
+
+          const refreshed = await supabase
+            .from("profiles")
+            .select("email,has_access,full_name,phone")
+            .eq("user_id", uid)
+            .maybeSingle();
+
+          if (refreshed.error) throw refreshed.error;
+          pData = refreshed.data;
+        }
+      }
+
+      const hasAccess = Boolean((pData as any)?.has_access);
+
+      setProfile({
+        email: ensureString((pData as any)?.email, em),
+        has_access: hasAccess,
+        full_name: (pData as any)?.full_name ?? null,
+        phone: (pData as any)?.phone ?? null,
+      });
+
+      const { data: rData, error: rErr } = await supabase
+        .from("access_requests")
+        .select("id,status,created_at")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (rErr) throw rErr;
+
+      if (!rData?.[0] && !hasAccess) {
+        const { error: insertRequestErr } = await supabase.from("access_requests").insert({
+          user_id: uid,
+          email: em,
+          full_name: fullName.trim() || ((pData as any)?.full_name ?? null),
+          phone: phone.trim() || ((pData as any)?.phone ?? null),
+          status: "PENDING",
+        });
+
+        if (insertRequestErr) throw insertRequestErr;
+
+        const { data: r2, error: r2Err } = await supabase
+          .from("access_requests")
+          .select("id,status,created_at")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (r2Err) throw r2Err;
+        setRequest((r2?.[0] ?? null) as any);
+      } else {
+        setRequest((rData?.[0] ?? null) as any);
+      }
+    } catch (e) {
+      setError(`Setup gate (profiles/access_requests): ${normalizeError(e)}`);
+      setProfile({ email: session?.user?.email ?? "", has_access: false });
+    } finally {
+      setGateBusy(false);
+    }
+  }, [fullName, phone, session?.user?.email, session?.user?.id]);
+
+  useEffect(() => {
+    if (!session) return;
+    refreshApprovalStatus().catch((e) => setError(normalizeError(e)));
+  }, [session, refreshApprovalStatus]);
+
+  /* -------------------------- load user settings when approved -------------------------- */
+
+  useEffect(() => {
+    if (!session) return;
+    if (!profile?.has_access) return;
+    (async () => {
+      try {
+        const s = await getUserSettings();
+        const v = Number((s as any)?.default_chapter_words ?? 3000) || 3000;
+        setDefaultChapterWords(Math.max(500, Math.min(20000, v)));
+      } catch {
+        setDefaultChapterWords(3000);
+      }
+    })();
+  }, [profile?.has_access, session]);
+
+  /* -------------------------- projects loading (approved only) -------------------------- */
 
   const hydrateProject = useCallback(async (projectId: string) => {
     const { project, sections, masterLatest } = await getProjectFull(projectId);
@@ -824,7 +595,6 @@ const App: React.FC = () => {
 
   const refreshList = useCallback(async () => {
     const list = await listProjects();
-    // mantenemos objetos existentes si ya están hidratados
     setProjects((prev) => {
       const prevById = new Map(prev.map((p) => [p.id, p]));
       const next: Project[] = [];
@@ -832,12 +602,11 @@ const App: React.FC = () => {
         const existing = prevById.get(row.id);
         if (existing) next.push(existing);
         else {
-          // stub mínimo
           next.push({
             id: row.id,
             title: row.title,
-            state: normalizeProjectState({ project_id: row.id, book_title: row.title, book_topic: row.topic ?? '', outline_12: [] }),
-            master_document: { title: row.title, text: '', chunks: [] } as any,
+            state: normalizeProjectState({ project_id: row.id, book_title: row.title, book_topic: row.topic ?? "", outline_12: [] }),
+            master_document: { title: row.title, text: "", chunks: [] } as any,
             dashboard: null,
             generation_progress: {} as any,
           } as any);
@@ -847,77 +616,39 @@ const App: React.FC = () => {
     });
   }, []);
 
-  // ✅ Auto-selección SOLO una vez por sesión (evita que “Crear nuevo” te rebote al primer proyecto).
+  const didLoadListRef = useRef(false);
+  useEffect(() => {
+    if (!profile?.has_access) return;
+    if (didLoadListRef.current) return;
+    didLoadListRef.current = true;
+    refreshList().catch((e) => setError(normalizeError(e)));
+  }, [profile?.has_access, refreshList]);
+
   const didAutoSelectRef = useRef(false);
-  const sessionUserId = session?.user?.id ?? null;
-
   useEffect(() => {
-    // reset cuando cambia el usuario (login/logout)
-    didAutoSelectRef.current = false;
-  }, [sessionUserId]);
-
-  useEffect(() => {
-    if (!session) return;
+    if (!profile?.has_access) return;
     if (didAutoSelectRef.current) return;
-
-    // si ya hay uno seleccionado, marcamos y salimos
     if (activeProjectId) {
       didAutoSelectRef.current = true;
       return;
     }
-
-    // si tenemos lista, seleccionamos el primero UNA sola vez
     if (projects.length > 0) {
       didAutoSelectRef.current = true;
       setActiveProjectId(projects[0].id);
     }
-  }, [session, projects, activeProjectId]);
-
-
+  }, [activeProjectId, profile?.has_access, projects]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const s = await getSession();
-        setSession(s);
-        if (s) {
-          await refreshList();
-        }
-      } catch (e) {
-        setError(normalizeError(e));
-      }
-    })();
-  }, [refreshList]);
+    if (!profile?.has_access) return;
+    if (!activeProjectId) return;
 
-  // Carga preferencia global de longitud por capítulo (por usuario).
-  useEffect(() => {
-    if (!session) return;
-    (async () => {
-      try {
-        const s = await getUserSettings();
-        const v = Number((s as any)?.default_chapter_words ?? 3000) || 3000;
-        setDefaultChapterWords(Math.max(500, Math.min(20000, v)));
-      } catch {
-        // si no existe tabla user_settings todavía, usamos fallback
-        setDefaultChapterWords(3000);
-      }
-    })();
-  }, [session]);
-
-
-  // Auto-hidratación cuando seleccionas proyecto
-  useEffect(() => {
-    if (!session || !activeProjectId) return;
     const p = projects.find((x) => x.id === activeProjectId);
-    // si no tiene outline/chapters/master, hidratamos
     const st: any = (p as any)?.state ?? {};
-    const maybeEmpty = !p || (!ensureArray(st?.chapters, []).length && !ensureString((p as any)?.master_document?.text, '').trim());
-    if (maybeEmpty) {
-      hydrateProject(activeProjectId).catch((e) => setError(normalizeError(e)));
-    }
-  }, [activeProjectId, hydrateProject, projects, session]);
+    const maybeEmpty = !p || (!ensureArray(st?.chapters, []).length && !ensureString((p as any)?.master_document?.text, "").trim());
+    if (maybeEmpty) hydrateProject(activeProjectId).catch((e) => setError(normalizeError(e)));
+  }, [activeProjectId, hydrateProject, profile?.has_access, projects]);
 
-  /* --------------------------- Supabase persistence --------------------------- */
+  /* -------------------------- persistence helpers -------------------------- */
 
   const persistProjectMeta = useCallback(async (proj: Project) => {
     const st: any = proj.state ?? {};
@@ -932,31 +663,32 @@ const App: React.FC = () => {
     });
   }, []);
 
-  const upsertOneSectionFromState = useCallback(async (proj: Project, kind: 'proposal' | 'intro' | 'chapter', chapterNum?: number) => {
+  const upsertOneSectionFromState = useCallback(async (proj: Project, kind: "proposal" | "intro" | "chapter", chapterNum?: number) => {
     const st: any = proj.state ?? {};
-    if (kind === 'proposal') {
-      const text = ensureString(st?.proposal?.text, '');
+
+    if (kind === "proposal") {
+      const text = ensureString(st?.proposal?.text, "");
       const sid = await upsertSection({
         project_id: proj.id,
-        type: 'PROPOSAL',
+        type: "PROPOSAL",
         chapter_number: null,
-        title: 'Propuesta editorial',
+        title: "Propuesta editorial",
         content: text,
-        status: ensureString(st?.proposal?.status, 'PENDING') === 'COMPLETED' ? 'COMPLETED' : 'PENDING',
+        status: ensureString(st?.proposal?.status, "PENDING") === "COMPLETED" ? "COMPLETED" : "PENDING",
       });
       await insertSectionVersion(sid, text);
       return;
     }
 
-    if (kind === 'intro') {
-      const text = ensureString(st?.introduction?.text, '');
+    if (kind === "intro") {
+      const text = ensureString(st?.introduction?.text, "");
       const sid = await upsertSection({
         project_id: proj.id,
-        type: 'INTRODUCTION',
+        type: "INTRODUCTION",
         chapter_number: null,
-        title: 'Introducción',
+        title: "Introducción",
         content: text,
-        status: ensureString(st?.introduction?.status, 'PENDING') === 'COMPLETED' ? 'COMPLETED' : 'PENDING',
+        status: ensureString(st?.introduction?.status, "PENDING") === "COMPLETED" ? "COMPLETED" : "PENDING",
       });
       await insertSectionVersion(sid, text);
       return;
@@ -964,16 +696,18 @@ const App: React.FC = () => {
 
     const n = Number(chapterNum ?? 0) || 0;
     if (!n) return;
+
     const ch = ensureArray<any>(st?.chapters, []).find((c: any) => Number(c?.chapter_number ?? 0) === n);
     const title = ensureString(ch?.title, `Capítulo ${n}`);
-    const text = ensureString(ch?.text, '');
+    const text = ensureString(ch?.text, "");
+
     const sid = await upsertSection({
       project_id: proj.id,
-      type: 'CHAPTER',
+      type: "CHAPTER",
       chapter_number: n,
       title,
       content: text,
-      status: ensureString(ch?.status, 'PENDING') === 'COMPLETED' ? 'COMPLETED' : 'PENDING',
+      status: ensureString(ch?.status, "PENDING") === "COMPLETED" ? "COMPLETED" : "PENDING",
     });
     await insertSectionVersion(sid, text);
   }, []);
@@ -984,165 +718,316 @@ const App: React.FC = () => {
     return masterText;
   }, []);
 
-  /* ------------------------------ composer calls ------------------------------ */
+  /* -------------------------- auth actions -------------------------- */
 
-  
-const callComposer = useCallback(async (task: ComposerTask, state: AnyRecord): Promise<EngineResult> => {
-  // ✅ DEV (npm run dev / Vite): Vite NO sirve /api/composer, así que llamamos directo a Gemini.
-  // ✅ PROD (Vercel): usamos /api/composer para no exponer la API key.
-  if (import.meta.env.DEV) {
-    if (!DEV_GEMINI_API_KEY) {
-      throw new Error('Falta VITE_GEMINI_API_KEY en .env.local (solo dev).');
-    }
-
-    // Dynamic import para evitar bundling innecesario cuando no se usa.
-    const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: DEV_GEMINI_API_KEY });
-
-    const prompt = `TASK:\n${JSON.stringify(task)}\n\nPROJECT_STATE:\n${JSON.stringify(state)}`;
-
-    const response = await withRetry(() => ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: (() => {
-        const targetW =
-          typeof task.target_length_words === 'number' && Number.isFinite(task.target_length_words)
-            ? Math.max(0, Math.floor(task.target_length_words))
-            : 0;
-
-        const isChapter = task.action === 'GENERATE_CHAPTER';
-        const maxOut = isChapter
-          ? Math.min(32000, Math.max(14000, Math.floor(targetW > 0 ? targetW * 3.2 : 20000)))
-          : 8192;
-
-        return {
-          systemInstruction: DEV_SYSTEM_PROMPT,
-          responseMimeType: 'application/json',
-          maxOutputTokens: maxOut,
-          temperature: isChapter ? 0.85 : 0.6,
-        };
-      })() as any,
-    }));
-
-    const parsed = safeJsonParse(response.text || '');
-    return validateEngineResult(parsed);
-  }
-
-  // ✅ PROD: backend composer (Vercel Function /api/composer)
-  const r = await fetch('/api/composer', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      task,
-      state,
-      model: GEMINI_MODEL,
-    }),
-  });
-
-  const raw = await r.text();
-
-  let data: any;
-  try {
-    data = safeJsonParse(raw);
-  } catch {
+  const handleSignIn = useCallback(async () => {
+    setError(null);
+    setAuthNotice(null);
+    setAuthBusy(true);
     try {
-      data = JSON.parse(raw);
-    } catch {
-      data = { ok: false, error: raw || `HTTP ${r.status}` };
+      const e = email.trim();
+      if (!e || !password) throw new Error("Escribe email y clave.");
+      const { data, error: signErr } = await supabase.auth.signInWithPassword({ email: e, password });
+      if (signErr) throw signErr;
+      setSession(data.session);
+      await refreshApprovalStatus();
+    } catch (e) {
+      setError(normalizeError(e));
+    } finally {
+      setAuthBusy(false);
     }
-  }
+  }, [email, password, refreshApprovalStatus]);
 
-  if (!r.ok) {
-    const msg =
-      ensureString(data?.error?.message, '') ||
-      ensureString(data?.error, '') ||
-      ensureString(data?.message, '') ||
-      `Error HTTP ${r.status}`;
-    if (r.status === 429) throw new Error(`Rate limit / cuota: ${msg}`);
-    throw new Error(msg);
-  }
+  const handleSignUp = useCallback(async () => {
+    setError(null);
+    setAuthNotice(null);
+    setAuthBusy(true);
+    try {
+      const e = email.trim();
+      const name = fullName.trim();
+      const ph = phone.trim();
 
-  return validateEngineResult(data);
-}, []);
+      if (!e || !password) throw new Error("Escribe email y clave.");
+      if (!name) throw new Error("Escribe tu nombre.");
+      if (!ph) throw new Error("Escribe tu WhatsApp/teléfono.");
 
-const processResponse = useCallback(
-    (result: EngineResult, currentProject?: Project, ctx?: { action?: string; chapterNum?: number }): Project => {
-      const dashboard = isRecord(result.dashboard) ? (result.dashboard as AnyRecord) : {};
-      const nextState = normalizeProjectState(result.project_state_updated);
+      const { data, error: upErr } = await supabase.auth.signUp({ email: e, password });
+      if (upErr) throw upErr;
 
-      // 🔒 anti-motor-loco: si generas capítulo N, tratamos respuesta como patch solo de ese capítulo
-      if (ctx?.action === 'GENERATE_CHAPTER' && ctx?.chapterNum) {
-        const expected = ctx.chapterNum;
-        const chs = ensureArray<any>((nextState as any).chapters, []);
-        const pickWords = (x: any) => countWordsQuick(ensureString(x?.text, ''));
-        let chosen = chs.find((c: any) => Number(c?.chapter_number ?? 0) === expected);
-        if (!chosen) {
-          chosen = chs
-            .filter((c: any) => ensureString(c?.text, '').trim())
-            .slice()
-            .sort((a: any, b: any) => pickWords(b) - pickWords(a))[0];
-        }
-        if (chosen) {
-          (chosen as any).chapter_number = expected;
-          (chosen as any).title = ensureString((chosen as any).title, `Capítulo ${expected}`);
-          (nextState as any).chapters = [chosen];
-        } else {
-          (nextState as any).chapters = [];
+      if (!data.session) throw new Error('Tu Supabase tiene "Confirm email" activado. Desactívalo para flujo inmediato.');
+
+      setSession(data.session);
+
+      const uid = data.session.user.id;
+
+      // IMPORTANTE:
+      // Nunca hacemos upsert con has_access:false desde el cliente.
+      // Si el usuario ya fue aprobado, un upsert así puede tumbar o bloquear el acceso.
+      const { data: existingProfile, error: existingProfileErr } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("user_id", uid)
+        .maybeSingle();
+
+      if (existingProfileErr) throw existingProfileErr;
+
+      if (!existingProfile) {
+        const { error: insertProfileErr } = await supabase.from("profiles").insert({
+          user_id: uid,
+          email: e,
+          full_name: name,
+          phone: ph,
+        });
+
+        if (insertProfileErr) throw insertProfileErr;
+      } else {
+        const { error: updateProfileErr } = await supabase
+          .from("profiles")
+          .update({
+            email: e,
+            full_name: name,
+            phone: ph,
+          })
+          .eq("user_id", uid);
+
+        if (updateProfileErr) throw updateProfileErr;
+      }
+
+      const { data: existingRequest, error: existingRequestErr } = await supabase
+        .from("access_requests")
+        .select("id")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (existingRequestErr) throw existingRequestErr;
+
+      if (!existingRequest?.[0]) {
+        const { error: requestErr } = await supabase.from("access_requests").insert({
+          user_id: uid,
+          email: e,
+          full_name: name,
+          phone: ph,
+          status: "PENDING",
+        });
+
+        if (requestErr) throw requestErr;
+      }
+
+      await refreshApprovalStatus();
+    } catch (e) {
+      setError(normalizeError(e));
+    } finally {
+      setAuthBusy(false);
+    }
+  }, [email, fullName, password, phone, refreshApprovalStatus]);
+
+  const clearDeviceTimers = useCallback(() => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+
+    if (heartbeatTimerRef.current) {
+      clearInterval(heartbeatTimerRef.current);
+      heartbeatTimerRef.current = null;
+    }
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    clearDeviceTimers();
+
+    try {
+      const currentDeviceId = deviceId || (typeof window !== "undefined" ? window.localStorage.getItem(DEVICE_STORAGE_KEY) || "" : "");
+      if (currentDeviceId) {
+        await supabase.rpc("revoke_my_device_session", {
+          p_device_id: currentDeviceId,
+        });
+      }
+    } catch {
+      // Si la RPC no existe o falla, igual cerramos Auth.
+    }
+
+    deviceAutoClaimAttemptedRef.current = false;
+    setDeviceAllowed(false);
+    setDeviceBusy(false);
+    setDeviceNotice(null);
+    setDeviceError(null);
+    setOtherDevice(null);
+    await supabase.auth.signOut();
+  }, [clearDeviceTimers, deviceId]);
+
+
+  /* -------------------------- device/session gate -------------------------- */
+
+  const claimDeviceSession = useCallback(async (opts?: { force?: boolean }) => {
+    if (!session?.user?.id) return false;
+    if (!profile?.has_access) return false;
+
+    const force = Boolean(opts?.force);
+    const nextDeviceId = deviceId || getOrCreateDeviceId();
+
+    setDeviceId(nextDeviceId);
+    setDeviceBusy(true);
+    setDeviceError(null);
+    setDeviceNotice(null);
+
+    try {
+      if (!force) {
+        const { data: activeData, error: activeErr } = await supabase.rpc("get_active_device_session", {
+          p_device_id: nextDeviceId,
+        });
+
+        if (activeErr) throw activeErr;
+
+        const row = Array.isArray(activeData) ? activeData[0] : activeData;
+        const hasOther = Boolean((row as any)?.has_other_active_device);
+
+        if (hasOther) {
+          setOtherDevice({
+            active_device_label: (row as any)?.active_device_label ?? null,
+            active_last_seen_at: (row as any)?.active_last_seen_at ?? null,
+          });
+          setDeviceAllowed(false);
+          return false;
         }
       }
 
-      const mergedState = mergeProjectState(currentProject?.state as any, nextState);
-      const stateMaster = buildMasterFromState(mergedState, ensureString(dashboard.book_title, currentProject?.title)).trim();
-      const prevMaster = ensureString((currentProject as any)?.master_document?.text, '').trim();
-      const finalMaster = stateMaster || prevMaster;
+      const { error: claimErr } = await supabase.rpc("claim_device_session", {
+        p_device_id: nextDeviceId,
+        p_device_label: getDeviceLabel(),
+        p_user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      });
 
-      const updatedProject: Project = {
-        id: ensureString((currentProject as any)?.id, ensureString((mergedState as any).project_id, `proj_${Date.now()}`)),
-        title: ensureString(dashboard.book_title, currentProject?.title || ensureString((mergedState as any).book_title, 'Libro sin título')),
-        state: mergedState,
-        master_document: {
-          title: ensureString(dashboard.book_title, ensureString((mergedState as any).book_title, 'Documento maestro')),
-          text: finalMaster,
-          chunks: finalMaster ? [{ index: 1, total: 1, text: finalMaster }] : [],
-        } as any,
-        dashboard: result.dashboard as any,
-        generation_progress: currentProject ? ({ ...(((currentProject as any).generation_progress as AnyRecord) || {}) } as any) : ({} as any),
-      } as Project;
+      if (claimErr) throw claimErr;
 
-      (updatedProject as any).generation_progress = recomputeGenerationProgress(updatedProject);
-      return updatedProject;
-    },
-    []
-  );
+      setOtherDevice(null);
+      setDeviceAllowed(true);
+      setDeviceNotice(force ? "Sesión anterior cerrada. Entraste en este dispositivo." : null);
+      return true;
+    } catch (e) {
+      setDeviceAllowed(false);
+      setDeviceError(`Device gate: ${normalizeError(e)}`);
+      return false;
+    } finally {
+      setDeviceBusy(false);
+    }
+  }, [deviceId, profile?.has_access, session?.user?.id]);
 
-  /* ------------------------------ UI handlers ------------------------------ */
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    if (!profile?.has_access) return;
+    if (deviceAllowed) return;
+    if (deviceBusy) return;
+    if (deviceAutoClaimAttemptedRef.current) return;
 
-  const handleAuth = useCallback(async () => {
+    deviceAutoClaimAttemptedRef.current = true;
+    claimDeviceSession().catch((e) => setDeviceError(`Device gate: ${normalizeError(e)}`));
+  }, [claimDeviceSession, deviceAllowed, deviceBusy, profile?.has_access, session?.user?.id]);
+
+  useEffect(() => {
+    if (!session?.user?.id || !profile?.has_access || !deviceAllowed || !deviceId) return;
+
+    const signOutForInactivity = async () => {
+      clearDeviceTimers();
+
+      try {
+        await supabase.rpc("revoke_my_device_session", {
+          p_device_id: deviceId,
+        });
+      } catch {
+        // Igual cerramos sesión local.
+      }
+
+      setDeviceAllowed(false);
+      setDeviceNotice(null);
+      setOtherDevice(null);
+      setDeviceError("Sesión cerrada por 30 minutos sin actividad.");
+      await supabase.auth.signOut();
+    };
+
+    const resetIdleTimer = () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(() => {
+        signOutForInactivity().catch(() => {});
+      }, IDLE_TIMEOUT_MS);
+    };
+
+    const events: Array<keyof WindowEventMap> = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+
+    resetIdleTimer();
+
+    for (const eventName of events) {
+      window.addEventListener(eventName, resetIdleTimer, { passive: true });
+    }
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) resetIdleTimer();
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      for (const eventName of events) {
+        window.removeEventListener(eventName, resetIdleTimer);
+      }
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+        idleTimerRef.current = null;
+      }
+    };
+  }, [clearDeviceTimers, deviceAllowed, deviceId, profile?.has_access, session?.user?.id]);
+
+  useEffect(() => {
+    if (!session?.user?.id || !profile?.has_access || !deviceAllowed || !deviceId) return;
+
+    const heartbeat = async () => {
+      try {
+        const { data, error: touchErr } = await supabase.rpc("touch_device_session", {
+          p_device_id: deviceId,
+        });
+
+        if (touchErr) throw touchErr;
+
+        if (data !== true) {
+          clearDeviceTimers();
+          setDeviceAllowed(false);
+          setDeviceError("Tu sesión venció o fue reemplazada por otro dispositivo.");
+          await supabase.auth.signOut();
+        }
+      } catch (e) {
+        setDeviceError(`Heartbeat: ${normalizeError(e)}`);
+      }
+    };
+
+    heartbeatTimerRef.current = setInterval(() => {
+      heartbeat().catch(() => {});
+    }, HEARTBEAT_MS);
+
+    heartbeat().catch(() => {});
+
+    return () => {
+      if (heartbeatTimerRef.current) {
+        clearInterval(heartbeatTimerRef.current);
+        heartbeatTimerRef.current = null;
+      }
+    };
+  }, [clearDeviceTimers, deviceAllowed, deviceId, profile?.has_access, session?.user?.id]);
+
+
+  /* -------------------------- app UI actions -------------------------- */
+
+  const handleSelectProject = useCallback(async (id: string) => {
+    setActiveProjectId(id);
+    setViewMode("plan");
     setError(null);
-    setAuthNotice(null);
     try {
-      const e = email.trim();
-      if (!e) throw new Error('Escribe tu email.');
-      await signInMagicLink(e);
-      setAuthNotice('Listo: revisa tu correo (magic link). Cuando entres, recarga la página.');
+      await hydrateProject(id);
     } catch (e) {
       setError(normalizeError(e));
     }
-  }, [email]);
-
-  const handleSelectProject = useCallback(
-    async (id: string) => {
-      setActiveProjectId(id);
-      setViewMode('plan');
-      setError(null);
-      try {
-        await hydrateProject(id);
-      } catch (e) {
-        setError(normalizeError(e));
-      }
-    },
-    [hydrateProject]
-  );
+  }, [hydrateProject]);
 
   const handleDeleteProject = useCallback(async (id: string) => {
     setError(null);
@@ -1158,219 +1043,184 @@ const processResponse = useCallback(
     }
   }, [activeProjectId]);
 
-  const handleStartNewBook = useCallback(
-    async (idea: string) => {
-      setIsLoading(true);
-      setError(null);
+  const handleStartNewBook = useCallback(async (idea: string) => {
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        const title = idea.length < 70 ? idea.trim() : 'Libro sin título';
-        const dbProject = await createProject({ title, topic: idea });
+    try {
+      const title = idea.length < 70 ? idea.trim() : "Libro sin título";
+      const dbProject = await createProject({ title, topic: idea });
 
-        // Genera dossier/outline con project_id real de Supabase
-        const task: ComposerTask = { action: 'BUILD_FULL_DOSSIER', target_length_words: 1500, active_view: 'DOSSIER' };
-        const seedState: Partial<ProjectState> = {
-          project_id: dbProject.id,
-          book_title: dbProject.title,
-          book_topic: idea,
-          outline_12: [],
-        };
+      const task: ComposerTask = { action: "BUILD_FULL_DOSSIER", target_length_words: 1500, active_view: "DOSSIER" };
+      const seedState: Partial<ProjectState> = {
+        project_id: dbProject.id,
+        book_title: dbProject.title,
+        book_topic: idea,
+        outline_12: [],
+      };
 
-        const result = await callComposer(task, seedState as AnyRecord);
+      const result = await callComposer({
+        task,
+        state: seedState,
+        model: GEMINI_MODEL,
+        isDev: import.meta.env.DEV,
+        devApiKey: DEV_GEMINI_API_KEY,
+        devSystemPrompt: DEV_SYSTEM_PROMPT,
+      });
 
-        // Procesa a estado UI
-        const baseStub: Project = {
-          id: dbProject.id,
-          title: dbProject.title,
-          state: normalizeProjectState(seedState as AnyRecord),
-          master_document: { title: dbProject.title, text: '', chunks: [] } as any,
-          dashboard: null,
-          generation_progress: {} as any,
-        } as any;
+      const baseStub: Project = {
+        id: dbProject.id,
+        title: dbProject.title,
+        state: normalizeProjectState(seedState as AnyRecord),
+        master_document: { title: dbProject.title, text: "", chunks: [] } as any,
+        dashboard: null,
+        generation_progress: {} as any,
+      } as any;
 
-        const updated = processResponse(result, baseStub);
+      const updated = processEngineResult(result as any, baseStub);
 
-        // Persistimos: meta + secciones + master
-        await persistProjectMeta(updated);
-        await upsertOneSectionFromState(updated, 'proposal');
-        await upsertOneSectionFromState(updated, 'intro');
+      await persistProjectMeta(updated);
+      await upsertOneSectionFromState(updated, "proposal");
+      await upsertOneSectionFromState(updated, "intro");
 
-        // Si el engine ya metió capítulos (a veces), los persistimos
-        const chs = ensureArray<any>((updated.state as any).chapters, []);
-        for (const c of chs) {
-          const n = Number(c?.chapter_number ?? 0) || 0;
-          if (n) await upsertOneSectionFromState(updated, 'chapter', n);
-        }
-
-        const masterText = await rebuildAndSnapshotMaster(updated);
-        const updatedWithMaster = {
-          ...updated,
-          master_document: { ...(updated as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
-        } as Project;
-        (updatedWithMaster as any).generation_progress = recomputeGenerationProgress(updatedWithMaster);
-
-        setProjects((prev) => [updatedWithMaster, ...prev.filter((p) => p.id !== updatedWithMaster.id)]);
-        setActiveProjectId(updatedWithMaster.id);
-        setViewMode('plan');
-
-        const now = Date.now();
-        setMessages((prev) => [
-          ...prev,
-          { id: `user-${now}`, role: 'user', content: idea },
-          {
-            id: `ai-${now + 1}`,
-            role: 'model',
-            content: `Expediente generado para **${updatedWithMaster.title}**. ¿Generamos propuesta, introducción o capítulo 1?`,
-          },
-        ]);
-      } catch (e) {
-        setError(normalizeError(e));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [callComposer, persistProjectMeta, processResponse, rebuildAndSnapshotMaster, upsertOneSectionFromState]
-  );
-
-  
-  const generateSectionCore = useCallback(
-    async (
-      action: string,
-      chapterNum?: number,
-      opts?: { bypassLock?: boolean }
-    ) => {
-      const proj = projectsRef.current.find((p) => p.id === activeProjectId);
-      if (!proj) return false;
-
-      setError(null);
-
-      const bypass = Boolean(opts?.bypassLock);
-
-      // Single-flight global (solo si NO estamos en un "batch" controlado)
-      if (!bypass) {
-        if (globalGenLockRef.current || anyGenerating) {
-          setError('Ya hay una generación en curso. Termina esa y luego lanzas otra.');
-          return false;
-        }
-        globalGenLockRef.current = true;
+      const chs = ensureArray<any>((updated.state as any).chapters, []);
+      for (const c of chs) {
+        const n = Number(c?.chapter_number ?? 0) || 0;
+        if (n) await upsertOneSectionFromState(updated, "chapter", n);
       }
 
-      const sectionId =
-        action === 'GENERATE_INTRODUCTION'
-          ? 'intro'
-          : action === 'GENERATE_PROPOSAL'
-            ? 'proposal'
-            : `chap-${chapterNum}`;
+      const masterText = await rebuildAndSnapshotMaster(updated);
+      const updatedWithMaster = {
+        ...updated,
+        master_document: { ...(updated as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
+      } as Project;
+      (updatedWithMaster as any).generation_progress = recomputeGenerationProgress(updatedWithMaster);
 
-      setSectionProgress(proj.id, sectionId, 'generating');
+      setProjects((prev) => [updatedWithMaster, ...prev.filter((p) => p.id !== updatedWithMaster.id)]);
+      setActiveProjectId(updatedWithMaster.id);
+      setViewMode("plan");
 
-      const seq = (requestSeqRef.current[proj.id] ?? 0) + 1;
-      requestSeqRef.current[proj.id] = seq;
+      const now = Date.now();
+      setMessages((prev) => [
+        ...prev,
+        { id: `user-${now}`, role: "user", content: idea },
+        { id: `ai-${now + 1}`, role: "model", content: `Expediente generado para **${updatedWithMaster.title}**.` },
+      ]);
+    } catch (e) {
+      setError(normalizeError(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [persistProjectMeta, rebuildAndSnapshotMaster, upsertOneSectionFromState]);
 
-      try {
-        const task: ComposerTask = {
-          action: action as ComposerTask['action'],
-          chapter_number: chapterNum,
-          target_length_words: (() => {
-            if (action !== 'GENERATE_CHAPTER') return 1200;
+  const generateSectionCore = useCallback(async (action: string, chapterNum?: number, opts?: { bypassLock?: boolean }) => {
+    const proj = projectsRef.current.find((p) => p.id === activeProjectId);
+    if (!proj) return false;
 
-            const st: any = proj.state as any;
-            const outline = ensureArray<any>(st?.outline_12, []);
-            const o = outline.find((x: any) => Number(x?.chapter_number ?? 0) === Number(chapterNum ?? 0));
-            const tw = Number(o?.target_words ?? 0) || 0;
+    setError(null);
 
-            // si outline no trae target_words, usamos el default global guardado por usuario
-            return tw > 0 ? tw : defaultChapterWords;
-          })(),
-          active_view:
-            action === 'GENERATE_PROPOSAL'
-              ? 'PROPOSAL'
-              : action === 'GENERATE_INTRODUCTION'
-                ? 'INTRODUCTION'
-                : 'CHAPTER',
-        };
-
-        const stateForComposer = compactStateForComposer(proj);
-        const result = await callComposer(task, stateForComposer);
-
-        // out-of-order guard
-        if ((requestSeqRef.current[proj.id] ?? 0) !== seq) return false;
-
-        const updatedProj = processResponse(result, proj, { action, chapterNum });
-
-        // ✅ Evita el "parece que escribe pero no escribe": si el modelo devolvió vacío, lo marcamos como error.
-        // ✅ Si el capítulo quedó corto vs target, lo auto-extendemos en DEV (2–4 tandas) hasta llegar al 100% del target (>= target).
-        if (action === 'GENERATE_CHAPTER' && import.meta.env.DEV) {
-          const tw = Number((task as any).target_length_words ?? 0) || 0;
-          const n = Number(chapterNum ?? 0) || 0;
-          if (tw > 0 && n > 0) {
-            const extended = await autoExtendChapterDev({
-              project: updatedProj,
-              chapterNum: n,
-              targetWords: tw,
-              model: GEMINI_MODEL,
-              apiKey: DEV_GEMINI_API_KEY,
-            });
-            // mutación controlada (evita rewire de variables)
-            (updatedProj as any).state = (extended as any).state;
-            (updatedProj as any).master_document = (extended as any).master_document;
-            (updatedProj as any).generation_progress = (extended as any).generation_progress;
-          }
-        }
-
-        assertGeneratedContentNonEmpty(updatedProj, action, chapterNum, (task as any).target_length_words);
-
-        // Persistimos patch (meta + sección afectada) + master
-        await persistProjectMeta(updatedProj);
-        if (action === 'GENERATE_PROPOSAL') await upsertOneSectionFromState(updatedProj, 'proposal');
-        if (action === 'GENERATE_INTRODUCTION') await upsertOneSectionFromState(updatedProj, 'intro');
-        if (action === 'GENERATE_CHAPTER') await upsertOneSectionFromState(updatedProj, 'chapter', chapterNum);
-
-        const masterText = await rebuildAndSnapshotMaster(updatedProj);
-        const updatedWithMaster = {
-          ...updatedProj,
-          master_document: {
-            ...(updatedProj as any).master_document,
-            text: masterText,
-            chunks: [{ index: 1, total: 1, text: masterText }],
-          },
-        } as Project;
-
-        updateProjectById(proj.id, () => updatedWithMaster);
-
-        setSectionProgress(proj.id, sectionId, 'completed');
-        return true;
-      } catch (e) {
-        if ((requestSeqRef.current[proj.id] ?? 0) !== seq) return false;
-
-        setError(`Error: ${normalizeError(e)}`);
-        setSectionProgress(proj.id, sectionId, 'error');
+    const bypass = Boolean(opts?.bypassLock);
+    if (!bypass) {
+      if (globalGenLockRef.current || anyGenerating) {
+        setError("Ya hay una generación en curso. Termina esa y luego lanzas otra.");
         return false;
-      } finally {
-        if (!bypass) globalGenLockRef.current = false;
       }
-    },
-    [
-      activeProjectId,
-      anyGenerating,
-      defaultChapterWords,
-      callComposer,
-      persistProjectMeta,
-      processResponse,
-      rebuildAndSnapshotMaster,
-      setSectionProgress,
-      updateProjectById,
-      upsertOneSectionFromState,
-    ]
-  );
+      globalGenLockRef.current = true;
+    }
 
-  const handleGenerateSection = useCallback(
-    async (action: string, chapterNum?: number) => generateSectionCore(action, chapterNum),
-    [generateSectionCore]
-  );
+    const sectionId =
+      action === "GENERATE_INTRODUCTION" ? "intro"
+        : action === "GENERATE_PROPOSAL" ? "proposal"
+          : `chap-${chapterNum}`;
+
+    setSectionProgress(proj.id, sectionId, "generating");
+
+    const seq = (requestSeqRef.current[proj.id] ?? 0) + 1;
+    requestSeqRef.current[proj.id] = seq;
+
+    try {
+      const st: any = proj.state as any;
+      const outline = ensureArray<any>(st?.outline_12, []);
+      const o = outline.find((x: any) => Number(x?.chapter_number ?? 0) === Number(chapterNum ?? 0));
+
+      const targetWords =
+        action === "GENERATE_CHAPTER"
+          ? (Number(o?.target_words ?? 0) || defaultChapterWords)
+          : 1200;
+
+      const task: ComposerTask = {
+        action: action as any,
+        chapter_number: chapterNum,
+        target_length_words: targetWords,
+        active_view:
+          action === "GENERATE_PROPOSAL" ? "PROPOSAL"
+            : action === "GENERATE_INTRODUCTION" ? "INTRODUCTION"
+              : "CHAPTER",
+      };
+
+      const stateForComposer = compactStateForComposer(proj, MAX_MASTER_CHARS_TO_SEND);
+      const result = await callComposer({
+        task,
+        state: stateForComposer,
+        model: GEMINI_MODEL,
+        isDev: import.meta.env.DEV,
+        devApiKey: DEV_GEMINI_API_KEY,
+        devSystemPrompt: DEV_SYSTEM_PROMPT,
+      });
+
+      if ((requestSeqRef.current[proj.id] ?? 0) !== seq) return false;
+
+      let updated = processEngineResult(result as any, proj, { action, chapterNum });
+
+      if (action === "GENERATE_CHAPTER" && import.meta.env.DEV) {
+        const n = Number(chapterNum ?? 0) || 0;
+        if (n > 0 && targetWords > 0) {
+          updated = await autoExtendChapterDev({
+            project: updated,
+            chapterNum: n,
+            targetWords,
+            model: GEMINI_MODEL,
+            devApiKey: DEV_GEMINI_API_KEY,
+          });
+        }
+      }
+
+      await persistProjectMeta(updated);
+      if (action === "GENERATE_PROPOSAL") await upsertOneSectionFromState(updated, "proposal");
+      if (action === "GENERATE_INTRODUCTION") await upsertOneSectionFromState(updated, "intro");
+      if (action === "GENERATE_CHAPTER") await upsertOneSectionFromState(updated, "chapter", chapterNum);
+
+      const masterText = await rebuildAndSnapshotMaster(updated);
+      const updatedWithMaster = {
+        ...updated,
+        master_document: { ...(updated as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
+      } as Project;
+
+      updateProjectById(proj.id, () => updatedWithMaster);
+      setSectionProgress(proj.id, sectionId, "completed");
+      return true;
+    } catch (e) {
+      if ((requestSeqRef.current[proj.id] ?? 0) !== seq) return false;
+      setError(`Error: ${normalizeError(e)}`);
+      setSectionProgress(proj.id, sectionId, "error");
+      return false;
+    } finally {
+      if (!bypass) globalGenLockRef.current = false;
+    }
+  }, [
+    activeProjectId,
+    anyGenerating,
+    defaultChapterWords,
+    persistProjectMeta,
+    rebuildAndSnapshotMaster,
+    setSectionProgress,
+    updateProjectById,
+    upsertOneSectionFromState,
+  ]);
+
+  const handleGenerateSection = useCallback((action: string, chapterNum?: number) => generateSectionCore(action, chapterNum), [generateSectionCore]);
 
   const handleGenerateRemaining = useCallback(async () => {
-    // Batch: adquirimos lock una vez y generamos secuencialmente sin rebotar por el propio lock.
     if (globalGenLockRef.current || anyGenerating) return;
     globalGenLockRef.current = true;
 
@@ -1382,33 +1232,28 @@ const processResponse = useCallback(
       let current = getFresh();
       if (!current) return;
 
-      const st1: any = current.state as any;
-      if ((st1 as any).proposal?.status !== 'COMPLETED') {
-        const ok = await generateSectionCore('GENERATE_PROPOSAL', undefined, { bypassLock: true });
+      if (ensureString((current.state as any)?.proposal?.status, "PENDING") !== "COMPLETED") {
+        const ok = await generateSectionCore("GENERATE_PROPOSAL", undefined, { bypassLock: true });
         if (!ok) return;
       }
 
       current = getFresh();
       if (!current) return;
 
-      const st2: any = current.state as any;
-      if ((st2 as any).introduction?.status !== 'COMPLETED') {
-        const ok = await generateSectionCore('GENERATE_INTRODUCTION', undefined, { bypassLock: true });
+      if (ensureString((current.state as any)?.introduction?.status, "PENDING") !== "COMPLETED") {
+        const ok = await generateSectionCore("GENERATE_INTRODUCTION", undefined, { bypassLock: true });
         if (!ok) return;
       }
 
       current = getFresh();
       if (!current) return;
 
-      const st3: any = current.state as any;
-      for (const item of ensureArray<any>((st3 as any).outline_12, [])) {
+      for (const item of ensureArray<any>((current.state as any)?.outline_12, [])) {
         const key = `chap-${item.chapter_number}`;
         const status = (((current as any).generation_progress || {})[key] as GenerationStatus | undefined);
+        if (status === "completed") continue;
 
-        if (status === 'generating') break;
-        if (status === 'completed') continue;
-
-        const ok = await generateSectionCore('GENERATE_CHAPTER', item.chapter_number, { bypassLock: true });
+        const ok = await generateSectionCore("GENERATE_CHAPTER", item.chapter_number, { bypassLock: true });
         if (!ok) break;
 
         current = getFresh();
@@ -1420,69 +1265,61 @@ const processResponse = useCallback(
     }
   }, [activeProjectId, anyGenerating, generateSectionCore]);
 
+  const handleEditSection = useCallback(async (payload: any) => {
+    const proj = projectsRef.current.find((p) => p.id === activeProjectId);
+    if (!proj) return;
+    setError(null);
 
-  const handleEditSection = useCallback(
-    async (payload: any) => {
-      const proj = projectsRef.current.find((p) => p.id === activeProjectId);
-      if (!proj) return;
-      setError(null);
-      try {
-        // 1) Update state local
-        const next = (() => {
-          const st: any = proj.state ?? {};
-          const draft = JSON.parse(JSON.stringify(st));
+    try {
+      const st: any = proj.state ?? {};
+      const draft = JSON.parse(JSON.stringify(st));
 
-          if (payload.kind === 'proposal') {
-            draft.proposal = { ...(draft.proposal ?? {}), text: payload.text, status: 'COMPLETED' };
-          } else if (payload.kind === 'intro') {
-            draft.introduction = { ...(draft.introduction ?? {}), text: payload.text, status: 'COMPLETED' };
-          } else if (payload.kind === 'chapter') {
-            const n = Number(payload.chapterNumber ?? 0) || 0;
-            const chs = ensureArray<any>(draft.chapters, []);
-            const idx = chs.findIndex((c: any) => Number(c?.chapter_number ?? 0) === n);
-            const base = idx >= 0 ? chs[idx] : { chapter_number: n };
-            const updated = {
-              ...base,
-              chapter_number: n,
-              title: ensureString(payload.title, ensureString(base?.title, `Capítulo ${n}`)),
-              text: payload.text,
-              status: 'COMPLETED',
-            };
-            if (idx >= 0) chs[idx] = updated;
-            else chs.push(updated);
-            draft.chapters = chs;
-          }
-
-          const merged = normalizeProjectState(draft);
-          const masterLocal = buildMasterFromState(merged, proj.title);
-          const out: Project = {
-            ...proj,
-            state: merged,
-            master_document: { ...(proj as any).master_document, text: masterLocal, chunks: [{ index: 1, total: 1, text: masterLocal }] },
-          } as any;
-          (out as any).generation_progress = recomputeGenerationProgress(out);
-          return out;
-        })();
-
-        updateProjectById(proj.id, () => next);
-
-        // 2) Persist section
-        if (payload.kind === 'proposal') await upsertOneSectionFromState(next, 'proposal');
-        if (payload.kind === 'intro') await upsertOneSectionFromState(next, 'intro');
-        if (payload.kind === 'chapter') await upsertOneSectionFromState(next, 'chapter', payload.chapterNumber);
-
-        // 3) Rebuild master + snapshot
-        const masterText = await rebuildAndSnapshotMaster(next);
-        updateProjectById(proj.id, (p) => ({
-          ...p,
-          master_document: { ...(p as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
-        }) as any);
-      } catch (e) {
-        setError(normalizeError(e));
+      if (payload.kind === "proposal") {
+        draft.proposal = { ...(draft.proposal ?? {}), text: payload.text, status: "COMPLETED" };
+      } else if (payload.kind === "intro") {
+        draft.introduction = { ...(draft.introduction ?? {}), text: payload.text, status: "COMPLETED" };
+      } else if (payload.kind === "chapter") {
+        const n = Number(payload.chapterNumber ?? 0) || 0;
+        const chs = ensureArray<any>(draft.chapters, []);
+        const idx = chs.findIndex((c: any) => Number(c?.chapter_number ?? 0) === n);
+        const base = idx >= 0 ? chs[idx] : { chapter_number: n };
+        const updated = {
+          ...base,
+          chapter_number: n,
+          title: ensureString(payload.title, ensureString(base?.title, `Capítulo ${n}`)),
+          text: payload.text,
+          status: "COMPLETED",
+        };
+        if (idx >= 0) chs[idx] = updated;
+        else chs.push(updated);
+        draft.chapters = chs;
       }
-    },
-    [activeProjectId, rebuildAndSnapshotMaster, updateProjectById, upsertOneSectionFromState]
-  );
+
+      const merged = normalizeProjectState(draft);
+      const masterLocal = buildMasterFromState(merged, proj.title);
+
+      const next: Project = {
+        ...proj,
+        state: merged,
+        master_document: { ...(proj as any).master_document, text: masterLocal, chunks: [{ index: 1, total: 1, text: masterLocal }] },
+      } as any;
+
+      (next as any).generation_progress = recomputeGenerationProgress(next);
+      updateProjectById(proj.id, () => next);
+
+      if (payload.kind === "proposal") await upsertOneSectionFromState(next, "proposal");
+      if (payload.kind === "intro") await upsertOneSectionFromState(next, "intro");
+      if (payload.kind === "chapter") await upsertOneSectionFromState(next, "chapter", payload.chapterNumber);
+
+      const masterText = await rebuildAndSnapshotMaster(next);
+      updateProjectById(proj.id, (p) => ({
+        ...p,
+        master_document: { ...(p as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
+      }) as any);
+    } catch (e) {
+      setError(normalizeError(e));
+    }
+  }, [activeProjectId, rebuildAndSnapshotMaster, updateProjectById, upsertOneSectionFromState]);
 
   const handleSaveSnapshot = useCallback(async () => {
     const proj = projectsRef.current.find((p) => p.id === activeProjectId);
@@ -1499,43 +1336,71 @@ const processResponse = useCallback(
     }
   }, [activeProjectId, rebuildAndSnapshotMaster, updateProjectById]);
 
-  /* ----------------------------------- UI ----------------------------------- */
+  /* ------------------------------ render gates ------------------------------ */
 
   if (!session) {
     return (
-      <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <div className="flex items-center gap-3">
-            <PenSquareIcon className="w-8 h-8 text-indigo-400" />
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold tracking-tight text-white truncate">BestSeller AI</h1>
-              <div className="text-[10px] text-slate-500 font-mono truncate">{BUILD_TAG}</div>
-            </div>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            <div className="text-sm text-slate-300">
-              Para guardar todo en Supabase necesitas iniciar sesión. Te mando un magic link.
-            </div>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
-              className="w-full bg-slate-950/60 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
-            />
-            <button
-              onClick={handleAuth}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-black text-xs uppercase tracking-widest transition-colors"
-            >
-              Enviar Magic Link
-            </button>
-            {authNotice && <div className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded p-3">{authNotice}</div>}
-            {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded p-3">{error}</div>}
-          </div>
-        </div>
-      </div>
+      <AuthScreen
+        buildTag={BUILD_TAG}
+        mode={authMode}
+        onMode={(m) => {
+          setAuthMode(m);
+          setAuthNotice(null);
+          setError(null);
+        }}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        fullName={fullName}
+        setFullName={setFullName}
+        phone={phone}
+        setPhone={setPhone}
+        busy={authBusy}
+        onSubmit={authMode === "signin" ? handleSignIn : handleSignUp}
+        error={error}
+        notice={authNotice}
+      />
     );
   }
+
+  if (!profile || !profile.has_access) {
+    const em = profile?.email || session?.user?.email || "";
+    return (
+      <AccessProcessingScreen
+        email={em}
+        busy={gateBusy}
+        requestStatus={request?.status}
+        error={error}
+        onRefresh={() => refreshApprovalStatus().catch((e) => setError(normalizeError(e)))}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
+
+  if (!deviceAllowed) {
+    const em = profile?.email || session?.user?.email || "";
+    return (
+      <DeviceSessionScreen
+        email={em}
+        busy={deviceBusy}
+        error={deviceError}
+        notice={deviceNotice}
+        otherDevice={otherDevice}
+        onEnterHere={() => {
+          deviceAutoClaimAttemptedRef.current = false;
+          claimDeviceSession({ force: true }).catch((e) => setDeviceError(normalizeError(e)));
+        }}
+        onRefresh={() => {
+          deviceAutoClaimAttemptedRef.current = false;
+          claimDeviceSession().catch((e) => setDeviceError(normalizeError(e)));
+        }}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
+
+  /* ------------------------------ approved main UI ------------------------------ */
 
   return (
     <div className="h-screen w-full bg-slate-950 text-slate-100">
@@ -1545,27 +1410,24 @@ const processResponse = useCallback(
             <div className="flex items-center gap-3">
               <PenSquareIcon className="w-8 h-8 text-indigo-400" />
               <div className="min-w-0">
-                <h1 className="text-xl font-bold tracking-tight text-white truncate">BestSeller AI</h1>
+                <h1 className="text-xl font-bold tracking-tight text-white truncate">BestSeller</h1>
                 <div className="text-[10px] text-slate-500 font-mono truncate">{BUILD_TAG}</div>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto p-4">
-
-            <div className="mb-4 bg-slate-950/40 border border-slate-800 rounded-xl p-3">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+            <div className="bg-slate-950/40 border border-slate-800 rounded-xl p-3">
               <div className="text-[10px] font-black tracking-widest uppercase text-slate-400">
-                Longitud por capítulo (default global)
+                Longitud por capítulo (global)
               </div>
 
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="mt-2 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setDefaultChapterWords(3000)}
-                  className={`py-2 rounded-lg text-xs font-black transition ${
-                    defaultChapterWords === 3000
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                  className={`flex-1 py-2 rounded-lg text-xs font-black transition ${
+                    defaultChapterWords === 3000 ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-200 hover:bg-slate-700"
                   }`}
                 >
                   3000
@@ -1573,10 +1435,8 @@ const processResponse = useCallback(
                 <button
                   type="button"
                   onClick={() => setDefaultChapterWords(6000)}
-                  className={`py-2 rounded-lg text-xs font-black transition ${
-                    defaultChapterWords === 6000
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                  className={`flex-1 py-2 rounded-lg text-xs font-black transition ${
+                    defaultChapterWords === 6000 ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-200 hover:bg-slate-700"
                   }`}
                 >
                   6000
@@ -1587,11 +1447,11 @@ const processResponse = useCallback(
                 <input
                   type="number"
                   value={defaultChapterWords}
+                  onChange={(e) => setDefaultChapterWords(Number(e.target.value || 3000))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs"
                   min={500}
                   max={20000}
                   step={100}
-                  onChange={(e) => setDefaultChapterWords(Number(e.target.value || 3000))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs"
                 />
                 <button
                   type="button"
@@ -1612,10 +1472,6 @@ const processResponse = useCallback(
                   Guardar
                 </button>
               </div>
-
-              <div className="mt-2 text-[11px] text-slate-400 leading-snug">
-                Se usa cuando el outline no trae <span className="font-mono">target_words</span>.
-              </div>
             </div>
 
             <TableOfContents
@@ -1632,34 +1488,37 @@ const processResponse = useCallback(
               onDeleteProject={handleDeleteProject as any}
               isLoading={isLoading || anyGenerating}
             />
-          
 
-<div className="mt-4 text-[11px] text-slate-400 bg-slate-950/40 border border-slate-800 rounded p-3 leading-relaxed">
-  DEV: Gemini directo con <span className="font-mono">VITE_GEMINI_API_KEY</span> en <span className="font-mono">.env.local</span>. PROD (Vercel): <span className="font-mono">POST /api/composer</span> con <span className="font-mono">GEMINI_API_KEY</span> (privada).
-</div>
-</div>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl font-black text-xs uppercase tracking-widest transition-colors"
+            >
+              Cerrar sesión
+            </button>
+          </div>
         </aside>
 
         <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-slate-950">
           {activeProject && (
             <div className="shrink-0 bg-slate-900 border-b border-slate-800 flex">
               <button
-                onClick={() => setViewMode('plan')}
+                onClick={() => setViewMode("plan")}
                 className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${
-                  viewMode === 'plan'
-                    ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                  viewMode === "plan"
+                    ? "border-indigo-500 text-indigo-300 bg-indigo-500/10"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
                 }`}
               >
                 <RocketIcon className="w-4 h-4 inline mr-2" /> Arquitectura Editorial
               </button>
 
               <button
-                onClick={() => setViewMode('book')}
+                onClick={() => setViewMode("book")}
                 className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${
-                  viewMode === 'book'
-                    ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                  viewMode === "book"
+                    ? "border-indigo-500 text-indigo-300 bg-indigo-500/10"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
                 }`}
               >
                 <BookOpenIcon className="w-4 h-4 inline mr-2" /> Documento Maestro
@@ -1669,13 +1528,13 @@ const processResponse = useCallback(
 
           <div className="relative flex-1 min-h-0 overflow-y-auto">
             {activeProject ? (
-              viewMode === 'plan' ? (
+              viewMode === "plan" ? (
                 <div className="min-h-full bg-slate-950">
                   <GenerationDashboard
                     project={activeProject}
                     onGenerate={handleGenerateSection}
                     onGenerateRemaining={handleGenerateRemaining}
-                    onOpenBookView={() => setViewMode('book')}
+                    onOpenBookView={() => setViewMode("book")}
                     isGeneratingGlobal={isLoading || anyGenerating}
                   />
                 </div>
@@ -1703,4 +1562,3 @@ const processResponse = useCallback(
 };
 
 export default App;
-
