@@ -519,79 +519,76 @@ const BookViewer: React.FC<BookViewerProps> = ({ project, onEditSection }) => {
 
   const [sectionKey, setSectionKey] = useState<string>('FULL');
 
-const editable = useMemo(() => {
-  const st: any = project?.state ?? {};
+  const editable = useMemo(() => {
+    const st: any = project?.state ?? {};
 
-  if (sectionKey === 'PROPOSAL') {
-    return { kind: 'proposal' as const, text: s(st?.proposal?.text, '') };
-  }
+    if (sectionKey === 'PROPOSAL') {
+      return { kind: 'proposal' as const, text: s(st?.proposal?.text, '') };
+    }
 
-  if (sectionKey === 'INTRO') {
-    return { kind: 'intro' as const, text: s(st?.introduction?.text, '') };
-  }
+    if (sectionKey === 'INTRO') {
+      return { kind: 'intro' as const, text: s(st?.introduction?.text, '') };
+    }
 
-  if (sectionKey.startsWith('CHAPTER:')) {
-    const n = Number.parseInt(sectionKey.split(':')[1] || '0', 10);
-    const ch = arr<any>(st?.chapters, []).find((c: any) => Number(c?.chapter_number ?? c?.chapterNumber ?? 0) === n);
-    return {
-      kind: 'chapter' as const,
-      chapterNumber: n,
-      title: s(ch?.title, s(ch?.chapter_title, `Capítulo ${n}`)).trim() || `Capítulo ${n}`,
-      text: s(ch?.text, ''),
-    };
-  }
+    if (sectionKey.startsWith('CHAPTER:')) {
+      const n = Number.parseInt(sectionKey.split(':')[1] || '0', 10);
+      const ch = arr<any>(st?.chapters, []).find((c: any) => Number(c?.chapter_number ?? c?.chapterNumber ?? 0) === n);
+      return {
+        kind: 'chapter' as const,
+        chapterNumber: n,
+        title: s(ch?.title, s(ch?.chapter_title, `Capítulo ${n}`)).trim() || `Capítulo ${n}`,
+        text: s(ch?.text, ''),
+      };
+    }
 
-  return null;
-}, [project, sectionKey]);
+    return null;
+  }, [project, sectionKey]);
 
-const canEdit = Boolean(onEditSection && editable);
+  const canEdit = Boolean(onEditSection && editable);
 
-const [isEditing, setIsEditing] = useState(false);
-const [draftText, setDraftText] = useState('');
-const [draftTitle, setDraftTitle] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftText, setDraftText] = useState('');
+  const [draftTitle, setDraftTitle] = useState('');
 
-// Cuando cambias de vista / proyecto, cerramos edición y sincronizamos el draft.
-useEffect(() => {
-  setIsEditing(false);
-  setDraftText((editable as any)?.text ?? '');
-  setDraftTitle((editable as any)?.title ?? '');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [project?.id, sectionKey]);
+  // Cuando cambias de vista / proyecto, cerramos edición y sincronizamos el draft.
+  useEffect(() => {
+    setIsEditing(false);
+    setDraftText((editable as any)?.text ?? '');
+    setDraftTitle((editable as any)?.title ?? '');
+  }, [project?.id, sectionKey, editable]);
 
-const startEdit = useCallback(() => {
-  if (!editable) return;
-  setDraftText((editable as any)?.text ?? '');
-  setDraftTitle((editable as any)?.title ?? '');
-  setIsEditing(true);
-}, [editable]);
+  const startEdit = useCallback(() => {
+    if (!editable) return;
+    setDraftText((editable as any)?.text ?? '');
+    setDraftTitle((editable as any)?.title ?? '');
+    setIsEditing(true);
+  }, [editable]);
 
-const cancelEdit = useCallback(() => {
-  setIsEditing(false);
-  setDraftText((editable as any)?.text ?? '');
-  setDraftTitle((editable as any)?.title ?? '');
-}, [editable]);
+  const cancelEdit = useCallback(() => {
+    setIsEditing(false);
+    setDraftText((editable as any)?.text ?? '');
+    setDraftTitle((editable as any)?.title ?? '');
+  }, [editable]);
 
-const saveEdit = useCallback(() => {
-  if (!onEditSection || !editable) return;
+  const saveEdit = useCallback(() => {
+    if (!onEditSection || !editable) return;
 
-  if ((editable as any).kind === 'chapter') {
-    onEditSection({
-      kind: 'chapter',
-      chapterNumber: (editable as any).chapterNumber,
-      title: draftTitle,
-      text: draftText,
-    });
-  } else {
-    onEditSection({
-      kind: (editable as any).kind,
-      text: draftText,
-    } as any);
-  }
+    if ((editable as any).kind === 'chapter') {
+      onEditSection({
+        kind: 'chapter',
+        chapterNumber: (editable as any).chapterNumber,
+        title: draftTitle,
+        text: draftText,
+      });
+    } else {
+      onEditSection({
+        kind: (editable as any).kind,
+        text: draftText,
+      } as any);
+    }
 
-  setIsEditing(false);
-}, [onEditSection, editable, draftText, draftTitle]);
-
-
+    setIsEditing(false);
+  }, [onEditSection, editable, draftText, draftTitle]);
 
   const [readerTheme, setReaderTheme] = useState<ReaderTheme>(() =>
     readEnum(READER_THEME_KEY, ['paper', 'sepia', 'night'] as const, 'paper')
@@ -614,13 +611,26 @@ const saveEdit = useCallback(() => {
 
   const rt = readerThemeStyles[readerTheme] ?? readerThemeStyles.paper;
 
-  // Reset de sección al cambiar de libro o cuando aparecen secciones nuevas
+  // ✅ FIX: no “pisar” la sección del usuario cada vez que cambian opciones o texto.
+  // Solo reseteamos si:
+  // - Cambia el libro, o
+  // - La sección actual ya no existe (key inválida), o
+  // - Si el libro es enorme, preferimos auto-abrir el primer capítulo/H2 *solo al entrar*.
+  const prevProjectIdRef = useRef<string | null>(null);
   useEffect(() => {
+    const projectId = (project as any)?.id ? String((project as any).id) : null;
+    const projectChanged = prevProjectIdRef.current !== projectId;
+    prevProjectIdRef.current = projectId;
+
+    const validKeys = new Set(baseSectionOptions.map((x) => x.key));
+    const currentKeyValid = validKeys.has(sectionKey);
+
+    if (!projectChanged && currentKeyValid) return;
+
     const firstChunk = baseSectionOptions.find((x) => x.key.startsWith('CHAPTER:') || x.key.startsWith('H2:'))?.key;
     if (fullText.length > LONG_TEXT_THRESHOLD && firstChunk) setSectionKey(firstChunk);
     else setSectionKey('FULL');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project?.id, baseSectionOptions.length, fullText.length]);
+  }, [project?.id, baseSectionOptions, fullText.length, sectionKey]);
 
   const displayText = useMemo(() => {
     const md = buildSectionMarkdown(project, sectionKey, fullText, autoH2Sections).trim();
@@ -991,38 +1001,37 @@ const saveEdit = useCallback(() => {
               ))}
             </select>
 
+            {canEdit && !isEditing && (
+              <button
+                type="button"
+                onClick={startEdit}
+                className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 text-slate-100"
+                title="Editar esta sección"
+              >
+                Editar
+              </button>
+            )}
 
-{canEdit && !isEditing && (
-  <button
-    type="button"
-    onClick={startEdit}
-    className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 text-slate-100"
-    title="Editar esta sección"
-  >
-    Editar
-  </button>
-)}
-
-{canEdit && isEditing && (
-  <>
-    <button
-      type="button"
-      onClick={saveEdit}
-      className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 text-white"
-      title="Guardar cambios"
-    >
-      Guardar
-    </button>
-    <button
-      type="button"
-      onClick={cancelEdit}
-      className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 text-slate-100"
-      title="Cancelar edición"
-    >
-      Cancelar
-    </button>
-  </>
-)}
+            {canEdit && isEditing && (
+              <>
+                <button
+                  type="button"
+                  onClick={saveEdit}
+                  className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 text-white"
+                  title="Guardar cambios"
+                >
+                  Guardar
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 text-slate-100"
+                  title="Cancelar edición"
+                >
+                  Cancelar
+                </button>
+              </>
+            )}
 
             <button
               type="button"
@@ -1053,55 +1062,54 @@ const saveEdit = useCallback(() => {
               rt?.article
             )}
           >
-{isEditing && canEdit ? (
-  <div className="space-y-3">
-    {(editable as any)?.kind === 'chapter' && (
-      <div>
-        <div className="text-[10px] font-black tracking-widest uppercase text-slate-400">Título</div>
-        <input
-          value={draftTitle}
-          onChange={(e) => setDraftTitle(e.target.value)}
-          className={cx(
-            'mt-1 w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-2',
-            readerTheme === 'night'
-              ? 'bg-slate-900 text-slate-100 border-slate-700 focus:ring-indigo-500/40'
-              : readerTheme === 'sepia'
-                ? 'bg-amber-50 text-slate-900 border-amber-200 focus:ring-indigo-500/30'
-                : 'bg-white text-slate-900 border-slate-200 focus:ring-indigo-500/30'
-          )}
-          placeholder="Título del capítulo"
-        />
-      </div>
-    )}
+            {isEditing && canEdit ? (
+              <div className="space-y-3">
+                {(editable as any)?.kind === 'chapter' && (
+                  <div>
+                    <div className="text-[10px] font-black tracking-widest uppercase text-slate-400">Título</div>
+                    <input
+                      value={draftTitle}
+                      onChange={(e) => setDraftTitle(e.target.value)}
+                      className={cx(
+                        'mt-1 w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-2',
+                        readerTheme === 'night'
+                          ? 'bg-slate-900 text-slate-100 border-slate-700 focus:ring-indigo-500/40'
+                          : readerTheme === 'sepia'
+                            ? 'bg-amber-50 text-slate-900 border-amber-200 focus:ring-indigo-500/30'
+                            : 'bg-white text-slate-900 border-slate-200 focus:ring-indigo-500/30'
+                      )}
+                      placeholder="Título del capítulo"
+                    />
+                  </div>
+                )}
 
-    <div>
-      <div className="text-[10px] font-black tracking-widest uppercase text-slate-400">Contenido (Markdown)</div>
-      <textarea
-        value={draftText}
-        onChange={(e) => setDraftText(e.target.value)}
-        className={cx(
-          'mt-1 w-full min-h-[60vh] text-sm p-4 rounded-xl border font-mono leading-relaxed focus:outline-none focus:ring-2',
-          readerTheme === 'night'
-            ? 'bg-slate-900 text-slate-100 border-slate-700 focus:ring-indigo-500/40'
-            : readerTheme === 'sepia'
-              ? 'bg-amber-50 text-slate-900 border-amber-200 focus:ring-indigo-500/30'
-              : 'bg-white text-slate-900 border-slate-200 focus:ring-indigo-500/30'
-        )}
-        placeholder="Escribe aquí..."
-      />
-      <div className="mt-2 text-[11px] text-slate-400">
-        Tip: guarda y el Documento Maestro se reconstruye sin borrar el resto del libro.
-      </div>
-    </div>
-  </div>
-) : (
-  <div className={proseCls}>
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
-      {displayText || 'Aún no hay contenido. Genera propuesta / introducción / capítulos.'}
-    </ReactMarkdown>
-  </div>
-)}
-
+                <div>
+                  <div className="text-[10px] font-black tracking-widest uppercase text-slate-400">Contenido (Markdown)</div>
+                  <textarea
+                    value={draftText}
+                    onChange={(e) => setDraftText(e.target.value)}
+                    className={cx(
+                      'mt-1 w-full min-h-[60vh] text-sm p-4 rounded-xl border font-mono leading-relaxed focus:outline-none focus:ring-2',
+                      readerTheme === 'night'
+                        ? 'bg-slate-900 text-slate-100 border-slate-700 focus:ring-indigo-500/40'
+                        : readerTheme === 'sepia'
+                          ? 'bg-amber-50 text-slate-900 border-amber-200 focus:ring-indigo-500/30'
+                          : 'bg-white text-slate-900 border-slate-200 focus:ring-indigo-500/30'
+                    )}
+                    placeholder="Escribe aquí..."
+                  />
+                  <div className="mt-2 text-[11px] text-slate-400">
+                    Tip: guarda y el Documento Maestro se reconstruye sin borrar el resto del libro.
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className={proseCls}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+                  {displayText || 'Aún no hay contenido. Genera propuesta / introducción / capítulos.'}
+                </ReactMarkdown>
+              </div>
+            )}
 
             <div
               className={cx(

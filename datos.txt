@@ -14,3 +14,5 @@ arajuezraulina@gmail.com
 
 
 
+node scripts/extend-chapter.mjs 7677e08f-656b-4022-a654-171bcad2a137 1 5000 6
+

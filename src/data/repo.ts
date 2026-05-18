@@ -375,3 +375,42 @@ export async function saveSectionAndRebuildMaster(params: {
 
   return { sectionId, master };
 }
+
+// ----------------------------- User Settings -----------------------------
+// Tabla: user_settings(user_id uuid PK, default_chapter_words int, updated_at timestamptz)
+
+export async function getUserSettings(): Promise<{ default_chapter_words: number }> {
+  const s = await getSession();
+  const uid = s?.user?.id;
+  if (!uid) throw new Error('No autenticado.');
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('default_chapter_words')
+    .eq('user_id', uid)
+    .maybeSingle();
+
+  // fallback si la tabla no existe todavía / RLS / etc.
+  if (error) return { default_chapter_words: 3000 };
+
+  const v = Number((data as any)?.default_chapter_words ?? 3000) || 3000;
+  return { default_chapter_words: Math.max(500, Math.min(20000, v)) };
+}
+
+export async function upsertUserSettings(defaultChapterWords: number): Promise<number> {
+  const s = await getSession();
+  const uid = s?.user?.id;
+  if (!uid) throw new Error('No autenticado.');
+
+  const v = Math.max(500, Math.min(20000, Math.floor(Number(defaultChapterWords || 3000))));
+
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert(
+      { user_id: uid, default_chapter_words: v, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    );
+
+  if (error) throw error;
+  return v;
+}

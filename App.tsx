@@ -1,4 +1,4 @@
-// App.supabase.tsx
+// App.tsx
 // ✅ Persistencia 100% en Supabase (sin localStorage para proyectos/libros)
 // - Carga/selección de proyectos desde DB
 // - Guardado de secciones (propuesta/intro/capítulos) en `sections`
@@ -27,13 +27,53 @@ import {
   // Nota: agrega estas funciones en repo.ts (te dejo el snippet en la respuesta)
   updateProject,
   deleteProject,
-} from './src/data/repo';
+  getUserSettings,
+  upsertUserSettings,
+} from './src/data/repo.ts';
 
-/**
+/**import { getUserSettings, upsertUserSettings } from './src/data/repo.ts';
  * BUILD TAG (sanity check)
  */
-const BUILD_TAG = 'App.supabase.tsx v1.1.0 (2026-05-17)';
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3-flash-preview';
+const BUILD_TAG = 'App.supabase.tsx v1.2.0 TURBO (2026-05-18)';
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3.1-flash-lite';
+const DEV_GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? '';
+const DEV_SYSTEM_PROMPT = `Eres BOOK_DOSSIER_CANVAS_ENGINE, un motor editorial.
+
+IDIOMA: Español neutro.
+FORMATO: Responde SIEMPRE con JSON válido (sin Markdown, sin texto fuera del JSON).
+
+ESQUEMA OBLIGATORIO:
+{
+  "ok": true,
+  "dashboard": {
+    "project_id": string,
+    "book_title": string,
+    "menu_items": [{"id": string, "label": string}] // incluye proposal, intro y chap-1..chap-12
+  },
+  "project_state_updated": {
+    "project_id": string,
+    "book_title": string,
+    "book_topic": string,
+    "audience": string,
+    "tone_style": string,
+    "outline_12": [ { "chapter_number": number, "chapter_title": string, "target_words": number, "objective": string, "key_points": string[] } ],
+    "proposal": { "id": "sec_proposal", "text": string, "status": "PENDING"|"COMPLETED", "words": number },
+    "introduction": { "id": "sec_introduction", "text": string, "status": "PENDING"|"COMPLETED", "words": number },
+    "chapters": [ { "chapter_number": number, "title": string, "text": string, "status": "PENDING"|"COMPLETED", "words": number } ],
+    "continuity_pack": object
+  },
+  "master_document": { "title": string, "text": string },
+  "needs_input": { "message": string } // opcional
+}
+
+REGLAS:
+- Nunca devuelvas placeholders ("..." o texto vacío) como contenido final.
+- Si la TASK es GENERATE_PROPOSAL: actualiza SOLO proposal (y lo demás déjalo intacto o como patch mínimo).
+- Si la TASK es GENERATE_INTRODUCTION: actualiza SOLO introduction.
+- Si la TASK es GENERATE_CHAPTER con chapter_number=N: devuelve SOLO ese capítulo (chapter_number=N) con aproximadamente TASK.target_length_words palabras (mínimo 100% del target (>= TASK.target_length_words)), en Markdown, con subtítulos H2/H3 y cierre.
+- Si falta información crítica, responde { "ok": false, "needs_input": { "message": "..." } } en vez de inventar.
+- master_document.text debe incluir Propuesta, Introducción y capítulos disponibles (Markdown).`.trim();
+
 
 // Para no reventar tokens/latencia: recortamos el master antes de mandarlo al modelo.
 const MAX_MASTER_CHARS_TO_SEND = 35_000;
@@ -91,6 +131,234 @@ function normalizeError(e: unknown): string {
   return 'Error desconocido';
 }
 
+/* ----------------------- dev resiliency + long chapters ----------------------- */
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function isRetriableGeminiError(e: unknown): boolean {
+  const msg = String((e as any)?.message ?? e ?? '');
+  return /503|UNAVAILABLE|Service Unavailable|RESOURCE_EXHAUSTED|quota|rate limit|429|ETIMEDOUT|ECONNRESET|fetch failed/i.test(msg);
+}
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  opts?: { attempts?: number; baseMs?: number; maxMs?: number }
+): Promise<T> {
+  const attempts = opts?.attempts ?? 5;
+  const baseMs = opts?.baseMs ?? 900;
+  const maxMs = opts?.maxMs ?? 20_000;
+
+  let lastErr: any = null;
+
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (!isRetriableGeminiError(e) || i === attempts - 1) throw e;
+      const jitter = Math.floor(Math.random() * 250);
+      const wait = Math.min(maxMs, Math.floor(baseMs * Math.pow(2, i)) + jitter);
+      // eslint-disable-next-line no-console
+      console.warn(`Gemini retry ${i + 1}/${attempts} in ${wait}ms`, (e as any)?.message ?? e);
+      await sleep(wait);
+    }
+  }
+
+  throw lastErr;
+}
+
+function trimOverlap(existing: string, addition: string): string {
+  const a = (existing ?? '').trim();
+  const b = (addition ?? '').trim();
+  if (!a) return b;
+  if (!b) return '';
+  const aTail = a.slice(-1600);
+
+  // Busca el mayor sufijo del tail que sea prefijo del nuevo texto
+  for (let k = Math.min(1200, aTail.length); k >= 120; k -= 40) {
+    const suffix = aTail.slice(-k);
+    if (b.startsWith(suffix)) return b.slice(k).trimStart();
+  }
+  return b;
+}
+
+function getChapterTextFromProject(p: Project, chapterNum: number): { idx: number; text: string; title: string } {
+  const st: any = (p as any).state ?? {};
+  const chs = ensureArray<any>(st?.chapters, []);
+  const idx = chs.findIndex((c: any) => Number(c?.chapter_number ?? 0) === chapterNum);
+  const ch = idx >= 0 ? chs[idx] : null;
+  const text = ensureString(ch?.text, '');
+  const title = ensureString(ch?.title, `Capítulo ${chapterNum}`);
+  return { idx, text, title };
+}
+
+function setChapterTextOnProject(
+  p: Project,
+  chapterNum: number,
+  title: string,
+  text: string,
+  status: 'PENDING' | 'COMPLETED'
+): Project {
+  const st: any = JSON.parse(JSON.stringify((p as any).state ?? {}));
+  const chs = ensureArray<any>(st?.chapters, []);
+  const idx = chs.findIndex((c: any) => Number(c?.chapter_number ?? 0) === chapterNum);
+
+  const updated = {
+    ...(idx >= 0 ? chs[idx] : {}),
+    chapter_number: chapterNum,
+    title,
+    text,
+    status,
+    words: countWordsQuick(text),
+  };
+
+  if (idx >= 0) chs[idx] = updated;
+  else chs.push(updated);
+
+  st.chapters = chs;
+  const merged = normalizeProjectState(st);
+
+  const masterLocal = buildMasterFromState(merged, (p as any).title);
+  const out: Project = {
+    ...(p as any),
+    state: merged,
+    master_document: {
+      ...((p as any).master_document ?? {}),
+      title: ensureString((p as any).master_document?.title, (p as any).title),
+      text: masterLocal,
+      chunks: [{ index: 1, total: 1, text: masterLocal }],
+    } as any,
+  } as any;
+
+  (out as any).generation_progress = recomputeGenerationProgress(out);
+  return out;
+}
+
+async function autoExtendChapterDev(params: {
+  project: Project;
+  chapterNum: number;
+  targetWords: number;
+  model: string;
+  apiKey: string;
+}): Promise<Project> {
+  const { project, chapterNum, targetWords, model, apiKey } = params;
+
+  // Solo corre en DEV (Gemini directo)
+  if (!import.meta.env.DEV) return project;
+  if (!apiKey) return project;
+
+  const target = Math.max(0, Math.floor(targetWords || 0));
+  if (!target) return project;
+
+  let current = project;
+  let { text: chapterText, title } = getChapterTextFromProject(current, chapterNum);
+
+  // ✅ si ya llegamos, no hacemos nada
+  if (countWordsQuick(chapterText) >= target) {
+    return setChapterTextOnProject(current, chapterNum, title, chapterText, 'COMPLETED');
+  }
+
+  const st: any = (current as any).state ?? {};
+  const outline = ensureArray<any>(st?.outline_12, []);
+  const o = outline.find((x: any) => Number(x?.chapter_number ?? 0) === chapterNum);
+
+  const objective = ensureString(o?.objective, '');
+  const keyPoints = ensureArray<any>(o?.key_points, []).slice(0, 12).filter(Boolean);
+  const subheads = ensureArray<any>(o?.subheads_h2, []).slice(0, 12).filter(Boolean);
+
+  // Dynamic import para evitar bundling extra
+  const { GoogleGenAI } = await import('@google/genai');
+  const ai = new GoogleGenAI({ apiKey });
+
+  // ✅ loops dinámicos: 3k–6k normalmente se completan en 2–4, pero dejamos margen
+  const maxSteps = Math.max(2, Math.min(8, Math.ceil(target / 2400) + 1));
+
+  for (let step = 1; step <= maxSteps; step++) {
+    const wcNow = countWordsQuick(chapterText);
+    if (wcNow >= target) break;
+
+    const remaining = Math.max(0, target - wcNow);
+
+    // chunk deseado por iteración: grande al inicio, más fino al final
+    const chunkWords =
+      remaining >= 3600 ? 2600 :
+      remaining >= 2400 ? 2000 :
+      remaining >= 1600 ? 1600 :
+      Math.max(900, remaining + 220);
+
+    // tokens de salida (aprox 1 palabra ~ 1.3 tokens, dejamos holgura)
+    const maxOut = Math.min(32_000, Math.max(12_000, Math.floor(chunkWords * 3.0)));
+
+    const tail = chapterText.slice(-2800);
+
+    const userPrompt = `
+CONTINÚA el Capítulo ${chapterNum} SIN REESCRIBIR lo ya escrito.
+Devuelve SOLO el texto NUEVO a añadir (Markdown). NO incluyas JSON.
+
+OBJETIVO DEL CAPÍTULO:
+${objective || '(no especificado)'}
+
+PUNTOS CLAVE (si aplica):
+${keyPoints.length ? '- ' + keyPoints.join('\n- ') : '(no especificado)'}
+
+SUBTÍTULOS SUGERIDOS (si aplica):
+${subheads.length ? '- ' + subheads.join('\n- ') : '(no especificado)'}
+
+REQUISITOS (DURÍSIMOS):
+- Añade un bloque SUSTANCIAL: objetivo ~${chunkWords} palabras (mínimo 1200 si faltan >2000).
+- NO repitas el final. NO resumas lo ya dicho. No metas “Capítulo X”.
+- Cierra con una frase completa (no cortar a medias).
+- Vamos a seguir iterando hasta llegar a ${target} palabras totales.
+
+ÚLTIMO CONTEXTO (NO REPETIR):
+<<<CONTEXT
+${tail}
+CONTEXT
+`.trim();
+
+    const resp = await withRetry(
+      () =>
+        ai.models.generateContent({
+          model,
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+          config: {
+            maxOutputTokens: maxOut,
+            temperature: 0.85,
+          } as any,
+        }),
+      { attempts: 6, baseMs: 900, maxMs: 20_000 }
+    );
+
+    const addRaw = ensureString((resp as any)?.text, '').trim();
+    const add = trimOverlap(chapterText, addRaw);
+
+    // si salió corto, reintenta en la siguiente vuelta (no guardamos basura)
+    if (countWordsQuick(add) < 500) continue;
+
+    chapterText = (chapterText.trim() ? chapterText.trim() + '\n\n' : '') + add.trim();
+
+    // actualiza en memoria en cada iteración (y mantiene master coherente)
+    current = setChapterTextOnProject(current, chapterNum, title, chapterText, 'PENDING');
+  }
+
+  const finalWords = countWordsQuick(chapterText);
+  const done = finalWords >= target;
+
+  current = setChapterTextOnProject(current, chapterNum, title, chapterText, done ? 'COMPLETED' : 'PENDING');
+
+  if (!done) {
+    throw new Error(`Capítulo quedó corto: ${finalWords} palabras. Objetivo: ${target}. Vuelve a intentar (el servicio puede estar devolviendo respuestas cortas/503).`);
+  }
+
+  return current;
+}
+
+
+
+
+
 /* ----------------------------- engine parse ----------------------------- */
 
 function safeJsonParse(text: string): unknown {
@@ -145,9 +413,44 @@ function chapterIsComplete(chText: string, targetWords?: number): boolean {
   const wc = countWordsQuick(chText);
   if (!wc) return false;
   if (isPlaceholderText(chText)) return false;
-  const target = typeof targetWords === 'number' && Number.isFinite(targetWords) ? targetWords : 0;
-  const minWords = target > 0 ? Math.max(250, Math.floor(target * 0.4)) : 250;
+
+  const target = typeof targetWords === 'number' && Number.isFinite(targetWords) ? Math.floor(targetWords) : 0;
+
+  // ✅ Para tus libros largos: “completo” significa llegar (o pasar) el target.
+  // Si no hay target, usamos un mínimo razonable.
+  const minWords = target > 0 ? Math.max(400, target) : 400;
+
   return wc >= minWords;
+}
+
+
+function assertGeneratedContentNonEmpty(updated: Project, action: string, chapterNum?: number, expectedTargetWords?: number) {
+  const st: any = (updated as any).state ?? {};
+  if (action === 'GENERATE_PROPOSAL') {
+    const t = ensureString(st?.proposal?.text, '').trim();
+    if (!t || isPlaceholderText(t) || countWordsQuick(t) < 120) throw new Error('El modelo devolvió una propuesta vacía o insuficiente.');
+  }
+  if (action === 'GENERATE_INTRODUCTION') {
+    const t = ensureString(st?.introduction?.text, '').trim();
+    if (!t || isPlaceholderText(t) || countWordsQuick(t) < 120) throw new Error('El modelo devolvió una introducción vacía o insuficiente.');
+  }
+  if (action === 'GENERATE_CHAPTER') {
+    const n = Number(chapterNum ?? 0) || 0;
+    const chs = ensureArray<any>(st?.chapters, []);
+    const ch = chs.find((c: any) => Number(c?.chapter_number ?? 0) === n);
+    const t = ensureString(ch?.text, '').trim();
+
+    const outline = ensureArray<any>(st?.outline_12, []);
+    const o = outline.find((x: any) => Number(x?.chapter_number ?? 0) === n);
+    const target = Number(expectedTargetWords ?? o?.target_words ?? 0) || 0;
+    const minWords = target > 0 ? Math.max(900, target) : 900;
+
+    if (!t || isPlaceholderText(t) || countWordsQuick(t) < minWords) {
+      throw new Error(
+        `El modelo devolvió un capítulo vacío/insuficiente (${countWordsQuick(t)} palabras). Objetivo: ${target || 'N/A'}.`
+      );
+    }
+  }
 }
 
 /* ----------------------- progress computed from text ----------------------- */
@@ -464,6 +767,10 @@ const App: React.FC = () => {
   const [email, setEmail] = useState('');
   const [authNotice, setAuthNotice] = useState<string | null>(null);
 
+  // global chapter length (aplica a TODOS los libros)
+  const [defaultChapterWords, setDefaultChapterWords] = useState<number>(3000);
+  const [savingSettings, setSavingSettings] = useState(false);
+
   // Ref sync: evita closures viejas
   const projectsRef = useRef<Project[]>(projects);
   useEffect(() => {
@@ -582,6 +889,22 @@ const App: React.FC = () => {
     })();
   }, [refreshList]);
 
+  // Carga preferencia global de longitud por capítulo (por usuario).
+  useEffect(() => {
+    if (!session) return;
+    (async () => {
+      try {
+        const s = await getUserSettings();
+        const v = Number((s as any)?.default_chapter_words ?? 3000) || 3000;
+        setDefaultChapterWords(Math.max(500, Math.min(20000, v)));
+      } catch {
+        // si no existe tabla user_settings todavía, usamos fallback
+        setDefaultChapterWords(3000);
+      }
+    })();
+  }, [session]);
+
+
   // Auto-hidratación cuando seleccionas proyecto
   useEffect(() => {
     if (!session || !activeProjectId) return;
@@ -665,7 +988,47 @@ const App: React.FC = () => {
 
   
 const callComposer = useCallback(async (task: ComposerTask, state: AnyRecord): Promise<EngineResult> => {
-  // ✅ Gemini corre en backend (Vercel Function /api/composer). La API Key vive allí como GEMINI_API_KEY (privada).
+  // ✅ DEV (npm run dev / Vite): Vite NO sirve /api/composer, así que llamamos directo a Gemini.
+  // ✅ PROD (Vercel): usamos /api/composer para no exponer la API key.
+  if (import.meta.env.DEV) {
+    if (!DEV_GEMINI_API_KEY) {
+      throw new Error('Falta VITE_GEMINI_API_KEY en .env.local (solo dev).');
+    }
+
+    // Dynamic import para evitar bundling innecesario cuando no se usa.
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey: DEV_GEMINI_API_KEY });
+
+    const prompt = `TASK:\n${JSON.stringify(task)}\n\nPROJECT_STATE:\n${JSON.stringify(state)}`;
+
+    const response = await withRetry(() => ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: (() => {
+        const targetW =
+          typeof task.target_length_words === 'number' && Number.isFinite(task.target_length_words)
+            ? Math.max(0, Math.floor(task.target_length_words))
+            : 0;
+
+        const isChapter = task.action === 'GENERATE_CHAPTER';
+        const maxOut = isChapter
+          ? Math.min(32000, Math.max(14000, Math.floor(targetW > 0 ? targetW * 3.2 : 20000)))
+          : 8192;
+
+        return {
+          systemInstruction: DEV_SYSTEM_PROMPT,
+          responseMimeType: 'application/json',
+          maxOutputTokens: maxOut,
+          temperature: isChapter ? 0.85 : 0.6,
+        };
+      })() as any,
+    }));
+
+    const parsed = safeJsonParse(response.text || '');
+    return validateEngineResult(parsed);
+  }
+
+  // ✅ PROD: backend composer (Vercel Function /api/composer)
   const r = await fetch('/api/composer', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -695,7 +1058,6 @@ const callComposer = useCallback(async (task: ComposerTask, state: AnyRecord): P
       ensureString(data?.error, '') ||
       ensureString(data?.message, '') ||
       `Error HTTP ${r.status}`;
-    // Mensaje más útil para rate limits
     if (r.status === 429) throw new Error(`Rate limit / cuota: ${msg}`);
     throw new Error(msg);
   }
@@ -870,19 +1232,28 @@ const processResponse = useCallback(
     [callComposer, persistProjectMeta, processResponse, rebuildAndSnapshotMaster, upsertOneSectionFromState]
   );
 
-  const handleGenerateSection = useCallback(
-    async (action: string, chapterNum?: number) => {
+  
+  const generateSectionCore = useCallback(
+    async (
+      action: string,
+      chapterNum?: number,
+      opts?: { bypassLock?: boolean }
+    ) => {
       const proj = projectsRef.current.find((p) => p.id === activeProjectId);
       if (!proj) return false;
 
       setError(null);
 
-      // Single-flight global
-      if (globalGenLockRef.current || anyGenerating) {
-        setError('Ya hay una generación en curso. Termina esa y luego lanzas otra.');
-        return false;
+      const bypass = Boolean(opts?.bypassLock);
+
+      // Single-flight global (solo si NO estamos en un "batch" controlado)
+      if (!bypass) {
+        if (globalGenLockRef.current || anyGenerating) {
+          setError('Ya hay una generación en curso. Termina esa y luego lanzas otra.');
+          return false;
+        }
+        globalGenLockRef.current = true;
       }
-      globalGenLockRef.current = true;
 
       const sectionId =
         action === 'GENERATE_INTRODUCTION'
@@ -900,8 +1271,23 @@ const processResponse = useCallback(
         const task: ComposerTask = {
           action: action as ComposerTask['action'],
           chapter_number: chapterNum,
-          target_length_words: action === 'GENERATE_CHAPTER' ? 1800 : 1200,
-          active_view: action === 'GENERATE_PROPOSAL' ? 'PROPOSAL' : action === 'GENERATE_INTRODUCTION' ? 'INTRODUCTION' : 'CHAPTER',
+          target_length_words: (() => {
+            if (action !== 'GENERATE_CHAPTER') return 1200;
+
+            const st: any = proj.state as any;
+            const outline = ensureArray<any>(st?.outline_12, []);
+            const o = outline.find((x: any) => Number(x?.chapter_number ?? 0) === Number(chapterNum ?? 0));
+            const tw = Number(o?.target_words ?? 0) || 0;
+
+            // si outline no trae target_words, usamos el default global guardado por usuario
+            return tw > 0 ? tw : defaultChapterWords;
+          })(),
+          active_view:
+            action === 'GENERATE_PROPOSAL'
+              ? 'PROPOSAL'
+              : action === 'GENERATE_INTRODUCTION'
+                ? 'INTRODUCTION'
+                : 'CHAPTER',
         };
 
         const stateForComposer = compactStateForComposer(proj);
@@ -912,6 +1298,28 @@ const processResponse = useCallback(
 
         const updatedProj = processResponse(result, proj, { action, chapterNum });
 
+        // ✅ Evita el "parece que escribe pero no escribe": si el modelo devolvió vacío, lo marcamos como error.
+        // ✅ Si el capítulo quedó corto vs target, lo auto-extendemos en DEV (2–4 tandas) hasta llegar al 100% del target (>= target).
+        if (action === 'GENERATE_CHAPTER' && import.meta.env.DEV) {
+          const tw = Number((task as any).target_length_words ?? 0) || 0;
+          const n = Number(chapterNum ?? 0) || 0;
+          if (tw > 0 && n > 0) {
+            const extended = await autoExtendChapterDev({
+              project: updatedProj,
+              chapterNum: n,
+              targetWords: tw,
+              model: GEMINI_MODEL,
+              apiKey: DEV_GEMINI_API_KEY,
+            });
+            // mutación controlada (evita rewire de variables)
+            (updatedProj as any).state = (extended as any).state;
+            (updatedProj as any).master_document = (extended as any).master_document;
+            (updatedProj as any).generation_progress = (extended as any).generation_progress;
+          }
+        }
+
+        assertGeneratedContentNonEmpty(updatedProj, action, chapterNum, (task as any).target_length_words);
+
         // Persistimos patch (meta + sección afectada) + master
         await persistProjectMeta(updatedProj);
         if (action === 'GENERATE_PROPOSAL') await upsertOneSectionFromState(updatedProj, 'proposal');
@@ -921,7 +1329,11 @@ const processResponse = useCallback(
         const masterText = await rebuildAndSnapshotMaster(updatedProj);
         const updatedWithMaster = {
           ...updatedProj,
-          master_document: { ...(updatedProj as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
+          master_document: {
+            ...(updatedProj as any).master_document,
+            text: masterText,
+            chunks: [{ index: 1, total: 1, text: masterText }],
+          },
         } as Project;
 
         updateProjectById(proj.id, () => updatedWithMaster);
@@ -930,17 +1342,35 @@ const processResponse = useCallback(
         return true;
       } catch (e) {
         if ((requestSeqRef.current[proj.id] ?? 0) !== seq) return false;
+
         setError(`Error: ${normalizeError(e)}`);
         setSectionProgress(proj.id, sectionId, 'error');
         return false;
       } finally {
-        globalGenLockRef.current = false;
+        if (!bypass) globalGenLockRef.current = false;
       }
     },
-    [activeProjectId, anyGenerating, callComposer, persistProjectMeta, processResponse, rebuildAndSnapshotMaster, setSectionProgress, updateProjectById, upsertOneSectionFromState]
+    [
+      activeProjectId,
+      anyGenerating,
+      defaultChapterWords,
+      callComposer,
+      persistProjectMeta,
+      processResponse,
+      rebuildAndSnapshotMaster,
+      setSectionProgress,
+      updateProjectById,
+      upsertOneSectionFromState,
+    ]
+  );
+
+  const handleGenerateSection = useCallback(
+    async (action: string, chapterNum?: number) => generateSectionCore(action, chapterNum),
+    [generateSectionCore]
   );
 
   const handleGenerateRemaining = useCallback(async () => {
+    // Batch: adquirimos lock una vez y generamos secuencialmente sin rebotar por el propio lock.
     if (globalGenLockRef.current || anyGenerating) return;
     globalGenLockRef.current = true;
 
@@ -954,7 +1384,7 @@ const processResponse = useCallback(
 
       const st1: any = current.state as any;
       if ((st1 as any).proposal?.status !== 'COMPLETED') {
-        const ok = await handleGenerateSection('GENERATE_PROPOSAL');
+        const ok = await generateSectionCore('GENERATE_PROPOSAL', undefined, { bypassLock: true });
         if (!ok) return;
       }
 
@@ -963,7 +1393,7 @@ const processResponse = useCallback(
 
       const st2: any = current.state as any;
       if ((st2 as any).introduction?.status !== 'COMPLETED') {
-        const ok = await handleGenerateSection('GENERATE_INTRODUCTION');
+        const ok = await generateSectionCore('GENERATE_INTRODUCTION', undefined, { bypassLock: true });
         if (!ok) return;
       }
 
@@ -974,11 +1404,13 @@ const processResponse = useCallback(
       for (const item of ensureArray<any>((st3 as any).outline_12, [])) {
         const key = `chap-${item.chapter_number}`;
         const status = (((current as any).generation_progress || {})[key] as GenerationStatus | undefined);
+
         if (status === 'generating') break;
-        // si está completed, igual permitimos “regenerar” manual, pero aquí skippeamos
         if (status === 'completed') continue;
-        const ok = await handleGenerateSection('GENERATE_CHAPTER', item.chapter_number);
+
+        const ok = await generateSectionCore('GENERATE_CHAPTER', item.chapter_number, { bypassLock: true });
         if (!ok) break;
+
         current = getFresh();
         if (!current) break;
       }
@@ -986,7 +1418,8 @@ const processResponse = useCallback(
       setIsLoading(false);
       globalGenLockRef.current = false;
     }
-  }, [activeProjectId, anyGenerating, handleGenerateSection]);
+  }, [activeProjectId, anyGenerating, generateSectionCore]);
+
 
   const handleEditSection = useCallback(
     async (payload: any) => {
@@ -1119,6 +1552,72 @@ const processResponse = useCallback(
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto p-4">
+
+            <div className="mb-4 bg-slate-950/40 border border-slate-800 rounded-xl p-3">
+              <div className="text-[10px] font-black tracking-widest uppercase text-slate-400">
+                Longitud por capítulo (default global)
+              </div>
+
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDefaultChapterWords(3000)}
+                  className={`py-2 rounded-lg text-xs font-black transition ${
+                    defaultChapterWords === 3000
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                  }`}
+                >
+                  3000
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDefaultChapterWords(6000)}
+                  className={`py-2 rounded-lg text-xs font-black transition ${
+                    defaultChapterWords === 6000
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                  }`}
+                >
+                  6000
+                </button>
+              </div>
+
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="number"
+                  value={defaultChapterWords}
+                  min={500}
+                  max={20000}
+                  step={100}
+                  onChange={(e) => setDefaultChapterWords(Number(e.target.value || 3000))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs"
+                />
+                <button
+                  type="button"
+                  disabled={savingSettings}
+                  onClick={async () => {
+                    try {
+                      setSavingSettings(true);
+                      const v = await upsertUserSettings(defaultChapterWords);
+                      setDefaultChapterWords(v);
+                    } catch (e) {
+                      setError(normalizeError(e));
+                    } finally {
+                      setSavingSettings(false);
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg text-xs font-black bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  Guardar
+                </button>
+              </div>
+
+              <div className="mt-2 text-[11px] text-slate-400 leading-snug">
+                Se usa cuando el outline no trae <span className="font-mono">target_words</span>.
+              </div>
+            </div>
+
             <TableOfContents
               projects={projects}
               activeProjectId={activeProjectId}
@@ -1136,8 +1635,7 @@ const processResponse = useCallback(
           
 
 <div className="mt-4 text-[11px] text-slate-400 bg-slate-950/40 border border-slate-800 rounded p-3 leading-relaxed">
-  Gemini corre en backend: <span className="font-mono">POST /api/composer</span>. En Vercel configura{' '}
-  <span className="font-mono">GEMINI_API_KEY</span> (privada, sin <span className="font-mono">VITE_</span>).
+  DEV: Gemini directo con <span className="font-mono">VITE_GEMINI_API_KEY</span> en <span className="font-mono">.env.local</span>. PROD (Vercel): <span className="font-mono">POST /api/composer</span> con <span className="font-mono">GEMINI_API_KEY</span> (privada).
 </div>
 </div>
         </aside>
@@ -1205,3 +1703,4 @@ const processResponse = useCallback(
 };
 
 export default App;
+
