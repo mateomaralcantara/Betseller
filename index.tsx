@@ -26,7 +26,7 @@ root.render(
         border: '1px solid rgba(255,255,255,.15)',
       }}
     >
-      ENTRY=index.tsx ✅ (si NO ves esto, estás editando el archivo equivocado)
+      BestSeller ✅ (Tu libro con dos clic)
     </div>
 
     <App />

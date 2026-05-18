@@ -414,3 +414,67 @@ export async function upsertUserSettings(defaultChapterWords: number): Promise<n
   if (error) throw error;
   return v;
 }
+export async function getMyProfile() {
+  const session = await getSession();
+  const uid = session?.user?.id;
+  if (!uid) throw new Error('No autenticado.');
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('user_id,email,has_access')
+    .eq('user_id', uid)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return {
+    user_id: uid,
+    email: (data as any)?.email ?? session.user.email ?? '',
+    has_access: Boolean((data as any)?.has_access),
+  };
+}
+
+export async function getMyAccessRequest() {
+  const session = await getSession();
+  const uid = session?.user?.id;
+  if (!uid) throw new Error('No autenticado.');
+
+  const { data, error } = await supabase
+    .from('access_requests')
+    .select('*')
+    .eq('user_id', uid)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+export async function createAccessRequest(payload: {
+  name?: string;
+  phone?: string;
+  message?: string;
+  transfer_reference?: string;
+}) {
+  const session = await getSession();
+  const uid = session?.user?.id;
+  const email = session?.user?.email;
+  if (!uid || !email) throw new Error('No autenticado.');
+
+  const { data, error } = await supabase
+    .from('access_requests')
+    .insert({
+      user_id: uid,
+      email,
+      name: payload.name ?? null,
+      phone: payload.phone ?? null,
+      message: payload.message ?? null,
+      transfer_reference: payload.transfer_reference ?? null,
+      status: 'PENDING',
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return (data as any)?.id as string;
+}
