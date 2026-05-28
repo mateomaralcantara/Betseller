@@ -56,8 +56,9 @@ function normalizeProgressKeyFromMenuItem(item: any): string {
 function buildFallbackMenuItemsFromState(project: Project): Array<{ id: string; label: string }> {
   const st: any = (project as any)?.state ?? {};
   const outline = Array.isArray(st?.outline_12) ? st.outline_12 : [];
+  const chapters = Array.isArray(st?.chapters) ? st.chapters : [];
 
-  const chapters = outline.map((o: any, idx: number) => {
+  const chaptersItems = (outline.length ? outline : chapters).map((o: any, idx: number) => {
     const n = Number(o?.chapter_number ?? (idx + 1)) || (idx + 1);
     const title = String(o?.chapter_title ?? o?.title ?? `Capítulo ${n}`).trim();
     // Mantén label legible sin duplicar "Capítulo"
@@ -68,7 +69,7 @@ function buildFallbackMenuItemsFromState(project: Project): Array<{ id: string; 
   return [
     { id: 'proposal', label: 'Propuesta editorial' },
     { id: 'intro', label: 'Introducción' },
-    ...chapters,
+    ...chaptersItems,
   ];
 }
 

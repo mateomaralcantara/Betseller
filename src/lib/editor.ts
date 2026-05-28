@@ -1,8 +1,12 @@
 // src/lib/editor.ts
-// Shared editor/state helpers for App.tsx
+// Centraliza: normalización/merge anti-borrado, master builder, progress, y apply EngineResult.
+// ✅ Incluye: outline fallback (deep scan en dashboard) + limpieza de headings duplicados en capítulos.
+
 import type { Project, ProjectState } from "../../types";
 
-export type AnyRecord = Record<string, unknown>;
+/* -------------------------------- Types --------------------------------- */
+
+export type AnyRecord = Record<string, any>;
 
 export type GenerationStatus = "pending" | "generating" | "completed" | "error";
 export type GenerationProgress = Record<string, GenerationStatus>;
@@ -17,7 +21,7 @@ export type EngineResult = {
 
 export type ProcessCtx = { action?: string; chapterNum?: number };
 
-const WORD_RE = /\S+/g;
+/* ----------------------------- tiny helpers ----------------------------- */
 
 export function isRecord(v: unknown): v is AnyRecord {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -36,6 +40,161 @@ export function normalizeError(e: unknown): string {
   if (isRecord(e) && "message" in e) return String((e as AnyRecord).message);
   return "Error desconocido";
 }
+
+/* ----------------------------- engine parse ----------------------------- */
+
+function cleanModelText(text: string): string {
+  return String(text ?? '')
+    .replace(/^\s*```json\s*/i, '')
+    .replace(/^\s*```\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
+}
+
+function escapeControlCharsInsideStrings(input: string): string {
+  let out = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+
+    if (!inString) {
+      if (ch === '"') inString = true;
+      out += ch;
+      continue;
+    }
+
+    if (escaped) {
+      out += ch;
+      escaped = false;
+      continue;
+    }
+
+    if (ch === '\\') {
+      out += ch;
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      out += ch;
+      inString = false;
+      continue;
+    }
+
+    if (ch === '\n') {
+      out += '\\n';
+      continue;
+    }
+
+    if (ch === '\r') {
+      out += '\\r';
+      continue;
+    }
+
+    if (ch === '\t') {
+      out += '\\t';
+      continue;
+    }
+
+    const code = ch.charCodeAt(0);
+    if (code >= 0 && code < 32) {
+      out += `\\u${code.toString(16).padStart(4, '0')}`;
+      continue;
+    }
+
+    out += ch;
+  }
+
+  return out;
+}
+
+function extractFirstJsonObject(text: string): string | null {
+  const t = cleanModelText(text);
+  const first = t.indexOf('{');
+  if (first < 0) return null;
+
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+
+  for (let i = first; i < t.length; i++) {
+    const ch = t[i];
+
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+
+    if (ch === '"') {
+      inStr = true;
+      continue;
+    }
+
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return t.slice(first, i + 1);
+    }
+  }
+
+  const last = t.lastIndexOf('}');
+  return last > first ? t.slice(first, last + 1) : null;
+}
+
+function parseJsonCandidate(candidate: string): any {
+  const cleaned = cleanModelText(candidate);
+  const repaired = escapeControlCharsInsideStrings(cleaned);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    return JSON.parse(repaired);
+  }
+}
+
+export function safeJsonParse(text: string): any {
+  const t = cleanModelText(text);
+  if (!t) throw new Error('Respuesta vacía');
+
+  try {
+    return parseJsonCandidate(t);
+  } catch (firstError: any) {
+    const obj = extractFirstJsonObject(t);
+    if (!obj) {
+      throw new Error(`No se pudo extraer JSON. ${firstError?.message || ''}`.trim());
+    }
+
+    try {
+      return parseJsonCandidate(obj);
+    } catch (secondError: any) {
+      const preview = obj.slice(0, 1200);
+      throw new Error(
+        `JSON inválido del modelo: ${secondError?.message || secondError}. Preview: ${preview}`
+      );
+    }
+  }
+}
+
+export function validateEngineResult(raw: unknown): EngineResult {
+  if (!isRecord(raw)) throw new Error("Respuesta no es JSON object.");
+  if ((raw as AnyRecord).ok !== true) {
+    const needs = (raw as AnyRecord).needs_input;
+    const msg = isRecord(needs) ? ensureString(needs.message, "") : "";
+    throw new Error(msg || "Error del motor editorial.");
+  }
+  if (!("project_state_updated" in raw)) throw new Error("Respuesta inválida: falta project_state_updated.");
+  if (!("master_document" in raw)) throw new Error("Respuesta inválida: falta master_document.");
+  if (!("dashboard" in raw)) throw new Error("Respuesta inválida: falta dashboard.");
+  return raw as EngineResult;
+}
+
+/* ------------------- word count + placeholder detection ------------------- */
+
+const WORD_RE = /\S+/g;
 
 export function countWordsQuick(text: string): number {
   const t = (text ?? "").trim();
@@ -56,219 +215,96 @@ export function isPlaceholderText(text: string): boolean {
   return false;
 }
 
-/** ✅ Business rule: complete means reaching target (if provided). */
-export function chapterIsComplete(text: string, targetWords?: number): boolean {
-  const wc = countWordsQuick(text);
+export function chapterIsComplete(chText: string, targetWords?: number): boolean {
+  const wc = countWordsQuick(chText);
   if (!wc) return false;
-  if (isPlaceholderText(text)) return false;
+  if (isPlaceholderText(chText)) return false;
+
   const target = typeof targetWords === "number" && Number.isFinite(targetWords) ? Math.floor(targetWords) : 0;
-  return target > 0 ? wc >= target : wc >= 900;
+
+  // ✅ Regla dura: si hay target, "COMPLETED" = llegar al target (y mínimo 2000 siempre).
+  const minWords = target > 0 ? Math.max(2000, target) : 2000;
+  return wc >= minWords;
 }
 
-/* ----------------------------- engine parse ----------------------------- */
+/* ----------------------- outline helpers (variable N) ----------------------- */
 
-export function safeJsonParse(text: string): unknown {
-  const t = (text ?? "").trim();
-  if (!t) throw new Error("Respuesta vacía.");
-  try {
-    return JSON.parse(t);
-  } catch {
-    const first = t.indexOf("{");
-    const last = t.lastIndexOf("}");
-    if (first >= 0 && last > first) return JSON.parse(t.slice(first, last + 1));
-    throw new Error("No se pudo parsear JSON.");
+function stripChapterLabel(title: string, chapterNum?: number): string {
+  const t = (title ?? "").trim();
+  if (!t) return "";
+  const n = typeof chapterNum === "number" && Number.isFinite(chapterNum) ? chapterNum : null;
+
+  // Remove leading "Capítulo 3:", "Capitulo 3 -", "Chapter 3:" etc.
+  if (n) {
+    const re1 = new RegExp(String.raw`^\s*(cap[ií]tulo|chapter)\s*${n}\s*[:\-–—]\s*`, "i");
+    if (re1.test(t)) return t.replace(re1, "").trim();
   }
+
+  // Remove generic "Capítulo:" prefix (without number)
+  return t.replace(/^\s*(cap[ií]tulo|chapter)\s*[:\-–—]\s*/i, "").trim();
 }
 
-export function validateEngineResult(raw: unknown): EngineResult {
-  if (!isRecord(raw)) throw new Error("Respuesta no es JSON object.");
-  if ((raw as AnyRecord).ok !== true) {
-    const needs = (raw as AnyRecord).needs_input;
-    const msg = isRecord(needs) ? ensureString(needs.message, "") : "";
-    throw new Error(msg || "Error del motor editorial.");
-  }
-  if (!("project_state_updated" in raw)) throw new Error("Respuesta inválida: falta project_state_updated.");
-  if (!("master_document" in raw)) throw new Error("Respuesta inválida: falta master_document.");
-  if (!("dashboard" in raw)) throw new Error("Respuesta inválida: falta dashboard.");
-  return raw as EngineResult;
-}
-
-/* -------------------------- master + normalize + merge -------------------------- */
-
-export function buildMasterFromState(state: ProjectState, title?: string): string {
-  const parts: string[] = [];
-  const bookTitle = (title || (state as any).book_title || "Documento maestro").trim();
-  parts.push(`# ${bookTitle}\n`);
-
-  const proposalText = ensureString((state as any).proposal?.text, "").trim();
-  if (proposalText) parts.push(`## Propuesta editorial\n\n${proposalText}`);
-
-  const introText = ensureString((state as any).introduction?.text, "").trim();
-  if (introText) parts.push(`## Introducción\n\n${introText}`);
-
-  const chapters = ensureArray<any>((state as any).chapters, [])
+function buildOutlineFromChapterSections(chapters: Array<{ chapter_number: number; title: string; text: string; status?: string }>) {
+  return chapters
+    .filter((c) => (Number(c?.chapter_number ?? 0) || 0) > 0)
     .slice()
-    .sort((a, b) => (Number(a?.chapter_number ?? 0) || 0) - (Number(b?.chapter_number ?? 0) || 0));
-
-  for (const ch of chapters) {
-    const t = ensureString(ch?.text, "").trim();
-    if (!t) continue;
-    const n = ch?.chapter_number ?? "";
-    const chTitle = ensureString(ch?.title, n ? `Capítulo ${n}` : "Capítulo").trim();
-    parts.push(`## ${chTitle}\n\n${t}`);
-  }
-
-  return parts.join("\n\n---\n\n").trim() + "\n";
+    .sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0))
+    .map((c) => {
+      const n = Number(c.chapter_number ?? 0) || 0;
+      const cleanTitle = stripChapterLabel(ensureString(c.title, n ? `Capítulo ${n}` : "Capítulo"), n) || `Capítulo ${n}`;
+      const wc = countWordsQuick(ensureString(c.text, ""));
+      return {
+        id: `outline_${String(n).padStart(2, "0")}`,
+        chapter_number: n,
+        chapter_title: cleanTitle,
+        status: c?.status === "COMPLETED" ? "COMPLETED" : "PENDING",
+        target_words: wc > 0 ? wc : 0,
+        objective: "",
+        key_points: [],
+        subheads_h2: [],
+        tools_frameworks: [],
+        exercises: [],
+        deliverable: "",
+        transition_to_next: "",
+      };
+    });
 }
 
-export function normalizeProjectState(input: unknown): ProjectState {
-  const state: AnyRecord = isRecord(input) ? { ...(input as AnyRecord) } : {};
+/* ----------------------- duplicate heading cleanup ------------------------ */
 
-  const proposal = isRecord((state as any).proposal) ? { ...((state as any).proposal as AnyRecord) } : {};
-  (proposal as any).id = ensureString((proposal as any).id, "sec_proposal");
-  (proposal as any).text = ensureString((proposal as any).text, "");
-  (proposal as any).status = (proposal as any).status === "COMPLETED" ? "COMPLETED" : "PENDING";
-  (proposal as any).words = typeof (proposal as any).words === "number" ? (proposal as any).words : 0;
-  (state as any).proposal = proposal;
+function stripLeadingChapterHeading(text: string, chapterNum?: number, chapterTitle?: string): string {
+  const t = (text ?? "").trimStart();
+  if (!t) return "";
 
-  const introduction = isRecord((state as any).introduction) ? { ...((state as any).introduction as AnyRecord) } : {};
-  (introduction as any).id = ensureString((introduction as any).id, "sec_introduction");
-  (introduction as any).text = ensureString((introduction as any).text, "");
-  (introduction as any).status = (introduction as any).status === "COMPLETED" ? "COMPLETED" : "PENDING";
-  (introduction as any).words = typeof (introduction as any).words === "number" ? (introduction as any).words : 0;
-  (state as any).introduction = introduction;
+  const title = (chapterTitle ?? "").trim();
+  const n = typeof chapterNum === "number" && Number.isFinite(chapterNum) ? chapterNum : null;
 
-  (state as any).outline_12 = ensureArray<any>((state as any).outline_12, []).map((o: any, idx: number) => {
-    const chapterNum =
-      typeof o?.chapter_number === "number"
-        ? o.chapter_number
-        : typeof o?.chapterNumber === "number"
-          ? o.chapterNumber
-          : idx + 1;
+  // Match headings like:
+  // "# Capítulo 3", "## Capitulo 3: X", "### Capítulo 3 — X"
+  const capLine = n
+    ? new RegExp(String.raw`^\s{0,3}#{1,3}\s*cap[ií]tulo\s*${n}\b[^\n]*\n+`, "i")
+    : null;
 
-    const normalized: AnyRecord = isRecord(o) ? { ...(o as AnyRecord) } : {};
-    (normalized as any).id = ensureString((normalized as any).id, `outline_${String(chapterNum).padStart(2, "0")}`);
-    (normalized as any).chapter_number = chapterNum;
-    (normalized as any).chapter_title = ensureString(
-      (normalized as any).chapter_title,
-      ensureString((normalized as any).title, `Capítulo ${chapterNum}`)
-    );
-    (normalized as any).status =
-      (normalized as any).status === "COMPLETED" || (normalized as any).status === "DRAFTED"
-        ? (normalized as any).status
-        : "PENDING";
-    (normalized as any).target_words = typeof (normalized as any).target_words === "number" ? (normalized as any).target_words : 0;
-    (normalized as any).objective = ensureString((normalized as any).objective, "");
-    (normalized as any).key_points = ensureArray((normalized as any).key_points, []);
-    (normalized as any).subheads_h2 = ensureArray((normalized as any).subheads_h2, []);
-    return normalized;
-  });
+  let out = t;
 
-  (state as any).chapters = ensureArray<any>((state as any).chapters, []).map((c: any, idx: number) => {
-    const cn = Number(c?.chapter_number ?? c?.chapterNumber ?? idx + 1) || idx + 1;
-    const normalized: AnyRecord = isRecord(c) ? { ...(c as AnyRecord) } : {};
-    (normalized as any).chapter_number = cn;
-    (normalized as any).id = ensureString((normalized as any).id, `sec_chapter_${String(cn).padStart(2, "0")}`);
-    (normalized as any).title = ensureString((normalized as any).title, `Capítulo ${cn}`).trim();
-    (normalized as any).text = ensureString((normalized as any).text, "");
-    (normalized as any).status = (normalized as any).status === "COMPLETED" ? "COMPLETED" : "PENDING";
-    (normalized as any).words = typeof (normalized as any).words === "number" ? (normalized as any).words : 0;
-    return normalized;
-  });
+  if (capLine && capLine.test(out)) out = out.replace(capLine, "");
 
-  const continuity = isRecord((state as any).continuity_pack) ? { ...((state as any).continuity_pack as AnyRecord) } : {};
-  (continuity as any).style_guide = ensureString((continuity as any).style_guide, "");
-  (continuity as any).canon = ensureString((continuity as any).canon, "");
-  (continuity as any).outline_progress = ensureString((continuity as any).outline_progress, "");
-  (continuity as any).open_loops = ensureArray((continuity as any).open_loops, []);
-  (continuity as any).chapter_summaries = ensureArray((continuity as any).chapter_summaries, []);
-  (continuity as any).next_chapter_plan = ensureArray((continuity as any).next_chapter_plan, []);
-  (state as any).continuity_pack = continuity;
+  if (title) {
+    const titleLine = new RegExp(String.raw`^\s{0,3}#{1,3}\s*${escapeRegExp(title)}\s*\n+`, "i");
+    if (titleLine.test(out)) out = out.replace(titleLine, "");
+  }
 
-  (state as any).project_id = ensureString((state as any).project_id, ensureString((state as any).projectId, `proj_${Date.now()}`));
-  (state as any).book_title = ensureString((state as any).book_title, ensureString((state as any).bookTitle, "Libro sin título"));
-  (state as any).book_topic = ensureString((state as any).book_topic, ensureString((state as any).bookTopic, ""));
-  (state as any).audience = ensureString((state as any).audience, "");
-  (state as any).tone_style = ensureString((state as any).tone_style, "");
+  // If still starts with "## Capítulo" generic, drop it once (defensive)
+  out = out.replace(/^\s{0,3}#{1,3}\s*cap[ií]tulo\b[^\n]*\n+/i, "");
 
-  return state as unknown as ProjectState;
+  return out.trimStart();
 }
 
-export function shouldPreservePrevText(prevText: string, nextText: string): boolean {
-  const prev = (prevText ?? "").trim();
-  const next = (nextText ?? "").trim();
-  if (!prev) return false;
-  if (!next) return true;
-  if (isPlaceholderText(next)) return true;
-
-  if (next.length < Math.max(160, Math.floor(prev.length * 0.7))) return true;
-
-  const prevW = countWordsQuick(prev);
-  const nextW = countWordsQuick(next);
-  if (prevW >= 220 && nextW < Math.max(80, Math.floor(prevW * 0.6))) return true;
-
-  return false;
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function mergeProjectState(prev: ProjectState | undefined, next: ProjectState): ProjectState {
-  if (!prev) return next;
-
-  const merged: AnyRecord = { ...(prev as any), ...(next as any) };
-
-  merged.proposal = { ...(prev as any).proposal, ...(next as any).proposal };
-  if (!ensureString((merged.proposal as any)?.text, "").trim() && ensureString((prev as any).proposal?.text, "").trim()) {
-    merged.proposal = { ...(prev as any).proposal };
-  }
-
-  merged.introduction = { ...(prev as any).introduction, ...(next as any).introduction };
-  if (
-    !ensureString((merged.introduction as any)?.text, "").trim() &&
-    ensureString((prev as any).introduction?.text, "").trim()
-  ) {
-    merged.introduction = { ...(prev as any).introduction };
-  }
-
-  const prevOutline = ensureArray<any>((prev as any).outline_12, []);
-  const nextOutline = ensureArray<any>((next as any).outline_12, []);
-  const outlineByNum = new Map<number, any>();
-  for (const o of prevOutline) outlineByNum.set(o.chapter_number, o);
-  for (const o of nextOutline) outlineByNum.set(o.chapter_number, { ...outlineByNum.get(o.chapter_number), ...o });
-  merged.outline_12 = Array.from(outlineByNum.values()).sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
-
-  const prevCh = ensureArray<any>((prev as any).chapters, []);
-  const nextCh = ensureArray<any>((next as any).chapters, []);
-  const byNum = new Map<number, any>();
-
-  for (const c of prevCh) {
-    const cn = Number(c?.chapter_number ?? 0) || 0;
-    if (cn > 0) byNum.set(cn, c);
-  }
-
-  for (const c of nextCh) {
-    const cn = Number(c?.chapter_number ?? 0) || 0;
-    if (!cn) continue;
-
-    const existing = byNum.get(cn);
-    const mergedC = { ...(existing || {}), ...c, chapter_number: cn };
-
-    if (existing) {
-      const prevText = ensureString(existing?.text, "");
-      const nextText = ensureString(c?.text, "");
-      if (shouldPreservePrevText(prevText, nextText)) {
-        mergedC.text = existing.text;
-        mergedC.status = existing.status;
-        mergedC.words = existing.words;
-      }
-    }
-
-    byNum.set(cn, mergedC);
-  }
-
-  merged.chapters = Array.from(byNum.values()).sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
-  merged.continuity_pack = { ...(prev as any).continuity_pack, ...(next as any).continuity_pack };
-
-  return merged as unknown as ProjectState;
-}
+/* ----------------------- progress computed from text ----------------------- */
 
 export function recomputeGenerationProgress(project: Project): GenerationProgress {
   const prev = ((project as any).generation_progress as AnyRecord) || {};
@@ -278,13 +314,11 @@ export function recomputeGenerationProgress(project: Project): GenerationProgres
   const proposalText = ensureString((st as any).proposal?.text, "");
   const introText = ensureString((st as any).introduction?.text, "");
 
-  const proposalDone =
-    (ensureString((st as any).proposal?.status, "") === "COMPLETED" || countWordsQuick(proposalText) >= 200) &&
-    !isPlaceholderText(proposalText);
+  const PROPOSAL_MIN_WORDS = 2000;
+  const INTRO_MIN_WORDS = 1200;
 
-  const introDone =
-    (ensureString((st as any).introduction?.status, "") === "COMPLETED" || countWordsQuick(introText) >= 200) &&
-    !isPlaceholderText(introText);
+  const proposalDone = countWordsQuick(proposalText) >= PROPOSAL_MIN_WORDS && !isPlaceholderText(proposalText);
+  const introDone = countWordsQuick(introText) >= INTRO_MIN_WORDS && !isPlaceholderText(introText);
 
   if (progress.proposal !== "generating") progress.proposal = proposalDone ? "completed" : "pending";
   if (progress.intro !== "generating") progress.intro = introDone ? "completed" : "pending";
@@ -334,71 +368,200 @@ export function compactStateForComposer(project: Project, maxMasterChars: number
   };
 }
 
-/* ----------------------- Apply engine result -> project ----------------------- */
+/* -------------------------- master builder -------------------------- */
 
-export function processEngineResult(
-  result: EngineResult,
-  currentProject: Project | undefined,
-  ctx?: ProcessCtx
-): Project {
-  const dashboard = isRecord(result.dashboard) ? (result.dashboard as AnyRecord) : {};
-  const nextState = normalizeProjectState(result.project_state_updated);
+export function buildMasterFromState(state: ProjectState, title?: string): string {
+  const parts: string[] = [];
+  const bookTitle = (title || (state as any).book_title || "Documento maestro").trim();
+  parts.push(`# ${bookTitle}\n`);
 
-  // anti-motor-loco: if generating chapter N, treat response as patch of that chapter only
-  if (ctx?.action === "GENERATE_CHAPTER" && ctx?.chapterNum) {
-    const expected = ctx.chapterNum;
-    const chs = ensureArray<any>((nextState as any).chapters, []);
-    const pickWords = (x: any) => countWordsQuick(ensureString(x?.text, ""));
+  const proposalText = ensureString((state as any).proposal?.text, "").trim();
+  if (proposalText) parts.push(`## Propuesta editorial\n\n${proposalText}`);
 
-    let chosen = chs.find((c: any) => Number(c?.chapter_number ?? 0) === expected);
-    if (!chosen) {
-      chosen = chs
-        .filter((c: any) => ensureString(c?.text, "").trim())
-        .slice()
-        .sort((a: any, b: any) => pickWords(b) - pickWords(a))[0];
-    }
-    (nextState as any).chapters = chosen ? [{ ...chosen, chapter_number: expected }] : [];
+  const introText = ensureString((state as any).introduction?.text, "").trim();
+  if (introText) parts.push(`## Introducción\n\n${introText}`);
+
+  const chapters = ensureArray<any>((state as any).chapters, [])
+    .slice()
+    .sort((a, b) => (Number(a?.chapter_number ?? 0) || 0) - (Number(b?.chapter_number ?? 0) || 0));
+
+  for (const ch of chapters) {
+    const n = Number(ch?.chapter_number ?? 0) || 0;
+    const chTitle = ensureString(ch?.title, n ? `Capítulo ${n}` : "Capítulo").trim();
+    const t = stripLeadingChapterHeading(ensureString(ch?.text, ""), n, chTitle).trim();
+    if (!t) continue;
+    parts.push(`## ${chTitle}\n\n${t}`);
   }
 
-  const mergedState = mergeProjectState((currentProject as any)?.state as any, nextState);
-  const stateMaster = buildMasterFromState(mergedState, ensureString(dashboard.book_title, (currentProject as any)?.title)).trim();
-  const prevMaster = ensureString((currentProject as any)?.master_document?.text, "").trim();
-  const finalMaster = stateMaster || prevMaster;
-
-  const updatedProject: Project = {
-    id: ensureString((currentProject as any)?.id, ensureString((mergedState as any).project_id, `proj_${Date.now()}`)),
-    title: ensureString(dashboard.book_title, (currentProject as any)?.title || ensureString((mergedState as any).book_title, "Libro sin título")),
-    state: mergedState,
-    master_document: {
-      title: ensureString(dashboard.book_title, ensureString((mergedState as any).book_title, "Documento maestro")),
-      text: finalMaster,
-      chunks: finalMaster ? [{ index: 1, total: 1, text: finalMaster }] : [],
-    } as any,
-    dashboard: result.dashboard as any,
-    generation_progress: currentProject ? ({ ...(((currentProject as any).generation_progress as AnyRecord) || {}) } as any) : ({} as any),
-  } as Project;
-
-  (updatedProject as any).generation_progress = recomputeGenerationProgress(updatedProject);
-  return updatedProject;
+  return parts.join("\n\n---\n\n").trim() + "\n";
 }
 
-/* ----------------------- DB -> UI mapping ----------------------- */
+/* -------------------------- normalize / merge state -------------------------- */
+
+export function normalizeProjectState(input: unknown): ProjectState {
+  const state: AnyRecord = isRecord(input) ? { ...(input as AnyRecord) } : {};
+
+  const proposal = isRecord((state as any).proposal) ? { ...((state as any).proposal as AnyRecord) } : {};
+  proposal.id = ensureString(proposal.id, "sec_proposal");
+  proposal.text = ensureString(proposal.text, "");
+  proposal.status = proposal.status === "COMPLETED" ? "COMPLETED" : "PENDING";
+  proposal.words = typeof proposal.words === "number" ? proposal.words : 0;
+  (state as any).proposal = proposal;
+
+  const introduction = isRecord((state as any).introduction) ? { ...((state as any).introduction as AnyRecord) } : {};
+  introduction.id = ensureString(introduction.id, "sec_introduction");
+  introduction.text = ensureString(introduction.text, "");
+  introduction.status = introduction.status === "COMPLETED" ? "COMPLETED" : "PENDING";
+  introduction.words = typeof introduction.words === "number" ? introduction.words : 0;
+  (state as any).introduction = introduction;
+
+  (state as any).outline_12 = ensureArray<any>((state as any).outline_12, []).map((o: any, idx: number) => {
+    const chapterNum = Number(o?.chapter_number ?? o?.chapterNumber ?? (idx + 1)) || (idx + 1);
+    const normalized: AnyRecord = isRecord(o) ? { ...(o as AnyRecord) } : {};
+    normalized.id = ensureString(normalized.id, `outline_${String(chapterNum).padStart(2, "0")}`);
+    normalized.chapter_number = chapterNum;
+    normalized.chapter_title = ensureString(normalized.chapter_title, ensureString(normalized.title, `Capítulo ${chapterNum}`));
+    normalized.status = normalized.status === "COMPLETED" || normalized.status === "DRAFTED" ? normalized.status : "PENDING";
+    normalized.target_words = typeof normalized.target_words === "number" ? normalized.target_words : 0;
+    normalized.objective = ensureString(normalized.objective, "");
+    normalized.key_points = ensureArray(normalized.key_points, []);
+    normalized.subheads_h2 = ensureArray(normalized.subheads_h2, []);
+    return normalized;
+  });
+
+  (state as any).chapters = ensureArray<any>((state as any).chapters, []).map((c: any, idx: number) => {
+    const cn = Number(c?.chapter_number ?? c?.chapterNumber ?? c?.number ?? (idx + 1)) || (idx + 1);
+    const normalized: AnyRecord = isRecord(c) ? { ...(c as AnyRecord) } : {};
+    normalized.chapter_number = cn;
+    normalized.id = ensureString(normalized.id, `sec_chapter_${String(cn).padStart(2, "0")}`);
+    normalized.title = ensureString(normalized.title, ensureString(normalized.chapter_title, `Capítulo ${cn}`)).trim();
+    normalized.text = stripLeadingChapterHeading(ensureString(normalized.text, ""), cn, normalized.title);
+    normalized.status = normalized.status === "COMPLETED" ? "COMPLETED" : "PENDING";
+    normalized.words = typeof normalized.words === "number" ? normalized.words : 0;
+    return normalized;
+  });
+
+  const continuity = isRecord((state as any).continuity_pack) ? { ...((state as any).continuity_pack as AnyRecord) } : {};
+  continuity.style_guide = ensureString(continuity.style_guide, "");
+  continuity.canon = ensureString(continuity.canon, "");
+  continuity.outline_progress = ensureString(continuity.outline_progress, "");
+  continuity.open_loops = ensureArray(continuity.open_loops, []);
+  continuity.chapter_summaries = ensureArray(continuity.chapter_summaries, []);
+  continuity.next_chapter_plan = ensureArray(continuity.next_chapter_plan, []);
+  (state as any).continuity_pack = continuity;
+
+  (state as any).project_id = ensureString((state as any).project_id, ensureString((state as any).projectId, `proj_${Date.now()}`));
+  (state as any).book_title = ensureString((state as any).book_title, ensureString((state as any).bookTitle, "Libro sin título"));
+  (state as any).book_topic = ensureString((state as any).book_topic, ensureString((state as any).bookTopic, ""));
+  (state as any).audience = ensureString((state as any).audience, "");
+  (state as any).tone_style = ensureString((state as any).tone_style, "");
+
+  return state as unknown as ProjectState;
+}
+
+function shouldPreservePrevText(prevText: string, nextText: string): boolean {
+  const prev = (prevText ?? "").trim();
+  const next = (nextText ?? "").trim();
+  if (!prev) return false;
+  if (!next) return true;
+  if (isPlaceholderText(next)) return true;
+  if (next.length < Math.max(160, Math.floor(prev.length * 0.7))) return true;
+  const prevW = countWordsQuick(prev);
+  const nextW = countWordsQuick(next);
+  if (prevW >= 220 && nextW < Math.max(80, Math.floor(prevW * 0.6))) return true;
+  return false;
+}
+
+export function mergeProjectState(prev: ProjectState | undefined, next: ProjectState): ProjectState {
+  if (!prev) return next;
+
+  const merged: AnyRecord = { ...(prev as any), ...(next as any) };
+
+  merged.proposal = { ...(prev as any).proposal, ...(next as any).proposal };
+  if (!ensureString(merged.proposal?.text, "").trim() && ensureString((prev as any).proposal?.text, "").trim()) {
+    merged.proposal = { ...(prev as any).proposal };
+  }
+
+  merged.introduction = { ...(prev as any).introduction, ...(next as any).introduction };
+  if (!ensureString(merged.introduction?.text, "").trim() && ensureString((prev as any).introduction?.text, "").trim()) {
+    merged.introduction = { ...(prev as any).introduction };
+  }
+
+  const prevOutline = ensureArray<any>((prev as any).outline_12, []);
+  const nextOutline = ensureArray<any>((next as any).outline_12, []);
+  const outlineByNum = new Map<number, any>();
+  for (const o of prevOutline) outlineByNum.set(Number(o?.chapter_number ?? 0) || 0, o);
+  for (const o of nextOutline) {
+    const n = Number(o?.chapter_number ?? 0) || 0;
+    if (!n) continue;
+    outlineByNum.set(n, { ...(outlineByNum.get(n) || {}), ...o, chapter_number: n });
+  }
+  merged.outline_12 = Array.from(outlineByNum.values()).filter(Boolean).sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
+
+  const prevCh = ensureArray<any>((prev as any).chapters, []);
+  const nextCh = ensureArray<any>((next as any).chapters, []);
+  const byNum = new Map<number, any>();
+  for (const c of prevCh) {
+    const cn = Number(c?.chapter_number ?? 0) || 0;
+    if (cn > 0) byNum.set(cn, c);
+  }
+
+  for (const c of nextCh) {
+    const cn = Number(c?.chapter_number ?? 0) || 0;
+    if (!cn) continue;
+
+    const existing = byNum.get(cn);
+    const prevText = ensureString(existing?.text, "");
+    const nextText = ensureString(c?.text, "");
+
+    const mergedC: AnyRecord = { ...(existing || {}), ...(c || {}), chapter_number: cn };
+    mergedC.title = ensureString(mergedC.title, ensureString(mergedC.chapter_title, `Capítulo ${cn}`)).trim();
+    mergedC.text = stripLeadingChapterHeading(ensureString(mergedC.text, ""), cn, mergedC.title);
+
+    if (existing && shouldPreservePrevText(prevText, nextText)) {
+      mergedC.text = existing.text;
+      mergedC.status = existing.status;
+      mergedC.words = existing.words;
+    }
+
+    byNum.set(cn, mergedC);
+  }
+
+  merged.chapters = Array.from(byNum.values())
+    .filter((c) => (Number(c?.chapter_number ?? 0) || 0) > 0)
+    .sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
+
+  merged.continuity_pack = { ...(prev as any).continuity_pack, ...(next as any).continuity_pack };
+  for (const k of ["style_guide", "canon", "outline_progress"] as const) {
+    if (!ensureString(merged.continuity_pack?.[k], "").trim() && ensureString((prev as any).continuity_pack?.[k], "").trim()) {
+      merged.continuity_pack[k] = (prev as any).continuity_pack[k];
+    }
+  }
+
+  return merged as unknown as ProjectState;
+}
+
+/* ----------------------- Supabase <-> UI mapping ----------------------- */
 
 export function mapDbFullToProject(db: any, sections: any[], masterLatest: any): Project {
   const proposal = sections.find((s: any) => s?.type === "PROPOSAL");
   const intro = sections.find((s: any) => s?.type === "INTRODUCTION");
-
   const chapters = sections
     .filter((s: any) => s?.type === "CHAPTER")
     .slice()
     .sort((a: any, b: any) => (a?.chapter_number ?? 0) - (b?.chapter_number ?? 0))
-    .map((s: any) => ({
-      chapter_number: s?.chapter_number ?? 0,
-      title: ensureString(s?.title, s?.chapter_number ? `Capítulo ${s.chapter_number}` : "Capítulo"),
-      text: ensureString(s?.content, ""),
-      status: s?.status === "COMPLETED" ? "COMPLETED" : "PENDING",
-      words: countWordsQuick(ensureString(s?.content, "")),
-    }));
+    .map((s: any) => {
+      const n = Number(s?.chapter_number ?? 0) || 0;
+      const title = ensureString(s?.title, n ? `Capítulo ${n}` : "Capítulo");
+      const text = stripLeadingChapterHeading(ensureString(s?.content, ""), n, title);
+      return {
+        chapter_number: n,
+        title,
+        text,
+        status: s?.status === "COMPLETED" ? "COMPLETED" : "PENDING",
+        words: countWordsQuick(text),
+      };
+    });
 
   const stateInput: AnyRecord = {
     project_id: ensureString(db?.id, ""),
@@ -406,7 +569,13 @@ export function mapDbFullToProject(db: any, sections: any[], masterLatest: any):
     book_topic: ensureString(db?.topic, ""),
     audience: ensureString(db?.audience, ""),
     tone_style: ensureString(db?.tone_style, ""),
-    outline_12: ensureArray<any>(db?.outline_12, []),
+    outline_12: (() => {
+      const fromDb = ensureArray<any>(db?.outline_12, []);
+      if (fromDb.length) return fromDb;
+      // Backfill: si no hay outline en projects pero sí hay capítulos guardados, lo reconstruimos.
+      if (chapters.length) return buildOutlineFromChapterSections(chapters as any);
+      return [];
+    })(),
     continuity_pack: (db?.continuity_pack ?? {}) as any,
     proposal: {
       id: "sec_proposal",
@@ -442,4 +611,112 @@ export function mapDbFullToProject(db: any, sections: any[], masterLatest: any):
 
   (p as any).generation_progress = recomputeGenerationProgress(p);
   return p;
+}
+
+/* ---------------------- outline extraction + fallback ---------------------- */
+
+function looksLikeOutlineArray(arr: any[]): boolean {
+  if (!Array.isArray(arr)) return false;
+  if (arr.length < 6) return false;
+  let score = 0;
+  for (const x of arr.slice(0, 12)) {
+    if (!isRecord(x)) continue;
+    if ("chapter_number" in x || "chapterNumber" in x) score += 2;
+    if ("chapter_title" in x || "chapterTitle" in x || "title" in x) score += 1;
+    if ("target_words" in x || "targetWords" in x) score += 1;
+  }
+  return score >= 6;
+}
+
+function deepFindOutline(node: any, depth = 0): any[] | null {
+  if (depth > 6) return null;
+
+  if (Array.isArray(node)) {
+    if (looksLikeOutlineArray(node)) return node;
+    for (const it of node) {
+      const found = deepFindOutline(it, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  if (isRecord(node)) {
+    // prefer obvious keys first
+    const keys = Object.keys(node);
+    const preferred = keys.filter((k) => /outline|blueprint|chapters/i.test(k));
+    for (const k of preferred) {
+      const found = deepFindOutline((node as any)[k], depth + 1);
+      if (found) return found;
+    }
+    for (const k of keys) {
+      const found = deepFindOutline((node as any)[k], depth + 1);
+      if (found) return found;
+    }
+  }
+
+  return null;
+}
+
+export function ensureOutline12InState(state: AnyRecord, dashboard?: AnyRecord): AnyRecord {
+  const outline = ensureArray<any>((state as any).outline_12, []);
+  if (outline.length) return state;
+
+  const candidate = dashboard ? deepFindOutline(dashboard) : null;
+  if (!candidate) return state;
+
+  (state as any).outline_12 = candidate;
+  return state;
+}
+
+/* ----------------------- Apply engine result -> project ----------------------- */
+
+export function processEngineResult(result: EngineResult, currentProject: Project | undefined, ctx?: ProcessCtx): Project {
+  const dashboard = isRecord(result.dashboard) ? (result.dashboard as AnyRecord) : {};
+  const nextState0 = isRecord(result.project_state_updated) ? (result.project_state_updated as AnyRecord) : {};
+  const nextState = normalizeProjectState(ensureOutline12InState(nextState0, dashboard));
+
+  // anti-motor-loco: if generating chapter N, treat response as patch of that chapter only
+  if (ctx?.action === "GENERATE_CHAPTER" && ctx?.chapterNum) {
+    const expected = ctx.chapterNum;
+    const chs = ensureArray<any>((nextState as any).chapters, []);
+    const pickWords = (x: any) => countWordsQuick(ensureString(x?.text, ""));
+
+    let chosen = chs.find((c: any) => Number(c?.chapter_number ?? 0) === expected);
+    if (!chosen) {
+      chosen = chs
+        .filter((c: any) => ensureString(c?.text, "").trim())
+        .slice()
+        .sort((a: any, b: any) => pickWords(b) - pickWords(a))[0];
+    }
+
+    if (chosen) {
+      const title = ensureString(chosen?.title, `Capítulo ${expected}`);
+      const text = stripLeadingChapterHeading(ensureString(chosen?.text, ""), expected, title);
+      (nextState as any).chapters = [{ ...(chosen as any), chapter_number: expected, title, text }];
+    } else {
+      (nextState as any).chapters = [];
+    }
+  }
+
+  const mergedState = mergeProjectState((currentProject as any)?.state as any, nextState);
+
+  const stateMaster = buildMasterFromState(mergedState, ensureString(dashboard.book_title, (currentProject as any)?.title)).trim();
+  const prevMaster = ensureString((currentProject as any)?.master_document?.text, "").trim();
+  const finalMaster = stateMaster || prevMaster;
+
+  const updatedProject: Project = {
+    id: ensureString((currentProject as any)?.id, ensureString((mergedState as any).project_id, `proj_${Date.now()}`)),
+    title: ensureString(dashboard.book_title, (currentProject as any)?.title || ensureString((mergedState as any).book_title, "Libro sin título")),
+    state: mergedState,
+    master_document: {
+      title: ensureString(dashboard.book_title, ensureString((mergedState as any).book_title, "Documento maestro")),
+      text: finalMaster,
+      chunks: finalMaster ? [{ index: 1, total: 1, text: finalMaster }] : [],
+    } as any,
+    dashboard: result.dashboard as any,
+    generation_progress: currentProject ? ({ ...(((currentProject as any).generation_progress as AnyRecord) || {}) } as any) : ({} as any),
+  } as Project;
+
+  (updatedProject as any).generation_progress = recomputeGenerationProgress(updatedProject);
+  return updatedProject;
 }

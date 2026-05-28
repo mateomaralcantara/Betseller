@@ -1,20 +1,54 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# BestSeller Jobs Architecture — capítulos completos sin romperse
 
-# Run and deploy your AI Studio app
+Esta base cambia la lógica:
 
-This contains everything you need to run your app locally.
+ANTES:
+Click → Gemini genera capítulo largo → app espera → JSON roto.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1WY8VG0QQOCbgut99IGcmiKdSlbkkKUfm
+AHORA:
+Click → crea job → worker genera por bloques → guarda capítulo → frontend consulta progreso.
 
-## Run Locally
+## Pasos
 
-**Prerequisites:**  Node.js
+1. Ejecuta `supabase/migrations/20260525_generation_jobs.sql` en Supabase SQL Editor.
+2. Copia los archivos `src/lib`, `src/hooks`, `src/components` y `worker`.
+3. Instala dependencias:
 
+```powershell
+npm install @supabase/supabase-js @google/genai dotenv tsx
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+4. Crea `worker/.env` usando `worker/.env.example`.
+5. En `package.json`, agrega:
+
+```json
+"worker": "tsx worker/generationWorker.ts"
+```
+
+6. Aplica los parches de `docs/APP_PATCH.md` y `docs/DASHBOARD_PATCH.md`.
+
+## Ejecutar
+
+Terminal 1:
+
+```powershell
+npm run dev
+```
+
+Terminal 2:
+
+```powershell
+npm run worker
+```
+
+## Importante
+
+Ningún sistema serio puede garantizar que un capítulo largo sea instantáneo.
+Lo que sí hace esta arquitectura:
+
+- no bloquea la UI;
+- evita JSON roto;
+- genera por bloques;
+- guarda progreso;
+- permite varios workers;
+- soporta más usuarios con cola.

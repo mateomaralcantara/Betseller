@@ -51,24 +51,60 @@ const BUILD_TAG = "App.tsx v3.2.0 (gate-safe + device-session + idle-timeout) 20
 // Gemini
 const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL ?? "gemini-3.1-flash-lite";
 const DEV_GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? "";
-const MAX_MASTER_CHARS_TO_SEND = 35_000;
+const MAX_MASTER_CHARS_TO_SEND = 70_000; // balance: contexto amplio sin reventar tokens
 
-const DEV_SYSTEM_PROMPT = `Eres BOOK_DOSSIER_CANVAS_ENGINE.
-Responde SIEMPRE con JSON válido (sin Markdown) con:
-{ ok, dashboard, project_state_updated, master_document, needs_input? }.
-
-REGLAS:
-- Nunca devuelvas placeholders ("..." o texto vacío) como contenido final.
-- Si TASK=GENERATE_CHAPTER con chapter_number=N:
-  - devuelve SOLO ese capítulo N
-  - el texto debe tener >= TASK.target_length_words palabras
-- master_document.text debe ser Markdown con secciones.`.trim();
+const DEV_SYSTEM_PROMPT = [
+  "Eres BOOK_DOSSIER_CANVAS_ENGINE (BestSeller).",
+  "",
+  "IDIOMA: Español neutro.",
+  "OBJETIVO: Crear/editar un libro con estructura editorial profesional.",
+  "",
+  "SALIDA (CRÍTICO):",
+  "- Responde ÚNICAMENTE con un (1) objeto JSON válido.",
+  "- PROHIBIDO: Markdown fuera del JSON, bloques ``` , comentarios, o texto antes/después del JSON.",
+  "",
+  "JSON MÍNIMO (ejemplo de forma, NO copies textos literales):",
+  '{ "ok": true, "dashboard": {}, "project_state_updated": {}, "master_document": { "title": "", "text": "" } }',
+  "",
+  "REGLAS DE CONSISTENCIA:",
+  "- No inventes tipos como string/number/boolean. Devuelve valores reales (strings con comillas, números reales).",
+  "- Nunca devuelvas placeholders ('...', vacío, 'TBD').",
+  "",
+  "ANTI-DUPLICADOS (MUY IMPORTANTE):",
+  "- La app YA imprime los encabezados de secciones y capítulos.",
+  "- Por eso NO repitas encabezados al inicio del contenido:",
+  "  * proposal.text: NO empieces con '#', '##' ni con un título tipo 'Propuesta editorial'.",
+  "  * introduction.text: NO empieces con '#', '##' ni con un título tipo 'Introducción'.",
+  "  * chapters[i].text: NO empieces con '#', '##' ni con 'Capítulo' ni repitas el título del capítulo.",
+  "- Dentro de capítulos puedes usar subtítulos internos SOLO con '###'.",
+  "",
+  "PATCH SEGURO (NO BORRAR CONTENIDO AJENO):",
+  "- Si action = 'GENERATE_CHAPTER' y chapter_number = N:",
+  "  * project_state_updated.chapters debe ser un array de 1 elemento (solo el capítulo N).",
+  "  * NO modifiques otros capítulos.",
+  "- Si action = 'GENERATE_PROPOSAL': actualiza SOLO proposal.",
+  "- Si action = 'GENERATE_INTRODUCTION': actualiza SOLO introduction.",
+  "",
+  "",
+  "CAPÍTULOS (N VARIABLE):",
+  "- Si PROJECT_STATE.outline_12 viene con N items, NO lo reduzcas.",
+  "- BUILD_FULL_DOSSIER debe devolver project_state_updated.outline_12 con el mismo número de items (o más si el usuario lo pidió).",
+  "- Cada item debe incluir chapter_number (1..N) y chapter_title (SIN prefijo Capítulo N:).",
+  "LONGITUD MÍNIMA (OBLIGATORIA):",
+  "- GENERATE_PROPOSAL: proposal.text >= 2000 palabras (ideal 2400–3200).",
+  "- GENERATE_INTRODUCTION: introduction.text >= 1400 palabras.",
+  "- GENERATE_CHAPTER: chapters[0].text >= TASK.target_length_words palabras.",
+  "",
+  "CALIDAD:",
+  "- Contenido denso, concreto y ordenado.",
+  "- Termina con frase completa (no cortar a mitad).",
+].join("\n");
 
 const initialWelcomeMessage: ChatMessage = {
   id: "welcome-0",
   role: "model",
   content:
-    "¡Bienvenido! Soy **BOOK_DOSSIER_CANVAS_ENGINE**. Para empezar, cuéntame de qué quieres que trate tu libro o dime un título.",
+    "¡Bienvenido! Soy **BestSeller**. Para empezar, cuéntame de qué quieres que trate tu libro o dime un título.",
 };
 
 type AccessProfile = {
@@ -83,6 +119,128 @@ type AccessRequest = {
   status: string;
   created_at?: string;
 };
+
+/* -------------------------- variable chapter count (N) -------------------------- */
+
+function clampInt(n: number, min: number, max: number): number {
+  const x = Math.floor(Number(n || 0));
+  if (!Number.isFinite(x)) return min;
+  return Math.min(max, Math.max(min, x));
+}
+
+/**
+ * Permite el flujo “tírame un libro de 22 capítulos”:
+ * - Detecta "22 capítulos", "22 cap", "22 chapters", etc.
+ * - Si no hay número, retorna null y el sistema usa el default (12).
+ */
+function extractDesiredChapterCount(idea: string): number | null {
+  const s = String(idea ?? "");
+  const m =
+    s.match(/(\d{1,3})\s*(cap[ií]tulos?|cap\b|chapters?\b)/i) ||
+    s.match(/cap[ií]tulos?\s*(\d{1,3})/i) ||
+    s.match(/chapters?\s*(\d{1,3})/i);
+  if (!m) return null;
+  const digits = (m[1] ?? (m[0].match(/\d{1,3}/)?.[0] ?? "")).toString();
+  const n = Number(digits || 0) || 0;
+  if (!n) return null;
+  return clampInt(n, 1, 120);
+}
+
+function stripChapterPrefix(title: string, n: number): string {
+  const t = String(title ?? "").trim();
+  if (!t) return "";
+  const re = new RegExp(String.raw`^\s*cap[ií]tulo\s*${n}\s*[:\-–—]\s*`, "i");
+  return t.replace(re, "").trim();
+}
+
+/**
+ * Outline variable (guardado en projects.outline_12 como JSONB, pero puede tener N items).
+ * El UI arma "Capítulo N: {chapter_title}", por eso chapter_title debe ir SIN "Capítulo N:".
+ */
+function buildFallbackOutline(count: number, seed: string, targetWords: number) {
+  const n = clampInt(count, 1, 120);
+  const topic = String(seed ?? "").trim() || "Tema";
+  const baseNames = [
+    "Panorama general",
+    "Historia y evolución",
+    "Conceptos clave",
+    "Actores y dinámicas",
+    "Mecanismos y procesos",
+    "Casos y ejemplos",
+    "Impactos y consecuencias",
+    "Estrategias y herramientas",
+    "Errores comunes y mitos",
+    "Ética y riesgos",
+    "Futuro y escenarios",
+    "Plan de acción y cierre",
+  ];
+
+  const pickName = (i: number) => {
+    if (i < baseNames.length) return baseNames[i];
+    // Para N>12, seguimos con nombres genéricos
+    return `Parte ${i + 1}: Desarrollo`;
+  };
+
+  return Array.from({ length: n }, (_, i) => ({
+    id: `outline_${String(i + 1).padStart(2, "0")}`,
+    chapter_number: i + 1,
+    chapter_title: `${pickName(i)} — ${topic}`,
+    status: "PENDING" as const,
+    target_words: Math.max(0, Math.floor(Number(targetWords || 0))),
+    objective: "",
+    key_points: [],
+    subheads_h2: [],
+    tools_frameworks: [],
+    exercises: [],
+    deliverable: "",
+    transition_to_next: "",
+  }));
+}
+
+/**
+ * Garantiza que el proyecto tenga outline_12 y con longitud >= desiredCount.
+ * - Si viene vacío pero ya hay chapters en state => reconstruimos desde chapters.
+ * - Si viene corto => completamos con fallback.
+ */
+function ensureOutlineForProject(proj: Project, desiredCount: number, seed: string, defaultChapterWords: number): Project {
+  const st: any = (proj as any).state ?? {};
+  const outline: any[] = Array.isArray(st?.outline_12) ? st.outline_12 : [];
+  const desired = clampInt(desiredCount, 1, 120);
+
+  // 1) Si no hay outline pero ya hay capítulos, reconstruimos títulos desde capítulos.
+  if (!outline.length) {
+    const chs: any[] = Array.isArray(st?.chapters) ? st.chapters : [];
+    const byNum = new Map<number, any>();
+    for (const c of chs) {
+      const n = Number(c?.chapter_number ?? 0) || 0;
+      if (!n) continue;
+      const rawTitle = String(c?.title ?? `Capítulo ${n}`).trim();
+      byNum.set(n, {
+        id: `outline_${String(n).padStart(2, "0")}`,
+        chapter_number: n,
+        chapter_title: stripChapterPrefix(rawTitle, n) || rawTitle || `Capítulo ${n}`,
+        status: "PENDING",
+        target_words: Math.max(0, Number(defaultChapterWords || 0)),
+      });
+    }
+    const rebuilt = Array.from(byNum.values()).sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
+    if (rebuilt.length) {
+      const nextState = { ...st, outline_12: rebuilt };
+      return { ...proj, state: nextState } as Project;
+    }
+  }
+
+  // 2) Si outline existe pero es más corto que desired => completamos
+  if (outline.length < desired) {
+    const existingNums = new Set<number>(outline.map((o) => Number(o?.chapter_number ?? 0) || 0).filter(Boolean));
+    const fillers = buildFallbackOutline(desired, seed, defaultChapterWords).filter((o: any) => !existingNums.has(o.chapter_number));
+    const merged = [...outline, ...fillers].sort((a, b) => (Number(a?.chapter_number ?? 0) || 0) - (Number(b?.chapter_number ?? 0) || 0));
+    const nextState = { ...st, outline_12: merged };
+    return { ...proj, state: nextState } as Project;
+  }
+
+  return proj;
+}
 
 type AccessProcessingScreenProps = {
   email: string;
@@ -1049,15 +1207,21 @@ const App: React.FC = () => {
 
     try {
       const title = idea.length < 70 ? idea.trim() : "Libro sin título";
-      const dbProject = await createProject({ title, topic: idea });
+      const desiredChapterCount = extractDesiredChapterCount(idea) ?? 12;
+      const seedOutline = buildFallbackOutline(desiredChapterCount, idea, defaultChapterWords);
+      const dbProject = await createProject({
+        title,
+        topic: idea,
+        outline_12: seedOutline,
+        continuity_pack: { chapter_count: desiredChapterCount },
+      });
 
       const task: ComposerTask = { action: "BUILD_FULL_DOSSIER", target_length_words: 1500, active_view: "DOSSIER" };
       const seedState: Partial<ProjectState> = {
         project_id: dbProject.id,
         book_title: dbProject.title,
         book_topic: idea,
-        outline_12: [],
-      };
+        outline_12: seedOutline,      };
 
       const result = await callComposer({
         task,
@@ -1077,8 +1241,12 @@ const App: React.FC = () => {
         generation_progress: {} as any,
       } as any;
 
-      const updated = processEngineResult(result as any, baseStub);
+      let updated = processEngineResult(result as any, baseStub);
 
+      // ✅ Garantiza capítulos visibles siempre (N variable)
+      updated = ensureOutlineForProject(updated, desiredChapterCount, idea, defaultChapterWords);
+
+      // Persistimos el outline si el motor no lo devolvió o devolvió menos
       await persistProjectMeta(updated);
       await upsertOneSectionFromState(updated, "proposal");
       await upsertOneSectionFromState(updated, "intro");
@@ -1143,10 +1311,18 @@ const App: React.FC = () => {
       const outline = ensureArray<any>(st?.outline_12, []);
       const o = outline.find((x: any) => Number(x?.chapter_number ?? 0) === Number(chapterNum ?? 0));
 
-      const targetWords =
-        action === "GENERATE_CHAPTER"
-          ? (Number(o?.target_words ?? 0) || defaultChapterWords)
-          : 1200;
+      
+const PROPOSAL_TARGET_WORDS = 2800; // >=2000 real
+const INTRO_TARGET_WORDS = 1600;
+
+const targetWords =
+  action === "GENERATE_PROPOSAL"
+    ? PROPOSAL_TARGET_WORDS
+    : action === "GENERATE_INTRODUCTION"
+      ? INTRO_TARGET_WORDS
+      : action === "GENERATE_CHAPTER"
+        ? (Number(o?.target_words ?? 0) || defaultChapterWords)
+        : 2500;
 
       const task: ComposerTask = {
         action: action as any,

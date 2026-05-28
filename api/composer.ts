@@ -8,27 +8,171 @@ import { GoogleGenAI } from '@google/genai';
  */
 
 const SYSTEM_PROMPT = `Eres BOOK_DOSSIER_CANVAS_ENGINE.
-Responde SIEMPRE en JSON válido (sin Markdown) con:
-{ ok, dashboard, project_state_updated, master_document, needs_input? }.
-Nunca borres texto existente si no estás seguro: si una sección no se está modificando, déjala intacta.`.trim();
+
+RESPUESTA OBLIGATORIA:
+Devuelve SIEMPRE un único JSON válido, sin Markdown y sin fences.
+
+Forma exacta:
+{
+  "ok": true,
+  "dashboard": {},
+  "project_state_updated": {},
+  "master_document": { "title": "", "text": "" },
+  "needs_input": null
+}
+
+REGLAS CRÍTICAS DE JSON:
+- No uses saltos de línea crudos dentro de strings; deben ser \\n.
+- No uses comillas sin escapar dentro de strings.
+- En arrays, separa cada elemento con coma.
+- No escribas comentarios fuera del JSON.
+- Si no puedes completar una sección, conserva el texto existente.
+- Nunca borres texto existente si no estás seguro: si una sección no se modifica, déjala intacta.
+- El libro completo, si aplica, debe ir en master_document.text como string válido.`.trim();
 
 /** Model allowlist (evita sorpresas) */
 const ALLOWED_MODELS = new Set<string>([
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+  'gemini-2.0-flash',
   'gemini-3.1-flash-lite',
   'gemini-3-flash-preview',
   'gemini-3.1-pro-preview',
 ]);
 
-function safeJsonParse(text: string): any {
-  const t = (text ?? '').trim();
-  if (!t) throw new Error('Respuesta vacía');
+function cleanModelText(text: string): string {
+  return String(text ?? '')
+    .replace(/^\s*```json\s*/i, '')
+    .replace(/^\s*```\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
+}
+
+function escapeControlCharsInsideStrings(input: string): string {
+  let out = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+
+    if (!inString) {
+      if (ch === '"') inString = true;
+      out += ch;
+      continue;
+    }
+
+    if (escaped) {
+      out += ch;
+      escaped = false;
+      continue;
+    }
+
+    if (ch === '\\') {
+      out += ch;
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      out += ch;
+      inString = false;
+      continue;
+    }
+
+    if (ch === '\n') {
+      out += '\\n';
+      continue;
+    }
+
+    if (ch === '\r') {
+      out += '\\r';
+      continue;
+    }
+
+    if (ch === '\t') {
+      out += '\\t';
+      continue;
+    }
+
+    const code = ch.charCodeAt(0);
+    if (code >= 0 && code < 32) {
+      out += `\\u${code.toString(16).padStart(4, '0')}`;
+      continue;
+    }
+
+    out += ch;
+  }
+
+  return out;
+}
+
+function extractFirstJsonObject(text: string): string | null {
+  const t = cleanModelText(text);
+  const first = t.indexOf('{');
+  if (first < 0) return null;
+
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+
+  for (let i = first; i < t.length; i++) {
+    const ch = t[i];
+
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+
+    if (ch === '"') {
+      inStr = true;
+      continue;
+    }
+
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return t.slice(first, i + 1);
+    }
+  }
+
+  const last = t.lastIndexOf('}');
+  return last > first ? t.slice(first, last + 1) : null;
+}
+
+function parseJsonCandidate(candidate: string): any {
+  const cleaned = cleanModelText(candidate);
+  const repaired = escapeControlCharsInsideStrings(cleaned);
+
   try {
-    return JSON.parse(t);
+    return JSON.parse(cleaned);
   } catch {
-    const first = t.indexOf('{');
-    const last = t.lastIndexOf('}');
-    if (first >= 0 && last > first) return JSON.parse(t.slice(first, last + 1));
-    throw new Error('No se pudo parsear JSON');
+    return JSON.parse(repaired);
+  }
+}
+
+function safeJsonParse(text: string): any {
+  const t = cleanModelText(text);
+  if (!t) throw new Error('Respuesta vacía');
+
+  try {
+    return parseJsonCandidate(t);
+  } catch (firstError: any) {
+    const obj = extractFirstJsonObject(t);
+    if (!obj) {
+      throw new Error(`No se pudo extraer JSON. ${firstError?.message || ''}`.trim());
+    }
+
+    try {
+      return parseJsonCandidate(obj);
+    } catch (secondError: any) {
+      const preview = obj.slice(0, 1200);
+      throw new Error(
+        `JSON inválido del modelo: ${secondError?.message || secondError}. Preview: ${preview}`
+      );
+    }
   }
 }
 
@@ -129,8 +273,8 @@ export default async function handler(req: any, res: any) {
 
     if (!task || !state) return res.status(400).json({ error: 'Missing task/state' });
 
-    const requestedModel = String(body?.model || 'gemini-3-flash-preview');
-    const model = ALLOWED_MODELS.has(requestedModel) ? requestedModel : 'gemini-3-flash-preview';
+    const requestedModel = String(body?.model || 'gemini-2.5-flash');
+    const model = ALLOWED_MODELS.has(requestedModel) ? requestedModel : 'gemini-2.5-flash';
 
     const prompt = `TASK:\n${JSON.stringify(task)}\n\nPROJECT_STATE:\n${JSON.stringify(state)}`;
 
@@ -145,7 +289,33 @@ export default async function handler(req: any, res: any) {
       },
     });
 
-    const parsed = safeJsonParse(response.text || '');
+    let parsed: any;
+
+    try {
+      parsed = safeJsonParse(response.text || '');
+    } catch (parseError: any) {
+      const repairPrompt = `Repara esta respuesta y devuelve SOLO JSON válido.
+No agregues explicación.
+No uses Markdown.
+Mantén la estructura:
+{ "ok": boolean, "dashboard": object, "project_state_updated": object, "master_document": object, "needs_input": object|null }
+
+RESPUESTA ROTA:
+${response.text || ''}`;
+
+      const repaired = await ai.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: repairPrompt }] }],
+        config: {
+          responseMimeType: 'application/json',
+          maxOutputTokens: 32000,
+          temperature: 0,
+        } as any,
+      });
+
+      parsed = safeJsonParse(repaired.text || '');
+    }
+
     return res.status(200).json(parsed);
   } catch (e: any) {
     const statusCode = typeof e?.statusCode === 'number' ? e.statusCode : 500;

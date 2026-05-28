@@ -1,6 +1,6 @@
-// src/components/AuthGate.tsx
+// components/AuthGate.tsx
 import React from "react";
-import { PenSquareIcon } from "../components/Icons";
+import { PenSquareIcon } from "./Icons";
 
 export type AuthMode = "signin" | "signup";
 

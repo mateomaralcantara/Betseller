@@ -327,6 +327,24 @@ const GenerationDashboard = function GenerationDashboard({
 }: GenerationDashboardProps) {
   const { dashboard, state } = project as any;
 
+  const bookTitle = useMemo(() => {
+    return (
+      String(project?.title || "").trim() ||
+      String(state?.book_title || "").trim() ||
+      String(dashboard?.book_title || "").trim() ||
+      "Libro sin título"
+    );
+  }, [project?.title, state?.book_title, dashboard?.book_title]);
+
+  const bookTopic = useMemo(() => {
+    return (
+      String(state?.book_topic || "").trim() ||
+      String((project as any)?.topic || "").trim() ||
+      String(dashboard?.one_liner || "").trim() ||
+      ""
+    );
+  }, [state?.book_topic, project, dashboard?.one_liner]);
+
   const [variant, setVariant] = useState<DashboardVariant>(() =>
     normalizeVariant(localStorage.getItem("DASH_VARIANT"))
   );
@@ -340,6 +358,33 @@ const GenerationDashboard = function GenerationDashboard({
   const gp: Record<string, Status> = (((project as any)?.generation_progress ?? state?.generation_progress ?? {}) as any) || {};
   const outline12: any[] = Array.isArray(state?.outline_12) ? state.outline_12 : [];
   const chaptersArr: any[] = Array.isArray(state?.chapters) ? state.chapters : [];
+
+  // ✅ Fallback: si outline_12 viene vacío pero hay capítulos en state,
+  // renderizamos capítulos igualmente (y el blueprint deja de ser 2/2).
+  const effectiveOutline: any[] = useMemo(() => {
+    if (outline12.length) return outline12;
+
+    const byNum = new Map<number, any>();
+    for (const ch of chaptersArr) {
+      const n = Number(ch?.chapter_number ?? 0) || 0;
+      if (!n) continue;
+
+      const rawTitle = String(ch?.title ?? "").trim();
+      const cleanTitle = rawTitle
+        .replace(new RegExp(String.raw`^\s*cap[ií]tulo\s*${n}\s*[:\-–—]\s*`, "i"), "")
+        .trim() || rawTitle || `Capítulo ${n}`;
+
+      byNum.set(n, {
+        id: `outline_${String(n).padStart(2, "0")}`,
+        chapter_number: n,
+        chapter_title: cleanTitle,
+        target_words: 0,
+        status: "PENDING",
+      });
+    }
+
+    return Array.from(byNum.values()).sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
+  }, [outline12, chaptersArr]);
 
   const proposalWords = useMemo(() => countWordsQuick(state?.proposal?.text || ""), [state?.proposal?.text]);
   const introWords = useMemo(() => countWordsQuick(state?.introduction?.text || ""), [state?.introduction?.text]);
@@ -355,12 +400,12 @@ const GenerationDashboard = function GenerationDashboard({
 
   const blueprintKeys = useMemo(() => {
     const keys: string[] = ["proposal", "intro"];
-    for (const ch of outline12) {
+    for (const ch of effectiveOutline) {
       const n = typeof ch?.chapter_number === "number" ? ch.chapter_number : 0;
       if (n > 0) keys.push(`chap-${n}`);
     }
     return keys;
-  }, [outline12]);
+  }, [effectiveOutline]);
 
   const firstPendingKey = useMemo(() => {
     return blueprintKeys.find((k) => {
@@ -385,7 +430,7 @@ const GenerationDashboard = function GenerationDashboard({
 
   const canGenerateSelected = useMemo(() => {
     if (isGeneratingGlobal) return false;
-    if (selectedStatus === "completed" || selectedStatus === "generating") return false;
+    if (selectedStatus === "generating") return false;
     return true;
   }, [isGeneratingGlobal, selectedStatus]);
 
@@ -408,6 +453,14 @@ const GenerationDashboard = function GenerationDashboard({
   }, [blueprintKeys, gp]);
 
   const hasPendingBlueprint = blueprintDone.done < blueprintDone.total;
+
+  const totalChapterWords = useMemo(() => {
+    let total = 0;
+    for (const value of chapterWordsByNum.values()) total += value;
+    return total;
+  }, [chapterWordsByNum]);
+
+  const totalBookWords = proposalWords + introWords + totalChapterWords;
 
   const pageCls = s?.page ?? "p-6 h-full overflow-y-auto bg-slate-900";
   const containerCls = s?.container ?? "max-w-6xl mx-auto space-y-8 pb-24";
@@ -437,18 +490,30 @@ const GenerationDashboard = function GenerationDashboard({
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <PenSquareIcon className="w-6 h-6 text-slate-200" />
-                <h2 className="text-2xl font-black text-slate-50 truncate">
-                  {state?.book_title ? String(state.book_title) : "Dashboard de Generación"}
-                </h2>
+                <PenSquareIcon className="w-6 h-6 text-slate-200 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300/60">
+                    Libro activo
+                  </div>
+                  <h2 className="mt-1 text-3xl md:text-4xl font-black text-slate-50 truncate">
+                    {bookTitle}
+                  </h2>
+                </div>
               </div>
-              <p className="mt-2 text-slate-200/75 leading-relaxed">
-                {state?.dossier?.one_liner ? String(state.dossier.one_liner) : "Define y genera tu obra por secciones, con control total."}
+
+              <p className="mt-3 max-w-4xl text-slate-200/75 leading-relaxed line-clamp-3">
+                {bookTopic || "Define y genera tu obra por secciones, con control total."}
               </p>
 
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <span className={cx("text-[10px] font-black uppercase tracking-[0.28em] px-3 py-1.5 rounded-full border", "border-white/10 bg-white/5 text-slate-200/80")}>
                   Blueprint: {blueprintDone.done}/{blueprintDone.total}
+                </span>
+                <span className={cx("text-[10px] font-black uppercase tracking-[0.28em] px-3 py-1.5 rounded-full border", "border-white/10 bg-white/5 text-slate-200/80")}>
+                  Capítulos: {effectiveOutline.length}
+                </span>
+                <span className={cx("text-[10px] font-black uppercase tracking-[0.28em] px-3 py-1.5 rounded-full border", "border-white/10 bg-white/5 text-slate-200/80")}>
+                  Palabras: {totalBookWords.toLocaleString()}
                 </span>
                 <span className={cx("text-[10px] font-black uppercase tracking-[0.28em] px-3 py-1.5 rounded-full border", "border-white/10 bg-white/5 text-slate-200/80")}>
                   Selección: {keyToHuman(selectedKey)} · {statusLabel(selectedStatus)}
@@ -535,7 +600,7 @@ const GenerationDashboard = function GenerationDashboard({
               <button
                 type="button"
                 className={cx(btnGhost, "py-2 px-4")}
-                onClick={() => setSelectedKey(firstPendingKey && firstPendingKey.startsWith("chap-") ? firstPendingKey : outline12?.[0]?.chapter_number ? `chap-${outline12[0].chapter_number}` : "chap-1")}
+                onClick={() => setSelectedKey(firstPendingKey && firstPendingKey.startsWith("chap-") ? firstPendingKey : effectiveOutline?.[0]?.chapter_number ? `chap-${effectiveOutline[0].chapter_number}` : "chap-1")}
               >
                 <span className={cx("w-2.5 h-2.5 rounded-full", ACCENTS.chapter.dot)} />
                 Capítulos
@@ -581,7 +646,7 @@ const GenerationDashboard = function GenerationDashboard({
             </div>
 
             <div className="grid gap-3">
-              {outline12.map((ch: any) => {
+              {effectiveOutline.map((ch: any) => {
                 const n = typeof ch?.chapter_number === "number" ? ch.chapter_number : 0;
                 const key = `chap-${n}`;
                 const st = (gp?.[key] || "pending") as Status;
