@@ -46,7 +46,7 @@ import { callComposer, autoExtendChapterDev } from "./src/lib/gemini";
 import type { ComposerTask } from "./src/lib/types.local";
 import { AuthScreen, AuthMode } from "./components/AuthGate";
 
-const BUILD_TAG = "App.tsx v3.2.0 (gate-safe + device-session + idle-timeout) 2026-05-18";
+const BUILD_TAG = "App.tsx v3.2.2 (prompt-leak-safe + explicit-outline-titles) 2026-06-06";
 
 // Gemini
 const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL ?? "gemini-3.1-flash-lite";
@@ -62,6 +62,14 @@ const DEV_SYSTEM_PROMPT = [
   "SALIDA (CRÍTICO):",
   "- Responde ÚNICAMENTE con un (1) objeto JSON válido.",
   "- PROHIBIDO: Markdown fuera del JSON, bloques ``` , comentarios, o texto antes/después del JSON.",
+
+  "- PROHIBIDO insertar instrucciones internas dentro del libro: no escribas 'Actúa como', 'Eres un escritor', 'Objetivo del capítulo', 'Requisitos', 'Prompt' ni similares.",
+  "- Los encabezados deben ser naturales: 'Capítulo 1. Título del capítulo'. Nunca agregues instrucciones después del título.",
+  "- PROHIBIDO agregar bibliografía, fuentes, referencias, citas o lecturas recomendadas dentro de cada capítulo.",
+  "- La bibliografía solo se permite si el usuario la pide o si el libro es histórico, académico o investigativo.",
+  "- Si se permite bibliografía, debe ir en una sola sección final del libro, nunca repartida entre capítulos.",
+  "- No uses HTML, colores, estilos inline, enlaces ni marcas visuales dentro del contenido del libro.",
+
   "",
   "JSON MÍNIMO (ejemplo de forma, NO copies textos literales):",
   '{ "ok": true, "dashboard": {}, "project_state_updated": {}, "master_document": { "title": "", "text": "" } }',
@@ -84,6 +92,15 @@ const DEV_SYSTEM_PROMPT = [
   "  * NO modifiques otros capítulos.",
   "- Si action = 'GENERATE_PROPOSAL': actualiza SOLO proposal.",
   "- Si action = 'GENERATE_INTRODUCTION': actualiza SOLO introduction.",
+  "",
+  "ANTI-PROMPT-LEAKAGE:",
+  "- Nunca copies TASK, PROJECT_STATE, prompt del usuario, instrucciones internas ni reglas del sistema dentro del contenido del libro.",
+  "- El contenido del capítulo debe empezar directamente con narrativa o análisis, no con instrucciones.",
+  "- Si recibes una idea larga del usuario, úsala como contexto, no como texto del capítulo.",
+  "- El título del capítulo debe ser corto y editorial; nunca debe contener 'Actúa como', 'Objetivo general', 'Formato final', 'Requisitos' ni listas de instrucciones.",
+  "- Si el usuario incluye un esquema con líneas tipo CAPÍTULO N: 'Título', usa ese título limpio como chapter_title.",
+  "- No sustituyas títulos explícitos del usuario por títulos genéricos si el esquema ya trae títulos reales.",
+  "- Si detectas instrucciones dentro de un título, limpia el título y conserva solo la idea editorial.",
   "",
   "",
   "CAPÍTULOS (N VARIABLE):",
@@ -157,44 +174,277 @@ function stripChapterPrefix(title: string, n: number): string {
  * Outline variable (guardado en projects.outline_12 como JSONB, pero puede tener N items).
  * El UI arma "Capítulo N: {chapter_title}", por eso chapter_title debe ir SIN "Capítulo N:".
  */
+const FALLBACK_CHAPTER_TITLES = [
+  "Panorama general",
+  "Historia y evolución",
+  "Conceptos clave",
+  "Actores y dinámicas",
+  "Mecanismos y procesos",
+  "Casos y ejemplos",
+  "Impactos y consecuencias",
+  "Estrategias y herramientas",
+  "Errores comunes y mitos",
+  "Ética y riesgos",
+  "Futuro y escenarios",
+  "Plan de acción y cierre",
+];
+
+function squashSpaces(value: string): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function firstUsefulLine(value: string): string {
+  return String(value ?? "")
+    .split(/\r?\n/)
+    .map((x) => x.trim())
+    .filter(Boolean)[0] ?? "";
+}
+
+function stripOuterQuotes(value: string): string {
+  return String(value ?? "")
+    .trim()
+    .replace(/^["'“”‘’«»]+|["'“”‘’«»]+$/g, "")
+    .trim();
+}
+
+function extractLabeledValue(text: string, labels: string[]): string {
+  const raw = String(text ?? "");
+  for (const label of labels) {
+    const re = new RegExp(`${label}\\s*:\\s*([^\\r\\n]+)`, "i");
+    const m = raw.match(re);
+    if (m?.[1]) return squashSpaces(stripOuterQuotes(m[1]));
+  }
+  return "";
+}
+
+function hasPromptLeak(value: string): boolean {
+  return /act[uú]a como|eres un escritor|como escritor|objetivo general|t[ií]tulo del libro|subt[ií]tulo|los\s+\d+\s+perfiles|enfoque editorial|tono del libro|regla legal|estructura general|conclusi[oó]n general|anexos obligatorios|formato final|estilo de escritura|regla de profundidad|regla de equilibrio|regla de datos|requisitos|project_state|task:|system:|prompt/i.test(
+    String(value ?? "")
+  );
+}
+
+function truncateEditorialTitle(value: string, fallback: string): string {
+  let out = squashSpaces(stripOuterQuotes(value))
+    .replace(/[.:;,\-–—]+$/g, "")
+    .trim();
+
+  if (!out || hasPromptLeak(out)) return fallback;
+
+  if (out.length > 110) {
+    out = out.slice(0, 110).replace(/\s+\S*$/, "").trim();
+  }
+
+  return out || fallback;
+}
+
+function extractBookTitleFromIdea(idea: string): string {
+  const labeled = extractLabeledValue(idea, [
+    "T[IÍ]TULO DEL LIBRO",
+    "T[IÍ]TULO",
+    "BOOK TITLE",
+    "TITLE",
+  ]);
+
+  if (labeled && !hasPromptLeak(labeled)) {
+    return truncateEditorialTitle(labeled, "Libro sin título");
+  }
+
+  const first = firstUsefulLine(idea);
+  if (first && first.length <= 90 && !hasPromptLeak(first)) {
+    return truncateEditorialTitle(first, "Libro sin título");
+  }
+
+  return "Libro sin título";
+}
+
+function cleanSeedForOutlineContext(seed: string): string {
+  const titled = extractBookTitleFromIdea(seed);
+  if (titled !== "Libro sin título") return titled;
+
+  let s = String(seed ?? "").trim();
+
+  const topic = extractLabeledValue(s, [
+    "TEMA",
+    "OBJETIVO GENERAL",
+    "ENFOQUE EDITORIAL",
+  ]);
+
+  if (topic && !hasPromptLeak(topic)) {
+    return truncateEditorialTitle(topic, "");
+  }
+
+  s = s
+    .replace(/\bact[uú]a como\b[\s\S]*$/i, "")
+    .replace(/\beres un escritor\b[\s\S]*$/i, "")
+    .replace(/\bobjetivo general\b[\s\S]*$/i, "")
+    .replace(/\blos\s+\d+\s+perfiles\b[\s\S]*$/i, "")
+    .replace(/\bformato final\b[\s\S]*$/i, "")
+    .replace(/\banexos obligatorios\b[\s\S]*$/i, "")
+    .replace(/\brequisitos\b[\s\S]*$/i, "");
+
+  return truncateEditorialTitle(s, "");
+}
+
+function pickFallbackChapterTitle(index: number): string {
+  if (index < FALLBACK_CHAPTER_TITLES.length) return FALLBACK_CHAPTER_TITLES[index];
+  return `Desarrollo editorial ${index + 1}`;
+}
+
+function isGenericFallbackTitle(title: string, chapterNumber: number): boolean {
+  const t = squashSpaces(title).toLowerCase();
+  const fallback = pickFallbackChapterTitle(chapterNumber - 1).toLowerCase();
+  return (
+    t === fallback ||
+    t === `parte ${chapterNumber}: desarrollo` ||
+    t === `capítulo ${chapterNumber}` ||
+    t === `capitulo ${chapterNumber}` ||
+    /^parte\s+\d+\s*:\s*desarrollo$/i.test(t)
+  );
+}
+
+function cleanChapterTitle(value: string, chapterNumber: number, fallback: string): string {
+  let title = String(value ?? "").trim();
+
+  title = title
+    .replace(new RegExp(String.raw`^\s*cap[ií]tulo\s*${chapterNumber}\s*[:\-–—.]?\s*`, "i"), "")
+    .replace(/^\s*cap[ií]tulo\s*[:\-–—.]?\s*/i, "")
+    .trim();
+
+  title = title
+    .replace(/\s+[—–-]\s+(act[uú]a como|eres un escritor|objetivo general|t[ií]tulo del libro|subt[ií]tulo|formato final|requisitos)\b[\s\S]*$/i, "")
+    .replace(/\b(act[uú]a como|eres un escritor|objetivo general|t[ií]tulo del libro|subt[ií]tulo|formato final|anexos obligatorios|requisitos|prompt)\b[\s\S]*$/i, "")
+    .trim();
+
+  return truncateEditorialTitle(title, fallback);
+}
+
+function extractTitleFromChapterChunk(chunk: string, chapterNumber: number): string {
+  let raw = String(chunk ?? "").trim();
+  if (!raw) return "";
+
+  const quoted = raw.match(/^[“"'«]([^”"'»]{3,180})[”"'»]/);
+  if (quoted?.[1]) raw = quoted[1];
+  else {
+    raw = raw
+      .replace(/\s+(Analizar|Trabajar|Explicar|Desarrollar|Estudiar|Crear|Incluir|Capítulo\s+crítico)\b[\s\S]*$/i, "")
+      .replace(/\s+(Debe|Este\s+capítulo|Capítulo\s+crítico)\b[\s\S]*$/i, "")
+      .trim();
+  }
+
+  return cleanChapterTitle(raw, chapterNumber, "");
+}
+
+function extractChapterTitlesFromIdea(seed: string): Map<number, string> {
+  const out = new Map<number, string>();
+  const raw = String(seed ?? "");
+
+  // 1) Funciona si el usuario pegó cada capítulo en líneas separadas.
+  for (const rawLine of raw.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const m = line.match(/^\s*cap[ií]tulo\s+(\d{1,3})\s*[:\-–—.]\s*(.+?)\s*$/i);
+    if (!m) continue;
+    const n = Number(m[1] || 0) || 0;
+    if (!n) continue;
+    const title = extractTitleFromChapterChunk(m[2] || "", n);
+    if (title && !hasPromptLeak(title)) out.set(n, title);
+  }
+
+  // 2) Funciona si todo vino en un solo bloque largo.
+  const re = /cap[ií]tulo\s+(\d{1,3})\s*[:\-–—.]\s*([\s\S]*?)(?=\s+cap[ií]tulo\s+\d{1,3}\s*[:\-–—.]|\s+conclusi[oó]n general\s*:|\s+anexos obligatorios\s*:|\s+estilo de escritura\s*:|\s+regla de profundidad\s*:|\s+formato final\s*:|$)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) {
+    const n = Number(m[1] || 0) || 0;
+    if (!n || out.has(n)) continue;
+    const title = extractTitleFromChapterChunk(m[2] || "", n);
+    if (title && !hasPromptLeak(title)) out.set(n, title);
+  }
+
+  return out;
+}
+
+function inferChapterCountFromIdea(seed: string): number | null {
+  const titles = extractChapterTitlesFromIdea(seed);
+  if (titles.size > 0) return Math.max(...Array.from(titles.keys()));
+  return null;
+}
+
+function extractDesiredChapterCountSafe(idea: string): number | null {
+  const explicit = extractDesiredChapterCount(idea);
+  if (explicit) return explicit;
+
+  const fromHeadings = inferChapterCountFromIdea(idea);
+  if (fromHeadings) return clampInt(fromHeadings, 1, 120);
+
+  return null;
+}
+
+/**
+ * Outline variable limpio.
+ * Lee títulos explícitos tipo CAPÍTULO N: "Título", pero NUNCA mete el prompt completo.
+ */
 function buildFallbackOutline(count: number, seed: string, targetWords: number) {
   const n = clampInt(count, 1, 120);
-  const topic = String(seed ?? "").trim() || "Tema";
-  const baseNames = [
-    "Panorama general",
-    "Historia y evolución",
-    "Conceptos clave",
-    "Actores y dinámicas",
-    "Mecanismos y procesos",
-    "Casos y ejemplos",
-    "Impactos y consecuencias",
-    "Estrategias y herramientas",
-    "Errores comunes y mitos",
-    "Ética y riesgos",
-    "Futuro y escenarios",
-    "Plan de acción y cierre",
-  ];
+  const safeContext = cleanSeedForOutlineContext(seed);
+  const explicitTitles = extractChapterTitlesFromIdea(seed);
 
-  const pickName = (i: number) => {
-    if (i < baseNames.length) return baseNames[i];
-    // Para N>12, seguimos con nombres genéricos
-    return `Parte ${i + 1}: Desarrollo`;
-  };
+  return Array.from({ length: n }, (_, i) => {
+    const chapterNumber = i + 1;
+    const fallbackTitle = pickFallbackChapterTitle(i);
+    const explicitTitle = explicitTitles.get(chapterNumber);
+    const title = cleanChapterTitle(explicitTitle || fallbackTitle, chapterNumber, fallbackTitle);
 
-  return Array.from({ length: n }, (_, i) => ({
-    id: `outline_${String(i + 1).padStart(2, "0")}`,
-    chapter_number: i + 1,
-    chapter_title: `${pickName(i)} — ${topic}`,
-    status: "PENDING" as const,
-    target_words: Math.max(0, Math.floor(Number(targetWords || 0))),
-    objective: "",
-    key_points: [],
-    subheads_h2: [],
-    tools_frameworks: [],
-    exercises: [],
-    deliverable: "",
-    transition_to_next: "",
-  }));
+    return {
+      id: `outline_${String(chapterNumber).padStart(2, "0")}`,
+      chapter_number: chapterNumber,
+      chapter_title: title,
+      status: "PENDING" as const,
+      target_words: Math.max(0, Math.floor(Number(targetWords || 0))),
+      objective: safeContext ? `Desarrollar ${title.toLowerCase()} dentro del marco editorial de ${safeContext}.` : "",
+      key_points: [],
+      subheads_h2: [],
+      tools_frameworks: [],
+      exercises: [],
+      deliverable: "",
+      transition_to_next: "",
+    };
+  });
+}
+
+function normalizeOutlineTitles(outline: any[], fallbackSeed: string, defaultChapterWords: number): any[] {
+  const safeFallback = cleanSeedForOutlineContext(fallbackSeed);
+  const explicitTitles = extractChapterTitlesFromIdea(fallbackSeed);
+
+  return ensureArray<any>(outline, [])
+    .map((o: any, idx: number) => {
+      const n = Number(o?.chapter_number ?? idx + 1) || idx + 1;
+      const fallback = pickFallbackChapterTitle(n - 1);
+      const rawTitle = ensureString(o?.chapter_title, ensureString(o?.title, fallback));
+      const promptTitle = explicitTitles.get(n);
+      const shouldPreferPromptTitle =
+        Boolean(promptTitle) &&
+        (hasPromptLeak(rawTitle) || isGenericFallbackTitle(rawTitle, n) || rawTitle.length > 120);
+
+      const cleanTitle = cleanChapterTitle(
+        shouldPreferPromptTitle ? promptTitle || fallback : rawTitle,
+        n,
+        fallback
+      );
+
+      return {
+        ...(o || {}),
+        id: ensureString(o?.id, `outline_${String(n).padStart(2, "0")}`),
+        chapter_number: n,
+        chapter_title: cleanTitle,
+        target_words: Math.max(0, Number(o?.target_words ?? defaultChapterWords ?? 0) || 0),
+        objective: hasPromptLeak(ensureString(o?.objective, ""))
+          ? safeFallback
+            ? `Desarrollar ${cleanTitle.toLowerCase()} dentro del marco editorial de ${safeFallback}.`
+            : ""
+          : ensureString(o?.objective, ""),
+      };
+    })
+    .sort((a, b) => (Number(a?.chapter_number ?? 0) || 0) - (Number(b?.chapter_number ?? 0) || 0));
 }
 
 /**
@@ -204,7 +454,8 @@ function buildFallbackOutline(count: number, seed: string, targetWords: number) 
  */
 function ensureOutlineForProject(proj: Project, desiredCount: number, seed: string, defaultChapterWords: number): Project {
   const st: any = (proj as any).state ?? {};
-  const outline: any[] = Array.isArray(st?.outline_12) ? st.outline_12 : [];
+  const rawOutline: any[] = Array.isArray(st?.outline_12) ? st.outline_12 : [];
+  const outline = normalizeOutlineTitles(rawOutline, seed, defaultChapterWords);
   const desired = clampInt(desiredCount, 1, 120);
 
   // 1) Si no hay outline pero ya hay capítulos, reconstruimos títulos desde capítulos.
@@ -237,6 +488,10 @@ function ensureOutlineForProject(proj: Project, desiredCount: number, seed: stri
     const merged = [...outline, ...fillers].sort((a, b) => (Number(a?.chapter_number ?? 0) || 0) - (Number(b?.chapter_number ?? 0) || 0));
     const nextState = { ...st, outline_12: merged };
     return { ...proj, state: nextState } as Project;
+  }
+
+  if (outline.length) {
+    return { ...proj, state: { ...st, outline_12: outline } } as Project;
   }
 
   return proj;
@@ -550,7 +805,21 @@ const App: React.FC = () => {
   }, [projects]);
 
   const updateProjectById = useCallback((projectId: string, updater: (p: Project) => Project) => {
-    const run = () => setProjects((prev) => prev.map((p) => (p.id === projectId ? updater(p) : p)));
+    const apply = (list: Project[]) => list.map((p) => (p.id === projectId ? updater(p) : p));
+
+    // ✅ Blindaje anti-estado viejo:
+    // React puede tardar en reflejar setProjects durante generaciones en cadena.
+    // Mantener projectsRef.current sincronizado evita que "Generar restantes"
+    // use una versión vieja del proyecto y parezca borrar capítulos previos.
+    projectsRef.current = apply(projectsRef.current);
+
+    const run = () =>
+      setProjects((prev) => {
+        const next = apply(prev);
+        projectsRef.current = next;
+        return next;
+      });
+
     if (typeof startTransition === "function") startTransition(run);
     else run();
   }, []);
@@ -589,6 +858,7 @@ const App: React.FC = () => {
         setDeviceNotice(null);
         setDeviceError(null);
         setOtherDevice(null);
+        projectsRef.current = [];
         setProjects([]);
         setActiveProjectId(null);
         setMessages([initialWelcomeMessage]);
@@ -745,8 +1015,9 @@ const App: React.FC = () => {
     const full = mapDbFullToProject(project, sections, masterLatest);
     setProjects((prev) => {
       const has = prev.some((p) => p.id === projectId);
-      if (!has) return [full, ...prev];
-      return prev.map((p) => (p.id === projectId ? full : p));
+      const next = !has ? [full, ...prev] : prev.map((p) => (p.id === projectId ? full : p));
+      projectsRef.current = next;
+      return next;
     });
     return full;
   }, []);
@@ -770,6 +1041,7 @@ const App: React.FC = () => {
           } as any);
         }
       }
+      projectsRef.current = next;
       return next;
     });
   }, []);
@@ -1191,10 +1463,11 @@ const App: React.FC = () => {
     setError(null);
     try {
       await deleteProject(id);
-      setProjects((prev) => prev.filter((p) => p.id !== id));
+      const nextProjects = projectsRef.current.filter((p) => p.id !== id);
+      projectsRef.current = nextProjects;
+      setProjects(nextProjects);
       if (activeProjectId === id) {
-        const next = projectsRef.current.filter((p) => p.id !== id);
-        setActiveProjectId(next[0]?.id ?? null);
+        setActiveProjectId(nextProjects[0]?.id ?? null);
       }
     } catch (e) {
       setError(normalizeError(e));
@@ -1206,8 +1479,8 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      const title = idea.length < 70 ? idea.trim() : "Libro sin título";
-      const desiredChapterCount = extractDesiredChapterCount(idea) ?? 12;
+      const title = extractBookTitleFromIdea(idea);
+      const desiredChapterCount = extractDesiredChapterCountSafe(idea) ?? 12;
       const seedOutline = buildFallbackOutline(desiredChapterCount, idea, defaultChapterWords);
       const dbProject = await createProject({
         title,
@@ -1221,7 +1494,8 @@ const App: React.FC = () => {
         project_id: dbProject.id,
         book_title: dbProject.title,
         book_topic: idea,
-        outline_12: seedOutline,      };
+        outline_12: seedOutline,
+      };
 
       const result = await callComposer({
         task,
@@ -1264,7 +1538,11 @@ const App: React.FC = () => {
       } as Project;
       (updatedWithMaster as any).generation_progress = recomputeGenerationProgress(updatedWithMaster);
 
-      setProjects((prev) => [updatedWithMaster, ...prev.filter((p) => p.id !== updatedWithMaster.id)]);
+      projectsRef.current = [
+        updatedWithMaster,
+        ...projectsRef.current.filter((p) => p.id !== updatedWithMaster.id),
+      ];
+      setProjects(projectsRef.current);
       setActiveProjectId(updatedWithMaster.id);
       setViewMode("plan");
 
@@ -1372,6 +1650,9 @@ const targetWords =
         master_document: { ...(updated as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
       } as Project;
 
+      projectsRef.current = projectsRef.current.map((p) =>
+        p.id === proj.id ? updatedWithMaster : p
+      );
       updateProjectById(proj.id, () => updatedWithMaster);
       setSectionProgress(proj.id, sectionId, "completed");
       return true;
@@ -1481,6 +1762,7 @@ const targetWords =
       } as any;
 
       (next as any).generation_progress = recomputeGenerationProgress(next);
+      projectsRef.current = projectsRef.current.map((p) => (p.id === proj.id ? next : p));
       updateProjectById(proj.id, () => next);
 
       if (payload.kind === "proposal") await upsertOneSectionFromState(next, "proposal");
@@ -1488,10 +1770,12 @@ const targetWords =
       if (payload.kind === "chapter") await upsertOneSectionFromState(next, "chapter", payload.chapterNumber);
 
       const masterText = await rebuildAndSnapshotMaster(next);
-      updateProjectById(proj.id, (p) => ({
-        ...p,
-        master_document: { ...(p as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
-      }) as any);
+      const nextWithMaster = {
+        ...next,
+        master_document: { ...(next as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
+      } as Project;
+      projectsRef.current = projectsRef.current.map((p) => (p.id === proj.id ? nextWithMaster : p));
+      updateProjectById(proj.id, () => nextWithMaster);
     } catch (e) {
       setError(normalizeError(e));
     }
@@ -1503,10 +1787,12 @@ const targetWords =
     setError(null);
     try {
       const masterText = await rebuildAndSnapshotMaster(proj);
-      updateProjectById(proj.id, (p) => ({
-        ...p,
-        master_document: { ...(p as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
-      }) as any);
+      const nextWithMaster = {
+        ...proj,
+        master_document: { ...(proj as any).master_document, text: masterText, chunks: [{ index: 1, total: 1, text: masterText }] },
+      } as Project;
+      projectsRef.current = projectsRef.current.map((p) => (p.id === proj.id ? nextWithMaster : p));
+      updateProjectById(proj.id, () => nextWithMaster);
     } catch (e) {
       setError(normalizeError(e));
     }
