@@ -331,10 +331,9 @@ const GenerationDashboard = function GenerationDashboard({
     return (
       String(project?.title || "").trim() ||
       String(state?.book_title || "").trim() ||
-      String(dashboard?.book_title || "").trim() ||
       "Libro sin título"
     );
-  }, [project?.title, state?.book_title, dashboard?.book_title]);
+  }, [project?.title, state?.book_title]);
 
   const bookTopic = useMemo(() => {
     return (

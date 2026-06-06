@@ -64,7 +64,7 @@ const readerThemeStyles: Record<ReaderTheme, ReaderThemeStyle> = {
     contentBg: 'bg-slate-950/80',
     article: 'bg-white text-slate-900 border-slate-200',
     prose: 'prose-slate',
-    proseExtras: 'prose-h2:border-slate-200 prose-a:text-indigo-700',
+    proseExtras: 'prose-h2:border-slate-200 prose-a:text-inherit prose-a:no-underline',
     mark: 'bg-yellow-200/80 text-slate-900 px-0.5 rounded-sm',
     selection: 'selection:bg-indigo-100',
   },
@@ -78,7 +78,7 @@ const readerThemeStyles: Record<ReaderTheme, ReaderThemeStyle> = {
     contentBg: 'bg-slate-950/80',
     article: 'bg-[#fbf3e6] text-[#2a2017] border-amber-200/70',
     prose: 'prose-stone',
-    proseExtras: 'prose-h2:border-amber-200/70 prose-a:text-amber-800',
+    proseExtras: 'prose-h2:border-amber-200/70 prose-a:text-inherit prose-a:no-underline',
     mark: 'bg-amber-200/90 text-[#2a2017] px-0.5 rounded-sm',
     selection: 'selection:bg-amber-200',
   },
@@ -92,7 +92,7 @@ const readerThemeStyles: Record<ReaderTheme, ReaderThemeStyle> = {
     contentBg: 'bg-transparent', // ✅ porque el fondo real es el del App
     article: 'bg-slate-900 text-slate-100 border-slate-800',
     prose: 'prose-invert prose-slate text-slate-100',
-    proseExtras: 'prose-h2:border-slate-700 prose-a:text-indigo-300 prose-strong:text-slate-100',
+    proseExtras: 'prose-h2:border-slate-700 prose-a:text-inherit prose-a:no-underline prose-strong:text-inherit',
     mark: 'bg-yellow-500/20 text-yellow-100 px-0.5 rounded-sm',
     selection: 'selection:bg-indigo-500/30',
   },
@@ -264,7 +264,7 @@ function highlightChildren(children: React.ReactNode, query: string, markClass: 
 function buildFullDossierMarkdown(project: Project): string {
   const st: any = project?.state ?? {};
 
-  const title = s(st.book_title, s(project?.title, 'Documento maestro')).trim();
+  const title = s(project?.title, s(st.book_title, 'Documento maestro')).trim();
   const topic = s(st.book_topic, '').trim();
   const audience = s(st.audience, '').trim();
   const tone = s(st.tone_style, '').trim();
@@ -384,7 +384,7 @@ function splitMarkdownByH2(markdown: string): SplitSection[] {
 
 function buildSectionMarkdown(project: Project, key: string, fullText: string, autoH2Sections: SplitSection[]): string {
   const st: any = project?.state ?? {};
-  const title = s(st.book_title, s(project?.title, 'Documento maestro')).trim();
+  const title = s(project?.title, s(st.book_title, 'Documento maestro')).trim();
 
   if (key === 'FULL') return fullText;
 
@@ -790,7 +790,7 @@ const BookViewer: React.FC<BookViewerProps> = ({ project, onEditSection }) => {
   const proseCls = useMemo(
     () =>
       cx(
-        'prose max-w-none',
+        'prose max-w-none prose-a:text-inherit prose-a:no-underline prose-strong:text-inherit prose-headings:text-inherit',
         rt?.prose,
         rt?.proseExtras,
         rt?.selection,
@@ -801,7 +801,7 @@ const BookViewer: React.FC<BookViewerProps> = ({ project, onEditSection }) => {
   );
 
   const title = useMemo(
-    () => s((project as any)?.state?.book_title, s((project as any)?.title, 'Documento')),
+    () => s((project as any)?.title, s((project as any)?.state?.book_title, 'Documento')),
     [project]
   );
 
@@ -1104,7 +1104,7 @@ const BookViewer: React.FC<BookViewerProps> = ({ project, onEditSection }) => {
                 </div>
               </div>
             ) : (
-              <div className={proseCls}>
+              <div className={cx(proseCls, "book-content [&_*]:text-inherit [&_a]:no-underline [&_a]:pointer-events-none")}>
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
                   {displayText || 'Aún no hay contenido. Genera propuesta / introducción / capítulos.'}
                 </ReactMarkdown>

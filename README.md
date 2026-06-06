@@ -1,54 +1,33 @@
-# BestSeller Jobs Architecture — capítulos completos sin romperse
+# BestSeller App.tsx — fix títulos reales sin prompt leakage
 
-Esta base cambia la lógica:
+Este parche corrige el problema donde el sistema dejó de mostrar los títulos reales y mostraba solo títulos genéricos.
 
-ANTES:
-Click → Gemini genera capítulo largo → app espera → JSON roto.
+## Qué hace
 
-AHORA:
-Click → crea job → worker genera por bloques → guarda capítulo → frontend consulta progreso.
+- Extrae títulos reales desde líneas como: `CAPÍTULO 3: “Colombia Alcántara: la entrevista como escenario de autoridad”`.
+- Funciona aunque el prompt venga con saltos de línea o en un solo bloque largo.
+- Evita meter el prompt largo en `chapter_title`.
+- Limpia títulos contaminados con `Actúa como`, `Objetivo general`, `Formato final`, etc.
+- Usa el máximo capítulo detectado en el esquema si no hay un número explícito mejor.
+- Mantiene el blindaje de `projectsRef.current`.
 
-## Pasos
-
-1. Ejecuta `supabase/migrations/20260525_generation_jobs.sql` en Supabase SQL Editor.
-2. Copia los archivos `src/lib`, `src/hooks`, `src/components` y `worker`.
-3. Instala dependencias:
-
-```powershell
-npm install @supabase/supabase-js @google/genai dotenv tsx
-```
-
-4. Crea `worker/.env` usando `worker/.env.example`.
-5. En `package.json`, agrega:
-
-```json
-"worker": "tsx worker/generationWorker.ts"
-```
-
-6. Aplica los parches de `docs/APP_PATCH.md` y `docs/DASHBOARD_PATCH.md`.
-
-## Ejecutar
-
-Terminal 1:
+## Instalación
 
 ```powershell
+cd "C:\Users\martin\Desktop\VSC\BestS\geneBestSeller"
+
+Copy-Item -Force ".\App.tsx" ".\App.tsx.bak_before_outline_titles_fix"
+Copy-Item -Force "RUTA_DONDE_DESCOMPRIMISTE\App.tsx" ".\App.tsx"
+
 npm run dev
 ```
 
-Terminal 2:
+## Verificación rápida
 
 ```powershell
-npm run worker
+node ".\scripts\audit-app-outline-titles.mjs"
 ```
 
-## Importante
+## Nota
 
-Ningún sistema serio puede garantizar que un capítulo largo sea instantáneo.
-Lo que sí hace esta arquitectura:
-
-- no bloquea la UI;
-- evita JSON roto;
-- genera por bloques;
-- guarda progreso;
-- permite varios workers;
-- soporta más usuarios con cola.
+Este parche no limpia libros viejos ya guardados en Supabase. Para ver los títulos corregidos, crea un libro nuevo o regenera/actualiza el outline del proyecto contaminado.

@@ -27,3 +27,29 @@ dist-ssr
 .health/
 datos.txt
 device_session_gate.sql
+# Local / seguridad
+.env
+.env.local
+.env.*.local
+claves.txt
+
+# Backups y trazas
+.trace/
+backups/
+*.bak
+*.bak_*
+*.bak_*
+
+# Parches temporales
+README_PATCH.md
+PATCH_*.md
+PATCH_NOTES.md
+PATCH_README.txt
+APP_WIRING.md
+
+# Instaladores locales
+install-app-*.ps1
+cleanup-app-backups.ps1
+
+# Carpetas raras duplicadas
+scripts/scripts/

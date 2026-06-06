@@ -1,6 +1,6 @@
-// src/lib/editor.ts
-// Centraliza: normalización/merge anti-borrado, master builder, progress, y apply EngineResult.
-// ✅ Incluye: outline fallback (deep scan en dashboard) + limpieza de headings duplicados en capítulos.
+// ==========================================
+// FILE: src/lib/editor.ts
+// ==========================================
 
 import type { Project, ProjectState } from "../../types";
 
@@ -23,6 +23,137 @@ export type ProcessCtx = { action?: string; chapterNum?: number };
 
 /* ----------------------------- tiny helpers ----------------------------- */
 
+
+
+export function isBibliographyAllowedForProject(projectLike: any): boolean {
+  const raw = [
+    projectLike?.title,
+    projectLike?.topic,
+    projectLike?.book_topic,
+    projectLike?.dossier?.book_title,
+    projectLike?.dossier?.book_topic,
+    projectLike?.tone_style,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return /hist[oó]ric|historia|acad[eé]mic|investigaci[oó]n|tesis|bibliograf|fuentes|citas|referencias|documental|ensayo cr[ií]tico/.test(raw);
+}
+
+export function sanitizeEditorialChapterText(
+  text: string,
+  opts?: {
+    allowBibliography?: boolean;
+    allowInstructionLines?: boolean;
+  }
+): string {
+  const allowBibliography = Boolean(opts?.allowBibliography);
+  const allowInstructionLines = Boolean(opts?.allowInstructionLines);
+
+  let out = String(text || "");
+
+  // Quita fences y etiquetas raras.
+  out = out
+    .replace(/\`\`\`[a-zA-Z0-9_-]*\s*/g, "")
+    .replace(/\`\`\`/g, "");
+
+  const lines = out.split(/\r?\n/);
+  const cleanLines: string[] = [];
+
+  let skippingBibliography = false;
+
+  const instructionLineRe =
+    /^\s*(act[uú]a como|eres un|como escritor|como edit(or|ora)|instrucciones?|reglas?|objetivo del cap[ií]tulo|requisitos?|devuelve solo|no uses|no incluyas|prompt|task:|project_state:|system:)\b/i;
+
+  const bibliographyStartRe =
+    /^\s*(bibliograf[ií]a|referencias|fuentes consultadas|fuentes|citas|notas bibliogr[aá]ficas|obras consultadas|lecturas recomendadas)\s*[:\-–—]?\s*$/i;
+
+  const chapterHeadingRe =
+    /^\s*(cap[ií]tulo\s+\d+)\s*[:\-–—.]\s*(.+?)\s*$/i;
+
+  for (const line of lines) {
+    const raw = line;
+    const trimmed = raw.trim();
+
+    if (!trimmed) {
+      if (!skippingBibliography) cleanLines.push(raw);
+      continue;
+    }
+
+    // Normaliza encabezados tipo:
+    // "Capítulo 1. Los comunicadores dominicanos. Actúa como..."
+    const chMatch = trimmed.match(chapterHeadingRe);
+    if (chMatch) {
+      let title = chMatch[2] || "";
+
+      title = title
+        .replace(/\b(act[uú]a como|eres un|como escritor|como editor|instrucciones?|reglas?|objetivo del cap[ií]tulo|requisitos?).*$/i, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      title = title.replace(/[.:;,-]+$/g, "").trim();
+
+      if (title) {
+        cleanLines.push(`${chMatch[1]}. ${title}`);
+      } else {
+        cleanLines.push(chMatch[1]);
+      }
+
+      skippingBibliography = false;
+      continue;
+    }
+
+    // Quita líneas de instrucciones internas.
+    if (!allowInstructionLines && instructionLineRe.test(trimmed)) {
+      continue;
+    }
+
+    // Quita bibliografía dentro del capítulo si no está permitida.
+    if (!allowBibliography && bibliographyStartRe.test(trimmed)) {
+      skippingBibliography = true;
+      continue;
+    }
+
+    // Si ya estamos saltando bibliografía, seguimos saltando hasta un nuevo capítulo o corte fuerte.
+    if (skippingBibliography) {
+      if (/^\s*cap[ií]tulo\s+\d+/i.test(trimmed)) {
+        skippingBibliography = false;
+        cleanLines.push(raw);
+      }
+      continue;
+    }
+
+    // Quita líneas bibliográficas típicas aunque no tengan encabezado.
+    if (
+      !allowBibliography &&
+      /^(\-\s*)?(autor|obra|editorial|isbn|doi|url|http|https|www\.|fuente:|referencia:)/i.test(trimmed)
+    ) {
+      continue;
+    }
+
+    cleanLines.push(raw);
+  }
+
+  out = cleanLines.join("\n");
+
+  // Quita bloques inline típicos de bibliografía/fuentes entre párrafos.
+  if (!allowBibliography) {
+    out = out.replace(
+      /\n\s*(bibliograf[ií]a|referencias|fuentes consultadas|obras consultadas|lecturas recomendadas)\s*[:\-–—]?[\s\S]*$/i,
+      ""
+    );
+  }
+
+  // Limpieza de exceso de líneas.
+  out = out
+    .replace(/[ \t]+$/gm, "")
+    .replace(/\n{4,}/g, "\n\n\n")
+    .trim();
+
+  return out;
+}
+
 export function isRecord(v: unknown): v is AnyRecord {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
@@ -44,15 +175,15 @@ export function normalizeError(e: unknown): string {
 /* ----------------------------- engine parse ----------------------------- */
 
 function cleanModelText(text: string): string {
-  return String(text ?? '')
-    .replace(/^\s*```json\s*/i, '')
-    .replace(/^\s*```\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
+  return String(text ?? "")
+    .replace(/^\s*```json\s*/i, "")
+    .replace(/^\s*```\s*/i, "")
+    .replace(/\s*```\s*$/i, "")
     .trim();
 }
 
 function escapeControlCharsInsideStrings(input: string): string {
-  let out = '';
+  let out = "";
   let inString = false;
   let escaped = false;
 
@@ -71,7 +202,7 @@ function escapeControlCharsInsideStrings(input: string): string {
       continue;
     }
 
-    if (ch === '\\') {
+    if (ch === "\\") {
       out += ch;
       escaped = true;
       continue;
@@ -83,24 +214,22 @@ function escapeControlCharsInsideStrings(input: string): string {
       continue;
     }
 
-    if (ch === '\n') {
-      out += '\\n';
+    if (ch === "\n") {
+      out += "\\n";
       continue;
     }
-
-    if (ch === '\r') {
-      out += '\\r';
+    if (ch === "\r") {
+      out += "\\r";
       continue;
     }
-
-    if (ch === '\t') {
-      out += '\\t';
+    if (ch === "\t") {
+      out += "\\t";
       continue;
     }
 
     const code = ch.charCodeAt(0);
     if (code >= 0 && code < 32) {
-      out += `\\u${code.toString(16).padStart(4, '0')}`;
+      out += `\\u${code.toString(16).padStart(4, "0")}`;
       continue;
     }
 
@@ -110,9 +239,109 @@ function escapeControlCharsInsideStrings(input: string): string {
   return out;
 }
 
+function removeTrailingCommasOutsideStrings(input: string): string {
+  let out = "";
+  let inStr = false;
+  let esc = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+
+    if (inStr) {
+      out += ch;
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+
+    if (ch === '"') {
+      inStr = true;
+      out += ch;
+      continue;
+    }
+
+    if (ch === ",") {
+      let j = i + 1;
+      while (j < input.length && /\s/.test(input[j])) j++;
+      const next = input[j];
+      if (next === "}" || next === "]") {
+        continue; // drop trailing comma
+      }
+    }
+
+    out += ch;
+  }
+
+  return out;
+}
+
+/**
+ * Fix muy común: falta coma entre propiedades.
+ * Ej: {"a":"x" "b":1} -> {"a":"x","b":1}
+ * (Heurística: inserta coma cuando termina un valor y empieza un "key":)
+ */
+function insertMissingCommasBetweenProps(input: string): string {
+  // Solo trabajamos en texto “fuera de strings” mediante un scan,
+  // y aplicamos inserción en patrones súper comunes.
+  let out = "";
+  let inStr = false;
+  let esc = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+
+    if (inStr) {
+      out += ch;
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+
+    if (ch === '"') {
+      inStr = true;
+      out += ch;
+      continue;
+    }
+
+    out += ch;
+
+    // Detecta: ... } "key":
+    //          ... "value" "key":
+    //          ... 123 "key":
+    //          ... true "key":
+    //          ... null "key":
+    // Para no hacer regex gigante, miramos lookahead.
+    if (ch === "}" || ch === '"' || ch === "e" || ch === "l" || ch === "n" || (ch >= "0" && ch <= "9")) {
+      let j = i + 1;
+      while (j < input.length && /\s/.test(input[j])) j++;
+      if (input[j] === '"') {
+        // Buscar hacia adelante si esto parece el inicio de una key: "xxx":
+        const k = input.indexOf(":", j);
+        if (k > j) {
+          // Asegurar que entre j y k solo haya algo tipo "key"
+          const mid = input.slice(j, k).trim();
+          if (/^"[^"]+"$/.test(mid)) {
+            // Retrocede para ver el último token "significativo" emitido
+            let t = out.trimEnd();
+            const last = t[t.length - 1];
+            // Si ya hay coma/llave abierta/colon, no insertes
+            if (last && last !== "{" && last !== "[" && last !== ":" && last !== ",") {
+              out = t + "," + out.slice(t.length);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
 function extractFirstJsonObject(text: string): string | null {
   const t = cleanModelText(text);
-  const first = t.indexOf('{');
+  const first = t.indexOf("{");
   if (first < 0) return null;
 
   let depth = 0;
@@ -124,7 +353,7 @@ function extractFirstJsonObject(text: string): string | null {
 
     if (inStr) {
       if (esc) esc = false;
-      else if (ch === '\\') esc = true;
+      else if (ch === "\\") esc = true;
       else if (ch === '"') inStr = false;
       continue;
     }
@@ -134,47 +363,53 @@ function extractFirstJsonObject(text: string): string | null {
       continue;
     }
 
-    if (ch === '{') depth++;
-    else if (ch === '}') {
+    if (ch === "{") depth++;
+    else if (ch === "}") {
       depth--;
       if (depth === 0) return t.slice(first, i + 1);
     }
   }
 
-  const last = t.lastIndexOf('}');
+  const last = t.lastIndexOf("}");
   return last > first ? t.slice(first, last + 1) : null;
 }
 
 function parseJsonCandidate(candidate: string): any {
   const cleaned = cleanModelText(candidate);
-  const repaired = escapeControlCharsInsideStrings(cleaned);
+
+  // pipeline de reparaciones locales (sin IA)
+  const repaired1 = escapeControlCharsInsideStrings(cleaned);
+  const repaired2 = removeTrailingCommasOutsideStrings(repaired1);
+  const repaired3 = insertMissingCommasBetweenProps(repaired2);
 
   try {
     return JSON.parse(cleaned);
   } catch {
-    return JSON.parse(repaired);
+    try {
+      return JSON.parse(repaired2);
+    } catch {
+      return JSON.parse(repaired3);
+    }
   }
 }
 
 export function safeJsonParse(text: string): any {
   const t = cleanModelText(text);
-  if (!t) throw new Error('Respuesta vacía');
+  if (!t) throw new Error("Respuesta vacía");
 
   try {
     return parseJsonCandidate(t);
   } catch (firstError: any) {
     const obj = extractFirstJsonObject(t);
     if (!obj) {
-      throw new Error(`No se pudo extraer JSON. ${firstError?.message || ''}`.trim());
+      throw new Error(`No se pudo extraer JSON. ${firstError?.message || ""}`.trim());
     }
 
     try {
       return parseJsonCandidate(obj);
     } catch (secondError: any) {
       const preview = obj.slice(0, 1200);
-      throw new Error(
-        `JSON inválido del modelo: ${secondError?.message || secondError}. Preview: ${preview}`
-      );
+      throw new Error(`JSON inválido del modelo: ${secondError?.message || secondError}. Preview: ${preview}`);
     }
   }
 }
@@ -222,9 +457,9 @@ export function chapterIsComplete(chText: string, targetWords?: number): boolean
 
   const target = typeof targetWords === "number" && Number.isFinite(targetWords) ? Math.floor(targetWords) : 0;
 
-  // ✅ Regla dura: si hay target, "COMPLETED" = llegar al target (y mínimo 2000 siempre).
-  const minWords = target > 0 ? Math.max(2000, target) : 2000;
-  return wc >= minWords;
+  // ✅ Regla dura: siempre mínimo 2000, y si target existe, hay que llegar al target.
+  const required = target > 0 ? Math.max(2000, target) : 2000;
+  return wc >= required;
 }
 
 /* ----------------------- outline helpers (variable N) ----------------------- */
@@ -234,17 +469,16 @@ function stripChapterLabel(title: string, chapterNum?: number): string {
   if (!t) return "";
   const n = typeof chapterNum === "number" && Number.isFinite(chapterNum) ? chapterNum : null;
 
-  // Remove leading "Capítulo 3:", "Capitulo 3 -", "Chapter 3:" etc.
   if (n) {
     const re1 = new RegExp(String.raw`^\s*(cap[ií]tulo|chapter)\s*${n}\s*[:\-–—]\s*`, "i");
     if (re1.test(t)) return t.replace(re1, "").trim();
   }
-
-  // Remove generic "Capítulo:" prefix (without number)
   return t.replace(/^\s*(cap[ií]tulo|chapter)\s*[:\-–—]\s*/i, "").trim();
 }
 
-function buildOutlineFromChapterSections(chapters: Array<{ chapter_number: number; title: string; text: string; status?: string }>) {
+function buildOutlineFromChapterSections(
+  chapters: Array<{ chapter_number: number; title: string; text: string; status?: string }>
+) {
   return chapters
     .filter((c) => (Number(c?.chapter_number ?? 0) || 0) > 0)
     .slice()
@@ -279,8 +513,6 @@ function stripLeadingChapterHeading(text: string, chapterNum?: number, chapterTi
   const title = (chapterTitle ?? "").trim();
   const n = typeof chapterNum === "number" && Number.isFinite(chapterNum) ? chapterNum : null;
 
-  // Match headings like:
-  // "# Capítulo 3", "## Capitulo 3: X", "### Capítulo 3 — X"
   const capLine = n
     ? new RegExp(String.raw`^\s{0,3}#{1,3}\s*cap[ií]tulo\s*${n}\b[^\n]*\n+`, "i")
     : null;
@@ -294,9 +526,7 @@ function stripLeadingChapterHeading(text: string, chapterNum?: number, chapterTi
     if (titleLine.test(out)) out = out.replace(titleLine, "");
   }
 
-  // If still starts with "## Capítulo" generic, drop it once (defensive)
   out = out.replace(/^\s{0,3}#{1,3}\s*cap[ií]tulo\b[^\n]*\n+/i, "");
-
   return out.trimStart();
 }
 
@@ -370,6 +600,42 @@ export function compactStateForComposer(project: Project, maxMasterChars: number
 
 /* -------------------------- master builder -------------------------- */
 
+
+
+function isBadBookTitle(value: unknown): boolean {
+  const t = String(value ?? "").trim();
+  if (!t) return true;
+  return /^(libro sin t[ií]tulo|documento maestro|documento|untitled)$/i.test(t);
+}
+
+function getCanonicalBookTitle(currentProject: any, mergedState: any, dashboard?: any): string {
+  const projectTitle = String(currentProject?.title ?? "").trim();
+  if (!isBadBookTitle(projectTitle)) return projectTitle;
+
+  const stateTitle = String(mergedState?.book_title ?? mergedState?.bookTitle ?? "").trim();
+  if (!isBadBookTitle(stateTitle)) return stateTitle;
+
+  const dashboardTitle = String(dashboard?.book_title ?? "").trim();
+  if (!isBadBookTitle(dashboardTitle)) return dashboardTitle;
+
+  return "Libro sin título";
+}
+
+function enforceCanonicalBookTitle(currentProject: any, mergedState: any, dashboard?: any): string {
+  const canonicalTitle = getCanonicalBookTitle(currentProject, mergedState, dashboard);
+
+  if (mergedState && typeof mergedState === "object") {
+    mergedState.book_title = canonicalTitle;
+    mergedState.bookTitle = canonicalTitle;
+  }
+
+  if (dashboard && typeof dashboard === "object") {
+    dashboard.book_title = canonicalTitle;
+  }
+
+  return canonicalTitle;
+}
+
 export function buildMasterFromState(state: ProjectState, title?: string): string {
   const parts: string[] = [];
   const bookTitle = (title || (state as any).book_title || "Documento maestro").trim();
@@ -416,7 +682,7 @@ export function normalizeProjectState(input: unknown): ProjectState {
   (state as any).introduction = introduction;
 
   (state as any).outline_12 = ensureArray<any>((state as any).outline_12, []).map((o: any, idx: number) => {
-    const chapterNum = Number(o?.chapter_number ?? o?.chapterNumber ?? (idx + 1)) || (idx + 1);
+    const chapterNum = Number(o?.chapter_number ?? o?.chapterNumber ?? (idx + 1)) || idx + 1;
     const normalized: AnyRecord = isRecord(o) ? { ...(o as AnyRecord) } : {};
     normalized.id = ensureString(normalized.id, `outline_${String(chapterNum).padStart(2, "0")}`);
     normalized.chapter_number = chapterNum;
@@ -430,7 +696,7 @@ export function normalizeProjectState(input: unknown): ProjectState {
   });
 
   (state as any).chapters = ensureArray<any>((state as any).chapters, []).map((c: any, idx: number) => {
-    const cn = Number(c?.chapter_number ?? c?.chapterNumber ?? c?.number ?? (idx + 1)) || (idx + 1);
+    const cn = Number(c?.chapter_number ?? c?.chapterNumber ?? c?.number ?? (idx + 1)) || idx + 1;
     const normalized: AnyRecord = isRecord(c) ? { ...(c as AnyRecord) } : {};
     normalized.chapter_number = cn;
     normalized.id = ensureString(normalized.id, `sec_chapter_${String(cn).padStart(2, "0")}`);
@@ -452,6 +718,7 @@ export function normalizeProjectState(input: unknown): ProjectState {
 
   (state as any).project_id = ensureString((state as any).project_id, ensureString((state as any).projectId, `proj_${Date.now()}`));
   (state as any).book_title = ensureString((state as any).book_title, ensureString((state as any).bookTitle, "Libro sin título"));
+  (state as any).bookTitle = (state as any).book_title;
   (state as any).book_topic = ensureString((state as any).book_topic, ensureString((state as any).bookTopic, ""));
   (state as any).audience = ensureString((state as any).audience, "");
   (state as any).tone_style = ensureString((state as any).tone_style, "");
@@ -490,17 +757,23 @@ export function mergeProjectState(prev: ProjectState | undefined, next: ProjectS
   const prevOutline = ensureArray<any>((prev as any).outline_12, []);
   const nextOutline = ensureArray<any>((next as any).outline_12, []);
   const outlineByNum = new Map<number, any>();
+
   for (const o of prevOutline) outlineByNum.set(Number(o?.chapter_number ?? 0) || 0, o);
+
   for (const o of nextOutline) {
     const n = Number(o?.chapter_number ?? 0) || 0;
     if (!n) continue;
     outlineByNum.set(n, { ...(outlineByNum.get(n) || {}), ...o, chapter_number: n });
   }
-  merged.outline_12 = Array.from(outlineByNum.values()).filter(Boolean).sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
+
+  merged.outline_12 = Array.from(outlineByNum.values())
+    .filter(Boolean)
+    .sort((a, b) => (a.chapter_number ?? 0) - (b.chapter_number ?? 0));
 
   const prevCh = ensureArray<any>((prev as any).chapters, []);
   const nextCh = ensureArray<any>((next as any).chapters, []);
   const byNum = new Map<number, any>();
+
   for (const c of prevCh) {
     const cn = Number(c?.chapter_number ?? 0) || 0;
     if (cn > 0) byNum.set(cn, c);
@@ -546,6 +819,7 @@ export function mergeProjectState(prev: ProjectState | undefined, next: ProjectS
 export function mapDbFullToProject(db: any, sections: any[], masterLatest: any): Project {
   const proposal = sections.find((s: any) => s?.type === "PROPOSAL");
   const intro = sections.find((s: any) => s?.type === "INTRODUCTION");
+
   const chapters = sections
     .filter((s: any) => s?.type === "CHAPTER")
     .slice()
@@ -572,7 +846,6 @@ export function mapDbFullToProject(db: any, sections: any[], masterLatest: any):
     outline_12: (() => {
       const fromDb = ensureArray<any>(db?.outline_12, []);
       if (fromDb.length) return fromDb;
-      // Backfill: si no hay outline en projects pero sí hay capítulos guardados, lo reconstruimos.
       if (chapters.length) return buildOutlineFromChapterSections(chapters as any);
       return [];
     })(),
@@ -641,7 +914,6 @@ function deepFindOutline(node: any, depth = 0): any[] | null {
   }
 
   if (isRecord(node)) {
-    // prefer obvious keys first
     const keys = Object.keys(node);
     const preferred = keys.filter((k) => /outline|blueprint|chapters/i.test(k));
     for (const k of preferred) {
@@ -675,7 +947,6 @@ export function processEngineResult(result: EngineResult, currentProject: Projec
   const nextState0 = isRecord(result.project_state_updated) ? (result.project_state_updated as AnyRecord) : {};
   const nextState = normalizeProjectState(ensureOutline12InState(nextState0, dashboard));
 
-  // anti-motor-loco: if generating chapter N, treat response as patch of that chapter only
   if (ctx?.action === "GENERATE_CHAPTER" && ctx?.chapterNum) {
     const expected = ctx.chapterNum;
     const chs = ensureArray<any>((nextState as any).chapters, []);
@@ -700,16 +971,17 @@ export function processEngineResult(result: EngineResult, currentProject: Projec
 
   const mergedState = mergeProjectState((currentProject as any)?.state as any, nextState);
 
-  const stateMaster = buildMasterFromState(mergedState, ensureString(dashboard.book_title, (currentProject as any)?.title)).trim();
+  const canonicalTitle = enforceCanonicalBookTitle(currentProject, mergedState, dashboard);
+  const stateMaster = buildMasterFromState(mergedState, canonicalTitle).trim();
   const prevMaster = ensureString((currentProject as any)?.master_document?.text, "").trim();
   const finalMaster = stateMaster || prevMaster;
 
   const updatedProject: Project = {
     id: ensureString((currentProject as any)?.id, ensureString((mergedState as any).project_id, `proj_${Date.now()}`)),
-    title: ensureString(dashboard.book_title, (currentProject as any)?.title || ensureString((mergedState as any).book_title, "Libro sin título")),
+    title: canonicalTitle,
     state: mergedState,
     master_document: {
-      title: ensureString(dashboard.book_title, ensureString((mergedState as any).book_title, "Documento maestro")),
+      title: canonicalTitle,
       text: finalMaster,
       chunks: finalMaster ? [{ index: 1, total: 1, text: finalMaster }] : [],
     } as any,

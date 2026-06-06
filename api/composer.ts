@@ -10,7 +10,16 @@ import { GoogleGenAI } from '@google/genai';
 const SYSTEM_PROMPT = `Eres BOOK_DOSSIER_CANVAS_ENGINE.
 
 RESPUESTA OBLIGATORIA:
-Devuelve SIEMPRE un único JSON válido, sin Markdown y sin fences.
+Devuelve SIEMPRE un único JSON válido, sin Markdown y sin fences.\n
+REGLAS DE LIMPIEZA EDITORIAL:
+- Nunca incluyas instrucciones internas dentro del contenido final.
+- No escribas "Actúa como", "Eres un escritor", "Objetivo del capítulo", "Requisitos", "Prompt" ni textos similares.
+- Los títulos deben verse normales: "Capítulo 1. Título del capítulo".
+- No incluyas bibliografía dentro de capítulos.
+- La bibliografía solo se permite si el libro es histórico, académico, investigativo o si el usuario la pidió explícitamente.
+- Si hay bibliografía, debe ir al final del libro en una sección única.
+- No uses HTML, colores, estilos inline ni enlaces.
+
 
 Forma exacta:
 {
@@ -296,7 +305,16 @@ export default async function handler(req: any, res: any) {
     } catch (parseError: any) {
       const repairPrompt = `Repara esta respuesta y devuelve SOLO JSON válido.
 No agregues explicación.
-No uses Markdown.
+No uses Markdown.\n
+REGLAS DE LIMPIEZA EDITORIAL:
+- Nunca incluyas instrucciones internas dentro del contenido final.
+- No escribas "Actúa como", "Eres un escritor", "Objetivo del capítulo", "Requisitos", "Prompt" ni textos similares.
+- Los títulos deben verse normales: "Capítulo 1. Título del capítulo".
+- No incluyas bibliografía dentro de capítulos.
+- La bibliografía solo se permite si el libro es histórico, académico, investigativo o si el usuario la pidió explícitamente.
+- Si hay bibliografía, debe ir al final del libro en una sección única.
+- No uses HTML, colores, estilos inline ni enlaces.
+
 Mantén la estructura:
 { "ok": boolean, "dashboard": object, "project_state_updated": object, "master_document": object, "needs_input": object|null }
 

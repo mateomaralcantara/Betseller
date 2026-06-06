@@ -1,12 +1,16 @@
-// src/lib/gemini.ts
-// FIX PREMIUM:
-// - BUILD_FULL_DOSSIER usa JSON porque es estructura corta.
-// - GENERATE_PROPOSAL, GENERATE_INTRODUCTION y GENERATE_CHAPTER usan TEXTO PLANO.
-// - Evita: JSON inválido por comillas, saltos de línea o textos largos.
-// - Evita retries eternos cuando Free Tier está agotado.
+// ==========================================
+// FILE: src/lib/gemini.ts
+// ==========================================
+//
+// ✅ OPTIMIZADO:
+// - BUILD_FULL_DOSSIER => JSON (estructura corta)
+// - PROPOSAL/INTRO/CHAPTER => TEXTO PLANO + AUTO-CONTINUE hasta llegar al target
+// - Si dossier devuelve JSON inválido: se intenta reparación local y si falla, REPAIR con Gemini (barato).
+// - Retry inteligente para 429/503 y fallback de modelos.
 
 import type { ComposerTask } from "./types.local";
 import type { Project } from "../../types";
+
 import {
   safeJsonParse,
   validateEngineResult,
@@ -15,6 +19,8 @@ import {
   countWordsQuick,
   normalizeProjectState,
   buildMasterFromState,
+  sanitizeEditorialChapterText,
+  isBibliographyAllowedForProject,
   recomputeGenerationProgress,
 } from "./editor";
 
@@ -34,10 +40,6 @@ type LongAction = "GENERATE_PROPOSAL" | "GENERATE_INTRODUCTION" | "GENERATE_CHAP
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-function ensureText(v: unknown): string {
-  return String(v || "").trim();
 }
 
 function cleanPlainText(raw: unknown): string {
@@ -95,9 +97,8 @@ function isDailyQuotaExhausted(e: unknown): boolean {
   return (
     /GenerateRequestsPerDayPerProjectPerModel-FreeTier/i.test(msg) ||
     /GenerateContentInputTokensPerModelPerDay-FreeTier/i.test(msg) ||
-    /quotaValue["']?\s*:\s*["']?20/i.test(msg) ||
-    /limit:\s*20/i.test(msg) ||
-    /limit:\s*0/i.test(msg)
+    /limit:\s*0/i.test(msg) ||
+    /limit:\s*20/i.test(msg)
   );
 }
 
@@ -118,7 +119,7 @@ function parseRetryDelayMs(e: unknown): number | null {
   return null;
 }
 
-async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
   let last: any = null;
 
   for (let i = 0; i < attempts; i++) {
@@ -129,7 +130,7 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
 
       if (isDailyQuotaExhausted(e)) {
         throw new Error(
-          "Cuota diaria de Gemini agotada para este modelo/proyecto. Activa billing/prepay o espera el reset diario. No se reintenta porque sería perder tiempo."
+          "Cuota diaria de Gemini agotada para este modelo/proyecto. Activa billing/prepay o espera el reset diario."
         );
       }
 
@@ -138,7 +139,7 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
       if (!retriable || i === attempts - 1) throw e;
 
       const retryFromServer = parseRetryDelayMs(e);
-      const wait = retryFromServer ?? Math.min(45000, 2500 * Math.pow(2, i) + Math.floor(Math.random() * 700));
+      const wait = retryFromServer ?? Math.min(60000, 3500 * Math.pow(2, i) + Math.floor(Math.random() * 900));
       console.warn(`Gemini retry ${i + 1}/${attempts} in ${wait}ms`, getErrorMessage(e));
       await sleep(wait);
     }
@@ -154,8 +155,7 @@ function getFallbackModels(primary: string): string[] {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  // No metas 2.5-pro en Free si tu cuenta marca limit 0.
-  const defaults = ["gemini-2.5-flash", "gemini-3.1-flash-lite"];
+  const defaults = ["gemini-3.1-flash", "gemini-3.1-flash-lite", "gemini-3-pro-preview"];
   return Array.from(new Set([primary, ...envList, ...defaults].map((s) => s.trim()).filter(Boolean)));
 }
 
@@ -186,12 +186,12 @@ function getOutlineHints(state: any, n: number) {
   const item = outline.find((x: any) => Number(x?.chapter_number ?? 0) === n);
   return {
     objective: ensureString(item?.objective, ""),
-    keyPoints: ensureArray<any>(item?.key_points, []).map(String).filter(Boolean).slice(0, 14),
-    subheads: ensureArray<any>(item?.subheads_h2, []).map(String).filter(Boolean).slice(0, 14),
+    keyPoints: ensureArray<any>(item?.key_points, []).map(String).filter(Boolean).slice(0, 18),
+    subheads: ensureArray<any>(item?.subheads_h2, []).map(String).filter(Boolean).slice(0, 18),
   };
 }
 
-function buildPlainPrompt(action: LongAction, task: ComposerTask, state: any): string {
+function buildPlainPrompt(action: LongAction, task: ComposerTask, state: any): { prompt: string; minWords: number } {
   const title = getBookTitle(state);
   const topic = getBookTopic(state);
   const audience = ensureString(state?.audience, "");
@@ -199,61 +199,68 @@ function buildPlainPrompt(action: LongAction, task: ComposerTask, state: any): s
   const targetWords = Math.max(800, Math.floor(Number((task as any)?.target_length_words ?? 0) || 0));
 
   if (action === "GENERATE_PROPOSAL") {
-    return `
+    const minWords = Math.max(2000, targetWords);
+    return {
+      minWords,
+      prompt: `
 Eres un editor senior de libros.
 
 Escribe la PROPUESTA EDITORIAL completa del libro.
-Devuelve SOLO TEXTO PLANO. NO JSON. NO Markdown fences. NO comentarios externos.
+Devuelve SOLO TEXTO PLANO. NO JSON. NO fences. NO comentarios externos.
 
 Libro:
 - Título: ${title}
 - Tema: ${topic}
 - Audiencia: ${audience}
 - Tono: ${tone}
-- Objetivo mínimo: ${Math.max(2000, targetWords)} palabras
+- Objetivo mínimo: ${minWords} palabras
 
-Requisitos:
-- Vende con claridad la promesa del libro.
-- Explica enfoque, alcance, lector ideal, valor diferencial y estructura.
-- Mantén voz editorial seria y convincente.
-- No uses placeholders.
+Reglas:
+- Nada de placeholders.
 - No termines a mitad de frase.
-`.trim();
+- No escribas "Propuesta editorial" como encabezado.
+`.trim(),
+    };
   }
 
   if (action === "GENERATE_INTRODUCTION") {
-    return `
+    const minWords = Math.max(1400, targetWords);
+    return {
+      minWords,
+      prompt: `
 Eres un editor senior de libros.
 
 Escribe la INTRODUCCIÓN completa del libro.
-Devuelve SOLO TEXTO PLANO. NO JSON. NO Markdown fences. NO comentarios externos.
+Devuelve SOLO TEXTO PLANO. NO JSON. NO fences. NO comentarios externos.
 
 Libro:
 - Título: ${title}
 - Tema: ${topic}
 - Audiencia: ${audience}
 - Tono: ${tone}
-- Objetivo mínimo: ${Math.max(1400, targetWords)} palabras
+- Objetivo mínimo: ${minWords} palabras
 
-Requisitos:
-- Abre con fuerza narrativa.
-- Presenta el problema central.
-- Promete el recorrido del libro sin sonar genérico.
-- No repitas "Introducción" como encabezado.
-- No uses placeholders.
+Reglas:
+- Nada de placeholders.
 - No termines a mitad de frase.
-`.trim();
+- No escribas "Introducción" como encabezado.
+`.trim(),
+    };
   }
 
   const n = Number((task as any)?.chapter_number ?? 0) || 0;
   const chapterTitle = getChapterTitle(state, n);
   const hints = getOutlineHints(state, n);
 
-  return `
+  const minWords = Math.max(2000, targetWords);
+
+  return {
+    minWords,
+    prompt: `
 Eres un escritor editorial profesional.
 
 Escribe el CAPÍTULO ${n} completo.
-Devuelve SOLO TEXTO PLANO. NO JSON. NO Markdown fences. NO comentarios externos.
+Devuelve SOLO TEXTO PLANO. NO JSON. NO fences. NO comentarios externos.
 
 Libro:
 - Título: ${title}
@@ -264,7 +271,7 @@ Libro:
 Capítulo:
 - Número: ${n}
 - Título: ${chapterTitle}
-- Objetivo mínimo: ${Math.max(1800, targetWords)} palabras
+- Objetivo mínimo: ${minWords} palabras
 - Objetivo editorial: ${hints.objective || "(no especificado)"}
 - Puntos clave: ${hints.keyPoints.length ? hints.keyPoints.join("; ") : "(no especificado)"}
 - Subtítulos sugeridos: ${hints.subheads.length ? hints.subheads.join("; ") : "(no especificado)"}
@@ -272,11 +279,11 @@ Capítulo:
 Reglas duras:
 - No incluyas encabezado "Capítulo ${n}".
 - No repitas el título al inicio.
-- Puedes usar subtítulos internos con ### si aportan orden.
-- Debe ser denso, claro, humano y publicable.
-- No uses placeholders.
+- Puedes usar subtítulos internos con ###.
+- Nada de placeholders.
 - No termines a mitad de frase.
-`.trim();
+`.trim(),
+  };
 }
 
 async function callGeminiPlain(args: {
@@ -288,6 +295,7 @@ async function callGeminiPlain(args: {
 }): Promise<string> {
   const { GoogleGenAI } = await import("@google/genai");
   const ai = new GoogleGenAI({ apiKey: args.apiKey });
+
   const models = getFallbackModels(args.model);
   let lastErr: any = null;
 
@@ -297,10 +305,7 @@ async function callGeminiPlain(args: {
         ai.models.generateContent({
           model: m,
           contents: [{ role: "user", parts: [{ text: args.prompt }] }],
-          config: {
-            maxOutputTokens: args.maxOutputTokens,
-            temperature: args.temperature,
-          } as any,
+          config: { maxOutputTokens: args.maxOutputTokens, temperature: args.temperature } as any,
         })
       );
 
@@ -322,35 +327,91 @@ async function callGeminiPlain(args: {
   throw lastErr ?? new Error("Error llamando Gemini en texto plano.");
 }
 
+function appendNonRepeating(base: string, addition: string): string {
+  const a = (base ?? "").trim();
+  const b = (addition ?? "").trim();
+  if (!a) return b;
+  if (!b) return a;
+
+  // remove overlap by suffix/prefix match
+  const tail = a.slice(-2000);
+  for (let k = Math.min(1200, tail.length); k >= 160; k -= 40) {
+    const suffix = tail.slice(-k);
+    if (b.startsWith(suffix)) {
+      return (a + "\n\n" + b.slice(k).trimStart()).trim() + "\n";
+    }
+  }
+  return (a + "\n\n" + b).trim() + "\n";
+}
+
+async function ensureMinWordsByContinuing(args: {
+  apiKey: string;
+  model: string;
+  basePrompt: string;
+  currentText: string;
+  minWords: number;
+  maxSteps: number;
+  temperature: number;
+}): Promise<string> {
+  let text = (args.currentText ?? "").trim();
+  let wc = countWordsQuick(text);
+
+  if (wc >= args.minWords) return text;
+
+  for (let step = 1; step <= args.maxSteps && wc < args.minWords; step++) {
+    const remaining = args.minWords - wc;
+
+    const chunkWords =
+      remaining >= 4000 ? 2600 :
+      remaining >= 2500 ? 2000 :
+      remaining >= 1600 ? 1600 :
+      Math.max(900, remaining + 200);
+
+    const contPrompt = [
+      args.basePrompt,
+      "",
+      "CONTINÚA el texto SIN repetir lo ya escrito.",
+      `Devuelve SOLO el texto NUEVO. Objetivo: añadir ~${chunkWords} palabras.`,
+      "",
+      "ÚLTIMO CONTEXTO (NO REPETIR):",
+      text.slice(-4500),
+    ].join("\n");
+
+    const maxOutputTokens = Math.min(32000, Math.max(9000, Math.floor(chunkWords * 3.2)));
+
+    const addition = await callGeminiPlain({
+      apiKey: args.apiKey,
+      model: args.model,
+      prompt: contPrompt,
+      maxOutputTokens,
+      temperature: args.temperature,
+    });
+
+    text = appendNonRepeating(text, addition);
+    wc = countWordsQuick(text);
+  }
+
+  return text.trim();
+}
+
 function buildEngineResultFromText(action: LongAction, task: ComposerTask, state: any, rawText: string): EngineResult {
   const nextState: any = normalizeProjectState(state);
   const text = cleanPlainText(rawText);
   const words = countWordsQuick(text);
 
   if (action === "GENERATE_PROPOSAL") {
-    nextState.proposal = {
-      ...(nextState.proposal ?? {}),
-      id: "sec_proposal",
-      text,
-      status: "COMPLETED",
-      words,
-    };
+    nextState.proposal = { ...(nextState.proposal ?? {}), id: "sec_proposal", text, status: "COMPLETED", words };
   }
 
   if (action === "GENERATE_INTRODUCTION") {
-    nextState.introduction = {
-      ...(nextState.introduction ?? {}),
-      id: "sec_introduction",
-      text,
-      status: "COMPLETED",
-      words,
-    };
+    nextState.introduction = { ...(nextState.introduction ?? {}), id: "sec_introduction", text, status: "COMPLETED", words };
   }
 
   if (action === "GENERATE_CHAPTER") {
     const n = Number((task as any)?.chapter_number ?? 0) || 0;
     const chapters = ensureArray<any>(nextState.chapters, []);
     const idx = chapters.findIndex((c: any) => Number(c?.chapter_number ?? 0) === n);
+
     const chapterText = stripChapterHeader(text);
     const chapter = {
       ...(idx >= 0 ? chapters[idx] : {}),
@@ -374,11 +435,36 @@ function buildEngineResultFromText(action: LongAction, task: ComposerTask, state
     ok: true,
     dashboard: (state as any)?.dashboard ?? {},
     project_state_updated: nextState,
-    master_document: {
-      title: getBookTitle(nextState),
-      text: master,
-    },
+    master_document: { title: getBookTitle(nextState), text: master },
   });
+}
+
+async function repairDossierJsonWithGemini(apiKey: string, model: string, badText: string): Promise<any> {
+  const { GoogleGenAI } = await import("@google/genai");
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = [
+    "Corrige el siguiente contenido para que sea JSON válido.",
+    "Devuelve SOLO JSON válido. Sin Markdown. Sin texto adicional.",
+    "Mantén el schema del motor: { ok, dashboard, project_state_updated, master_document, needs_input? }",
+    "",
+    "INPUT:",
+    badText.slice(0, 14000),
+  ].join("\n");
+
+  const resp = await withRetry(() =>
+    ai.models.generateContent({
+      model,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        maxOutputTokens: 4096,
+        temperature: 0.0,
+      } as any,
+    })
+  );
+
+  return safeJsonParse((resp as any)?.text || "");
 }
 
 async function callLongSectionPlainDev(opts: ComposerCallOpts): Promise<EngineResult> {
@@ -386,18 +472,21 @@ async function callLongSectionPlainDev(opts: ComposerCallOpts): Promise<EngineRe
   if (!apiKey) throw new Error("Falta VITE_GEMINI_API_KEY en .env.local.");
 
   const action = String((opts.task as any)?.action || "") as LongAction;
-  const targetWords = Math.max(0, Math.floor(Number((opts.task as any)?.target_length_words ?? 0) || 0));
-  const prompt = buildPlainPrompt(action, opts.task, opts.state ?? {});
+  const { prompt, minWords } = buildPlainPrompt(action, opts.task, opts.state ?? {});
 
+  const targetWords = Math.max(0, Math.floor(Number((opts.task as any)?.target_length_words ?? 0) || 0));
+  const required = action === "GENERATE_CHAPTER" ? Math.max(2000, targetWords) : minWords;
+
+  // 1) primera generación grande
   const maxOutputTokens =
     opts.maxOutputTokensHint ??
     (action === "GENERATE_CHAPTER"
-      ? Math.min(26000, Math.max(12000, Math.floor((targetWords || 3000) * 3.1)))
+      ? Math.min(32000, Math.max(14000, Math.floor((required || 3000) * 3.1)))
       : action === "GENERATE_PROPOSAL"
-        ? 18000
-        : 14000);
+        ? 20000
+        : 15000);
 
-  const text = await callGeminiPlain({
+  const firstText = await callGeminiPlain({
     apiKey,
     model: opts.model,
     prompt,
@@ -405,7 +494,18 @@ async function callLongSectionPlainDev(opts: ComposerCallOpts): Promise<EngineRe
     temperature: action === "GENERATE_CHAPTER" ? 0.82 : 0.68,
   });
 
-  return buildEngineResultFromText(action, opts.task, opts.state ?? {}, text);
+  // 2) auto-continue hasta llegar al mínimo (y si target=6000, llega a 6000)
+  const completedText = await ensureMinWordsByContinuing({
+    apiKey,
+    model: opts.model,
+    basePrompt: prompt,
+    currentText: firstText,
+    minWords: required,
+    maxSteps: action === "GENERATE_CHAPTER" ? 6 : 4,
+    temperature: action === "GENERATE_CHAPTER" ? 0.82 : 0.68,
+  });
+
+  return buildEngineResultFromText(action, opts.task, opts.state ?? {}, completedText);
 }
 
 async function callDossierJsonDev(opts: ComposerCallOpts): Promise<EngineResult> {
@@ -414,6 +514,7 @@ async function callDossierJsonDev(opts: ComposerCallOpts): Promise<EngineResult>
 
   const { GoogleGenAI } = await import("@google/genai");
   const ai = new GoogleGenAI({ apiKey });
+
   const prompt = `TASK:\n${JSON.stringify(opts.task)}\n\nPROJECT_STATE:\n${JSON.stringify(opts.state)}`;
   const models = getFallbackModels(opts.model);
   let lastErr: any = null;
@@ -427,13 +528,20 @@ async function callDossierJsonDev(opts: ComposerCallOpts): Promise<EngineResult>
           config: {
             systemInstruction: opts.devSystemPrompt ?? "",
             responseMimeType: "application/json",
-            maxOutputTokens: opts.maxOutputTokensHint ?? 12000,
-            temperature: 0.55,
+            maxOutputTokens: opts.maxOutputTokensHint ?? 14000,
+            temperature: 0.45,
           } as any,
         })
       );
 
-      return validateEngineResult(safeJsonParse((resp as any)?.text || ""));
+      // 1) parse local
+      try {
+        return validateEngineResult(safeJsonParse((resp as any)?.text || ""));
+      } catch (e) {
+        // 2) repair con Gemini (barato) si el JSON salió mal
+        const repaired = await repairDossierJsonWithGemini(apiKey, m, String((resp as any)?.text || ""));
+        return validateEngineResult(repaired);
+      }
     } catch (e) {
       lastErr = e;
       if (isDailyQuotaExhausted(e)) throw e;
@@ -459,8 +567,7 @@ export async function callComposer(opts: ComposerCallOpts): Promise<EngineResult
     return callDossierJsonDev(opts);
   }
 
-  // Producción actual: conserva endpoint existente.
-  // Recomendado: migrar /api/composer con la misma regla: texto largo = texto plano.
+  // PROD: conserva endpoint
   const endpoint = opts.endpoint ?? "/api/composer";
   const r = await fetch(endpoint, {
     method: "POST",
@@ -474,9 +581,7 @@ export async function callComposer(opts: ComposerCallOpts): Promise<EngineResult
   return validateEngineResult(data);
 }
 
-// Compatibilidad con App.tsx actual.
-// Ya no hacemos auto-extend con más llamadas por defecto para no quemar cuota.
-// Si quieres worker por bloques, usa la arquitectura de jobs.
+// Compatibilidad con App.tsx existente (si lo importa).
 export async function autoExtendChapterDev(params: {
   project: Project;
   chapterNum: number;
@@ -487,8 +592,6 @@ export async function autoExtendChapterDev(params: {
   minWords?: number;
   maxSteps?: number;
 }): Promise<Project> {
-  const p = params.project;
-  const out: Project = { ...(p as any) } as any;
-  (out as any).generation_progress = recomputeGenerationProgress(out as any);
-  return out;
+  // Ya se auto-extiende dentro del flujo principal (callLongSectionPlainDev).
+  return params.project;
 }
