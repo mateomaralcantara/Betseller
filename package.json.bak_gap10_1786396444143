@@ -9,11 +9,7 @@
     "styles:dashboard": "node scripts/trace-dashboard-styles.mjs",
     "preview": "vite preview",
     "elite:evaluate": "node scripts/evaluate-elite-system.mjs",
-    "elite:build": "node scripts/evaluate-elite-system.mjs && npm run build",
-    "test": "node scripts/elite-smoke-tests.mjs",
-    "elite:smoke": "node scripts/elite-smoke-tests.mjs",
-    "elite:market": "node scripts/market-perfection-score.mjs --full",
-    "elite:gap10": "node scripts/close-market-gap-to-10.mjs && npm test && npm run build"
+    "elite:build": "node scripts/evaluate-elite-system.mjs && npm run build"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

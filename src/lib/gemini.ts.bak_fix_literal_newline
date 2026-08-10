@@ -340,8 +340,7 @@ function buildFactualRules(state: any): string {
 
   return [...common, "", ...domainRules[domain], ...research].join("\n");
 }
-
-function buildPlainPrompt(action: LongAction, task: ComposerTask, state: any): { prompt: string; minWords: number } {
+\nfunction buildPlainPrompt(action: LongAction, task: ComposerTask, state: any): { prompt: string; minWords: number } {
   const title = getBookTitle(state);
   const topic = getBookTopic(state);
   const audience = ensureString(state?.audience, "");
@@ -369,11 +368,6 @@ Libro:
 Reglas:
 - Nada de placeholders.
 - No termines a mitad de frase.
-- ELITE_GENERATION_RULES_V1: usa subtítulos internos cuando existan en subheads_h2.
-- Cada sección debe aportar análisis, contexto, datos prudentes, consecuencias y profundidad.
-- No inventes datos para llenar palabras.
-- Si falta evidencia, explica los límites de la evidencia.
-- Evita títulos genéricos, repeticiones y relleno.
 - No escribas "Propuesta editorial" como encabezado.
 
 ${factualRules}
@@ -401,11 +395,6 @@ Libro:
 Reglas:
 - Nada de placeholders.
 - No termines a mitad de frase.
-- ELITE_GENERATION_RULES_V1: usa subtítulos internos cuando existan en subheads_h2.
-- Cada sección debe aportar análisis, contexto, datos prudentes, consecuencias y profundidad.
-- No inventes datos para llenar palabras.
-- Si falta evidencia, explica los límites de la evidencia.
-- Evita títulos genéricos, repeticiones y relleno.
 - No escribas "Introducción" como encabezado.
 
 ${factualRules}
@@ -447,11 +436,6 @@ Reglas duras:
 - Puedes usar subtítulos internos con ###.
 - Nada de placeholders.
 - No termines a mitad de frase.
-- ELITE_GENERATION_RULES_V1: usa subtítulos internos cuando existan en subheads_h2.
-- Cada sección debe aportar análisis, contexto, datos prudentes, consecuencias y profundidad.
-- No inventes datos para llenar palabras.
-- Si falta evidencia, explica los límites de la evidencia.
-- Evita títulos genéricos, repeticiones y relleno.
 - No incluyas bloques de bibliografía dentro del capítulo.
 - Cuando menciones cifras o hechos específicos, contextualízalos.
 - Separa claramente hechos, inferencias e interpretación.

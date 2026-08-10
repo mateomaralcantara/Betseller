@@ -137,13 +137,6 @@ const DEV_SYSTEM_PROMPT = [
   "- Conserva títulos explícitos proporcionados por el usuario.",
   "- Los títulos deben ser breves, claros y editoriales.",
   "",
-  "ELITE_BLUEPRINT_SYSTEM_V1:",
-  "- Antes de redactar, exige título, subtítulo, tesis central, promesa editorial, audiencia, género y estrategia factual.",
-  "- Cada capítulo debe tener chapter_title, chapter_thesis, objective, key_points, subheads_h2, required_facts, source_needs y transition_to_next.",
-  "- Los subtítulos internos subheads_h2 son obligatorios: mínimo 5 y máximo 10 por capítulo.",
-  "- Prohibido usar títulos genéricos como Panorama general, Conceptos clave o Desarrollo editorial salvo emergencia absoluta.",
-  "- En historia, biografía, finanzas y política, prioriza precisión, contexto y límites de evidencia sobre espectacularidad.",
-  "",
   "CALIDAD:",
   "- Contenido denso, concreto, ordenado y narrativamente legible.",
   "- Termina con frases completas.",
@@ -337,20 +330,7 @@ function extractBookTitleFromIdea(idea: string): string {
 
 function cleanSeedForOutlineContext(seed: string): string {
   const titled = extractBookTitleFromIdea(seed);
-
-  const normalizedTitle = String(titled ?? "")
-    .trim()
-    .toLowerCase();
-
-  const isPlaceholderTitle =
-    !normalizedTitle ||
-    normalizedTitle === "libro sin título" ||
-    normalizedTitle === "libro sin titulo" ||
-    normalizedTitle === "nuevo libro" ||
-    normalizedTitle === "nuevo libro sin título" ||
-    normalizedTitle === "nuevo libro sin titulo";
-
-  if (!isPlaceholderTitle) return titled;
+  if (titled !== "Libro sin título") return titled;
 
   let s = String(seed ?? "").trim();
 
@@ -376,119 +356,14 @@ function cleanSeedForOutlineContext(seed: string): string {
   return truncateEditorialTitle(s, "");
 }
 
-function pickFallbackChapterTitle(
-  index: number,
-  context = ""
-): string {
-  const topic = String(context ?? "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const base =
-    index < FALLBACK_CHAPTER_TITLES.length
-      ? FALLBACK_CHAPTER_TITLES[index]
-      : `Desarrollo editorial ${index + 1}`;
-
-  if (!topic) return base;
-
-  const shortTopic =
-    topic.length > 65
-      ? topic.slice(0, 65).replace(/\s+\S*$/, "").trim()
-      : topic;
-
-  const domainText = shortTopic.toLowerCase();
-
-  const historicalTitles = [
-    `Orígenes y contexto de ${shortTopic}`,
-    `Evolución histórica de ${shortTopic}`,
-    `Actores y acontecimientos determinantes`,
-    `Transformaciones políticas y sociales`,
-    `Momentos decisivos y puntos de ruptura`,
-    `Conflictos, debates y versiones contrapuestas`,
-    `Consecuencias históricas y sociales`,
-    `Instituciones, poder y relaciones de fuerza`,
-    `Interpretaciones, mitos y controversias`,
-    `El legado de ${shortTopic}`,
-    `Continuidades y cambios en el presente`,
-    `Conclusiones y perspectiva histórica`,
-  ];
-
-  const biographyTitles = [
-    `Orígenes y entorno familiar`,
-    `Formación y primeras influencias`,
-    `Los primeros pasos de su trayectoria`,
-    `La construcción de una identidad pública`,
-    `Ascenso, oportunidades y desafíos`,
-    `Colaboradores, aliados y círculos de influencia`,
-    `Conflictos, polémicas y momentos críticos`,
-    `Aportes profesionales y sociales`,
-    `Imagen pública, discurso y percepción social`,
-    `Contradicciones y límites de su trayectoria`,
-    `Legado, influencia y proyección`,
-    `Balance biográfico y perspectivas futuras`,
-  ];
-
-  const financeTitles = [
-    `Fundamentos económicos de ${shortTopic}`,
-    `Origen y evolución del modelo financiero`,
-    `Ingresos, costos y flujo de efectivo`,
-    `Capital, deuda y estructura financiera`,
-    `Rentabilidad, riesgo y rendimiento`,
-    `Mercado, competencia y posicionamiento`,
-    `Datos históricos y ciclos económicos`,
-    `Estrategias de crecimiento y expansión`,
-    `Errores financieros y decisiones críticas`,
-    `Escenarios, proyecciones y sensibilidad`,
-    `Riesgos futuros y oportunidades`,
-    `Conclusiones y plan financiero`,
-  ];
-
-  const generalTitles = [
-    `El contexto general de ${shortTopic}`,
-    `Origen y evolución de ${shortTopic}`,
-    `Conceptos fundamentales para comprender el tema`,
-    `Actores, instituciones y dinámicas principales`,
-    `Procesos y mecanismos determinantes`,
-    `Casos, experiencias y ejemplos relevantes`,
-    `Impactos sociales, económicos y culturales`,
-    `Problemas, contradicciones y desafíos`,
-    `Mitos, errores y debates frecuentes`,
-    `Riesgos, ética y responsabilidades`,
-    `Tendencias y escenarios futuros`,
-    `Conclusiones y propuestas de acción`,
-  ];
-
-  let collection = generalTitles;
-
-  if (
-    /historia|histórico|histórica|origen|evolución|guerra|dictadura|siglo/.test(
-      domainText
-    )
-  ) {
-    collection = historicalTitles;
-  } else if (
-    /biografía|biografico|biográfico|trayectoria|vida de|personaje|comunicador|artista|empresario|político/.test(
-      domainText
-    )
-  ) {
-    collection = biographyTitles;
-  } else if (
-    /finanza|economía|dinero|riqueza|inversión|empresa|mercado|rentabilidad|deuda/.test(
-      domainText
-    )
-  ) {
-    collection = financeTitles;
-  }
-
-  return collection[index] || base;
+function pickFallbackChapterTitle(index: number): string {
+  if (index < FALLBACK_CHAPTER_TITLES.length) return FALLBACK_CHAPTER_TITLES[index];
+  return `Desarrollo editorial ${index + 1}`;
 }
 
 function isGenericFallbackTitle(title: string, chapterNumber: number): boolean {
   const t = squashSpaces(title).toLowerCase();
-  const fallback = pickFallbackChapterTitle(
-    chapterNumber - 1,
-    ""
-  ).toLowerCase();
+  const fallback = pickFallbackChapterTitle(chapterNumber - 1).toLowerCase();
   return (
     t === fallback ||
     t === `parte ${chapterNumber}: desarrollo` ||
@@ -586,10 +461,7 @@ function buildFallbackOutline(count: number, seed: string, targetWords: number) 
 
   return Array.from({ length: n }, (_, i) => {
     const chapterNumber = i + 1;
-    const fallbackTitle = pickFallbackChapterTitle(
-      i,
-      safeContext
-    );
+    const fallbackTitle = pickFallbackChapterTitle(i);
     const explicitTitle = explicitTitles.get(chapterNumber);
     const title = cleanChapterTitle(explicitTitle || fallbackTitle, chapterNumber, fallbackTitle);
 
@@ -617,10 +489,7 @@ function normalizeOutlineTitles(outline: any[], fallbackSeed: string, defaultCha
   return ensureArray<any>(outline, [])
     .map((o: any, idx: number) => {
       const n = Number(o?.chapter_number ?? idx + 1) || idx + 1;
-      const fallback = pickFallbackChapterTitle(
-        n - 1,
-        safeFallback
-      );
+      const fallback = pickFallbackChapterTitle(n - 1);
       const rawTitle = ensureString(o?.chapter_title, ensureString(o?.title, fallback));
       const promptTitle = explicitTitles.get(n);
       const shouldPreferPromptTitle =
@@ -1691,7 +1560,7 @@ const App: React.FC = () => {
 
       const seedOutline = buildFallbackOutline(
         desiredChapterCount,
-        idea,
+        cleanOutlineContext,
         defaultChapterWords
       );
       const dbProject = await createProject({
@@ -1733,7 +1602,7 @@ const App: React.FC = () => {
       updated = ensureOutlineForProject(
         updated,
         desiredChapterCount,
-        idea,
+        cleanOutlineContext,
         defaultChapterWords
       );
 

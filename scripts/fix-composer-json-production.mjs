@@ -1,279 +1,31 @@
-import { GoogleGenAI } from '@google/genai';
+// scripts/fix-composer-json-production.mjs
+//
+// Corrige api/composer.ts para:
+// 1. Mantener JSON solo para BUILD_FULL_DOSSIER.
+// 2. Generar propuesta, introducción y capítulos como texto plano.
+// 3. Convertir el texto plano a la estructura JSON que espera la app.
+// 4. Evitar que un JSON roto cierre toda la generación.
+// 5. Mantener un fallback seguro cuando falle la reparación del dossier.
 
-/**
- * Vercel Serverless Function: POST /api/composer
- * - GEMINI_API_KEY: env privada (NO VITE_)
- * - COMPOSER_SHARED_SECRET: env privada para proteger endpoint
- * - Body esperado: { task: object, state: object, model?: string }
- */
+import fs from "node:fs";
+import path from "node:path";
 
-const SYSTEM_PROMPT = `Eres BOOK_DOSSIER_CANVAS_ENGINE, un motor editorial factual para libros de no ficción.
+const ROOT = process.cwd();
+const FILE = path.join(ROOT, "api", "composer.ts");
 
-RESPUESTA PARA DOSSIER:
-Devuelve un único JSON válido, sin Markdown ni texto externo.
-
-PRINCIPIO DE VERACIDAD:
-- No inventes fechas, cifras, porcentajes, citas, cargos, relaciones, premios, leyes, documentos, estudios, instituciones, fuentes ni acontecimientos.
-- Distingue hechos confirmados, inferencias, interpretaciones, controversias y datos no verificados.
-- Cuando no exista respaldo suficiente, omite el dato o marca que requiere verificación.
-- No afirmes que realizaste scraping, búsquedas web o consulta de fuentes si el sistema no te entregó resultados de investigación.
-
-ANÁLISIS:
-- Incluye causas, contexto, incentivos, actores, contradicciones, consecuencias e impactos.
-- No te limites a listas superficiales.
-- Evita generalidades vacías.
-
-HISTORIA:
-- Construye cronología, antecedentes, contexto de época y versiones contradictorias.
-- Evita anacronismos y presentismo.
-
-PERSONAJES:
-- Separa trayectoria comprobada, imagen pública, controversias verificadas y rumores.
-- No inventes conversaciones, pensamientos, motivaciones privadas ni citas.
-
-FINANZAS:
-- Distingue ingreso, beneficio, patrimonio, valoración, deuda, flujo de caja y proyección.
-- Toda cifra debe incluir período, moneda o contexto cuando esté disponible.
-- Expón supuestos y riesgos.
-
-BIBLIOGRAFÍA:
-- No inventes referencias.
-- No distribuyas bibliografía completa dentro de los capítulos.
-- Cuando proceda, colócala en una única sección final.
-
-LIMPIEZA:
-- No incluyas instrucciones internas como "Actúa como", "Prompt", "Requisitos" u "Objetivo del capítulo".
-- No uses HTML, colores ni estilos inline.
-- No borres contenido existente que no haya sido solicitado modificar.
-
-Forma:
-{
-  "ok": true,
-  "dashboard": {},
-  "project_state_updated": {},
-  "master_document": { "title": "", "text": "" },
-  "needs_input": null
+if (!fs.existsSync(FILE)) {
+  console.error("❌ No existe:", FILE);
+  process.exit(1);
 }
 
-REGLAS JSON:
-- Escapa comillas y saltos de línea dentro de strings.
-- No escribas comentarios.
-- No uses placeholders.
-`.trim();
+const BACKUP = `${FILE}.bak_prod_json_plain_fix`;
+fs.copyFileSync(FILE, BACKUP);
 
-/** Model allowlist (evita sorpresas) */
-const ALLOWED_MODELS = new Set<string>([
-  'gemini-2.5-flash',
-  'gemini-2.5-pro',
-  'gemini-2.0-flash',
-  'gemini-3.1-flash-lite',
-  'gemini-3-flash-preview',
-  'gemini-3.1-pro-preview',
-]);
+let code = fs.readFileSync(FILE, "utf8");
 
-function cleanModelText(text: string): string {
-  return String(text ?? '')
-    .replace(/^\s*```json\s*/i, '')
-    .replace(/^\s*```\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .trim();
-}
+const helperMarker = "function isLongTextAction";
 
-function escapeControlCharsInsideStrings(input: string): string {
-  let out = '';
-  let inString = false;
-  let escaped = false;
-
-  for (let i = 0; i < input.length; i++) {
-    const ch = input[i];
-
-    if (!inString) {
-      if (ch === '"') inString = true;
-      out += ch;
-      continue;
-    }
-
-    if (escaped) {
-      out += ch;
-      escaped = false;
-      continue;
-    }
-
-    if (ch === '\\') {
-      out += ch;
-      escaped = true;
-      continue;
-    }
-
-    if (ch === '"') {
-      out += ch;
-      inString = false;
-      continue;
-    }
-
-    if (ch === '\n') {
-      out += '\\n';
-      continue;
-    }
-
-    if (ch === '\r') {
-      out += '\\r';
-      continue;
-    }
-
-    if (ch === '\t') {
-      out += '\\t';
-      continue;
-    }
-
-    const code = ch.charCodeAt(0);
-    if (code >= 0 && code < 32) {
-      out += `\\u${code.toString(16).padStart(4, '0')}`;
-      continue;
-    }
-
-    out += ch;
-  }
-
-  return out;
-}
-
-function extractFirstJsonObject(text: string): string | null {
-  const t = cleanModelText(text);
-  const first = t.indexOf('{');
-  if (first < 0) return null;
-
-  let depth = 0;
-  let inStr = false;
-  let esc = false;
-
-  for (let i = first; i < t.length; i++) {
-    const ch = t[i];
-
-    if (inStr) {
-      if (esc) esc = false;
-      else if (ch === '\\') esc = true;
-      else if (ch === '"') inStr = false;
-      continue;
-    }
-
-    if (ch === '"') {
-      inStr = true;
-      continue;
-    }
-
-    if (ch === '{') depth++;
-    else if (ch === '}') {
-      depth--;
-      if (depth === 0) return t.slice(first, i + 1);
-    }
-  }
-
-  const last = t.lastIndexOf('}');
-  return last > first ? t.slice(first, last + 1) : null;
-}
-
-function parseJsonCandidate(candidate: string): any {
-  const cleaned = cleanModelText(candidate);
-  const repaired = escapeControlCharsInsideStrings(cleaned);
-
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    return JSON.parse(repaired);
-  }
-}
-
-function safeJsonParse(text: string): any {
-  const t = cleanModelText(text);
-  if (!t) throw new Error('Respuesta vacía');
-
-  try {
-    return parseJsonCandidate(t);
-  } catch (firstError: any) {
-    const obj = extractFirstJsonObject(t);
-    if (!obj) {
-      throw new Error(`No se pudo extraer JSON. ${firstError?.message || ''}`.trim());
-    }
-
-    try {
-      return parseJsonCandidate(obj);
-    } catch (secondError: any) {
-      const preview = obj.slice(0, 1200);
-      throw new Error(
-        `JSON inválido del modelo: ${secondError?.message || secondError}. Preview: ${preview}`
-      );
-    }
-  }
-}
-
-function pickErrorMessage(e: any): string {
-  if (!e) return 'Server error';
-  if (typeof e === 'string') return e;
-  if (typeof e.message === 'string') return e.message;
-
-  // Algunas libs meten detalles en "error" o "response"
-  const maybe =
-    e?.error?.message ||
-    e?.error ||
-    e?.details?.message ||
-    e?.response?.data?.error?.message ||
-    e?.response?.data?.error ||
-    e?.response?.data?.message;
-
-  if (typeof maybe === 'string') return maybe;
-
-  try {
-    return JSON.stringify(e).slice(0, 2000);
-  } catch {
-    return 'Server error';
-  }
-}
-
-function looksLikeQuota(msg: string) {
-  return /RESOURCE_EXHAUSTED|quota|rate limit|RetryInfo|retryDelay|429/i.test(msg);
-}
-
-function parseRetryAfterSeconds(msg: string): number | null {
-  // Gemini a veces trae "retryDelay":"46s"
-  const m1 = msg.match(/retryDelay["']?\s*:\s*["']?(\d+)\s*s/i);
-  if (m1) return Number(m1[1]);
-
-  // o "Please retry in 46.08s"
-  const m2 = msg.match(/retry in\s+(\d+(\.\d+)?)s/i);
-  if (m2) return Math.ceil(Number(m2[1]));
-
-  return null;
-}
-
-async function readJsonBody(req: any): Promise<any> {
-  // Vercel muchas veces entrega req.body como objeto si el Content-Type es JSON
-  if (req?.body && typeof req.body === 'object') return req.body;
-
-  const chunks: Buffer[] = [];
-  await new Promise<void>((resolve, reject) => {
-    req.on('data', (c: Buffer) => chunks.push(c));
-    req.on('end', () => resolve());
-    req.on('error', reject);
-  });
-
-  const raw = Buffer.concat(chunks).toString('utf8').trim();
-  if (!raw) return {};
-  return JSON.parse(raw);
-}
-
-function enforceSecret(req: any) {
-  const secret = process.env.COMPOSER_SHARED_SECRET;
-  if (!secret) return; // si no lo configuras, no bloquea (pero recomendado configurarlo)
-  const got = req.headers?.['x-composer-secret'];
-  if (!got || got !== secret) {
-    const err: any = new Error('Unauthorized');
-    err.statusCode = 401;
-    throw err;
-  }
-}
-
-
+const helpers = `
 
 type LongTextAction =
   | 'GENERATE_PROPOSAL'
@@ -312,24 +64,24 @@ function ensureArrayValue<T = any>(value: unknown): T[] {
 function countWords(text: string): number {
   return String(text ?? '')
     .trim()
-    .split(/\s+/)
+    .split(/\\s+/)
     .filter(Boolean)
     .length;
 }
 
 function cleanPlainModelText(raw: unknown): string {
   return String(raw ?? '')
-    .replace(/```json/gi, '')
-    .replace(/```txt/gi, '')
-    .replace(/```markdown/gi, '')
-    .replace(/```/g, '')
+    .replace(/\`\`\`json/gi, '')
+    .replace(/\`\`\`txt/gi, '')
+    .replace(/\`\`\`markdown/gi, '')
+    .replace(/\`\`\`/g, '')
     .trim();
 }
 
 function stripGeneratedChapterHeading(text: string): string {
   return cleanPlainModelText(text)
-    .replace(/^\s{0,3}#{1,3}\s*cap[ií]tulo\b[^\n]*\n+/i, '')
-    .replace(/^\s*cap[ií]tulo\s*\d+\s*[:\-–—.]?\s*/i, '')
+    .replace(/^\\s{0,3}#{1,3}\\s*cap[ií]tulo\\b[^\\n]*\\n+/i, '')
+    .replace(/^\\s*cap[ií]tulo\\s*\\d+\\s*[:\\-–—.]?\\s*/i, '')
     .trimStart();
 }
 
@@ -374,7 +126,7 @@ function getChapterTitleFromState(state: any, chapterNumber: number): string {
 
   const existingTitle = ensureText(chapter?.title, '');
 
-  return existingTitle || `Capítulo ${chapterNumber}`;
+  return existingTitle || \`Capítulo \${chapterNumber}\`;
 }
 
 function buildProductionPlainPrompt(task: any, state: any): string {
@@ -387,11 +139,7 @@ function buildProductionPlainPrompt(task: any, state: any): string {
   );
 
   const factualRules = [
-    'REGLAS FACTUALES ELITE:',
-    '- ELITE_API_RULES_V1: no inventes hechos, fechas, cifras, citas ni fuentes.',
-    '- Usa subtítulos internos, tesis de capítulo, puntos clave y datos requeridos cuando estén disponibles.',
-    '- Si no hay research_context, reduce certeza y evita detalles falsamente específicos.',
-    '- Todo capítulo debe tener análisis, contexto, consecuencias, contradicciones y límites de evidencia.',
+    'REGLAS FACTUALES:',
     '- No inventes fechas, cifras, citas, fuentes, cargos, premios, leyes, estudios ni acontecimientos.',
     '- Distingue hechos, inferencias, interpretaciones, controversias y datos no verificados.',
     '- No afirmes que realizaste búsquedas web o scraping si no recibiste fuentes.',
@@ -399,7 +147,7 @@ function buildProductionPlainPrompt(task: any, state: any): string {
     '- Profundiza con contexto, causas, consecuencias, comparación, contradicciones e impactos.',
     '- No fabriques bibliografía.',
     '- No rellenes extensión con repeticiones ni información dudosa.',
-  ].join('\n');
+  ].join('\\n');
 
   if (action === 'GENERATE_PROPOSAL') {
     return [
@@ -410,15 +158,15 @@ function buildProductionPlainPrompt(task: any, state: any): string {
       'No devuelvas JSON.',
       'No uses bloques de código.',
       '',
-      `Título: ${title}`,
-      `Tema: ${topic}`,
-      `Objetivo mínimo: ${Math.max(2000, targetWords)} palabras`,
+      \`Título: \${title}\`,
+      \`Tema: \${topic}\`,
+      \`Objetivo mínimo: \${Math.max(2000, targetWords)} palabras\`,
       '',
       factualRules,
       '',
       'No escribas el encabezado "Propuesta editorial".',
       'No termines a mitad de una frase.',
-    ].join('\n');
+    ].join('\\n');
   }
 
   if (action === 'GENERATE_INTRODUCTION') {
@@ -430,15 +178,15 @@ function buildProductionPlainPrompt(task: any, state: any): string {
       'No devuelvas JSON.',
       'No uses bloques de código.',
       '',
-      `Título: ${title}`,
-      `Tema: ${topic}`,
-      `Objetivo mínimo: ${Math.max(1400, targetWords)} palabras`,
+      \`Título: \${title}\`,
+      \`Tema: \${topic}\`,
+      \`Objetivo mínimo: \${Math.max(1400, targetWords)} palabras\`,
       '',
       factualRules,
       '',
       'No escribas el encabezado "Introducción".',
       'No termines a mitad de una frase.',
-    ].join('\n');
+    ].join('\\n');
   }
 
   const chapterNumber =
@@ -465,29 +213,29 @@ function buildProductionPlainPrompt(task: any, state: any): string {
   return [
     'Eres un escritor editorial profesional especializado en no ficción.',
     '',
-    `Escribe el capítulo ${chapterNumber} completo.`,
+    \`Escribe el capítulo \${chapterNumber} completo.\`,
     'Devuelve únicamente texto plano.',
     'No devuelvas JSON.',
     'No uses bloques de código.',
     '',
-    `Libro: ${title}`,
-    `Tema general: ${topic}`,
-    `Título del capítulo: ${chapterTitle}`,
-    `Objetivo mínimo: ${Math.max(2000, targetWords)} palabras`,
-    objective ? `Objetivo editorial: ${objective}` : '',
+    \`Libro: \${title}\`,
+    \`Tema general: \${topic}\`,
+    \`Título del capítulo: \${chapterTitle}\`,
+    \`Objetivo mínimo: \${Math.max(2000, targetWords)} palabras\`,
+    objective ? \`Objetivo editorial: \${objective}\` : '',
     keyPoints.length
-      ? `Puntos clave: ${keyPoints.join('; ')}`
+      ? \`Puntos clave: \${keyPoints.join('; ')}\`
       : '',
     '',
     factualRules,
     '',
-    `No escribas "Capítulo ${chapterNumber}" al inicio.`,
+    \`No escribas "Capítulo \${chapterNumber}" al inicio.\`,
     'No repitas el título al inicio.',
     'Puedes usar subtítulos internos con ###.',
     'No termines a mitad de una frase.',
   ]
     .filter(Boolean)
-    .join('\n');
+    .join('\\n');
 }
 
 function buildEngineResponseFromPlainText(
@@ -536,7 +284,7 @@ function buildEngineResponseFromPlainText(
 
     const chapterPayload = {
       ...(index >= 0 ? chapters[index] : {}),
-      id: `sec_chapter_${String(chapterNumber).padStart(2, '0')}`,
+      id: \`sec_chapter_\${String(chapterNumber).padStart(2, '0')}\`,
       chapter_number: chapterNumber,
       title: getChapterTitleFromState(nextState, chapterNumber),
       text: chapterText,
@@ -591,43 +339,58 @@ function buildSafeDossierFallback(state: any, reason: string): any {
     },
   };
 }
+`;
 
+if (!code.includes(helperMarker)) {
+  const insertBefore = "export default async function handler";
 
-export default async function handler(req: any, res: any) {
-  // (Opcional) CORS preflight si algún día llamas desde otro dominio
-  if (req.method === 'OPTIONS') return res.status(204).end();
+  const index = code.indexOf(insertBefore);
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (index < 0) {
+    console.error(
+      "❌ No encontré export default async function handler."
+    );
+    process.exit(1);
+  }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'Missing GEMINI_API_KEY in server env' });
+  code =
+    code.slice(0, index) +
+    helpers +
+    "\n\n" +
+    code.slice(index);
 
-  try {
-    // ✅ Protege el endpoint (evita que te quemen cuota)
-    enforceSecret(req);
+  console.log("✅ Funciones de texto plano agregadas.");
+} else {
+  console.log("ℹ️ Las funciones auxiliares ya existían.");
+}
 
-    const contentType = String(req.headers?.['content-type'] ?? '');
-    // No lo hacemos súper estricto, pero ayuda a evitar body raro
-    if (contentType && !contentType.includes('application/json')) {
-      return res.status(415).json({ error: 'Unsupported content-type. Use application/json' });
-    }
+const oldGenerationStart =
+  "    const prompt = `TASK:\\n${JSON.stringify(task)}\\n\\nPROJECT_STATE:\\n${JSON.stringify(state)}`;";
 
-    let body: any = {};
-    try {
-      body = await readJsonBody(req);
-    } catch {
-      return res.status(400).json({ error: 'Invalid JSON body' });
-    }
+const generationIndex = code.indexOf(oldGenerationStart);
 
-    const task = body?.task;
-    const state = body?.state;
+if (generationIndex < 0) {
+  console.error(
+    "❌ No encontré el bloque original de generación en api/composer.ts."
+  );
+  console.error("No se modificó el archivo.");
 
-    if (!task || !state) return res.status(400).json({ error: 'Missing task/state' });
+  fs.copyFileSync(BACKUP, FILE);
+  process.exit(1);
+}
 
-    const requestedModel = String(body?.model || 'gemini-2.5-flash');
-    const model = ALLOWED_MODELS.has(requestedModel) ? requestedModel : 'gemini-2.5-flash';
+const returnMarker = "    return res.status(200).json(parsed);";
+const returnIndex = code.indexOf(returnMarker, generationIndex);
 
-    const ai = new GoogleGenAI({ apiKey });
+if (returnIndex < 0) {
+  console.error("❌ No encontré el retorno final del bloque Gemini.");
+  fs.copyFileSync(BACKUP, FILE);
+  process.exit(1);
+}
+
+const oldBlockEnd = returnIndex + returnMarker.length;
+
+const newGenerationBlock = `    const ai = new GoogleGenAI({ apiKey });
 
     /*
      * PROPUESTA, INTRODUCCIÓN Y CAPÍTULOS:
@@ -704,7 +467,7 @@ export default async function handler(req: any, res: any) {
       '- No escribas capítulos completos.',
       '- Mantén master_document.text vacío.',
       '- Usa JSON válido y compacto.',
-    ].join('\n');
+    ].join('\\n');
 
     const response = await ai.models.generateContent({
       model,
@@ -747,7 +510,7 @@ export default async function handler(req: any, res: any) {
           '',
           'RESPUESTA ROTA:',
           String(response.text || '').slice(0, 18000),
-        ].join('\n');
+        ].join('\\n');
 
         const repairedResponse =
           await ai.models.generateContent({
@@ -780,17 +543,20 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    return res.status(200).json(parsed);
-  } catch (e: any) {
-    const statusCode = typeof e?.statusCode === 'number' ? e.statusCode : 500;
-    const msg = pickErrorMessage(e);
+    return res.status(200).json(parsed);`;
 
-    if (looksLikeQuota(msg)) {
-      const retryAfter = parseRetryAfterSeconds(msg);
-      if (retryAfter) res.setHeader('Retry-After', String(retryAfter));
-      return res.status(429).json({ error: msg });
-    }
+code =
+  code.slice(0, generationIndex) +
+  newGenerationBlock +
+  code.slice(oldBlockEnd);
 
-    return res.status(statusCode).json({ error: msg });
-  }
-}
+fs.writeFileSync(FILE, code, "utf8");
+
+console.log("✅ api/composer.ts corregido.");
+console.log("✅ JSON reservado para el dossier.");
+console.log("✅ Capítulos, introducción y propuesta usan texto plano.");
+console.log("✅ Se agregó fallback para dossier JSON roto.");
+console.log("✅ Backup:", BACKUP);
+console.log("");
+console.log("Ejecuta:");
+console.log("npm run build");

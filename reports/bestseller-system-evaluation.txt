@@ -1,0 +1,178 @@
+EVALUACIÓN BESTSELLER SYSTEM
+Fecha: 2026-08-02T15:46:34.026Z
+Proyecto: C:\Users\martin\Desktop\VSC\BestS\geneBestSeller
+Puntuación general: 8.5/10 — MUY BUENO
+
+PUNTUACIÓN POR ÁREA
+
+Títulos, capítulos y subtítulos: 10/10 — EXCELENTE
+Fortalezas:
+- Tiene extractor de título principal
+- Detecta TÍTULO DEL LIBRO / TITLE / NOMBRE DEL LIBRO
+- Tiene limpieza contra prompt-leak en títulos
+- Extrae títulos explícitos de capítulos
+- Usa subheads_h2 para subtítulos internos
+- Genera outline variable por cantidad de capítulos
+- Evita títulos genéricos como única salida
+- Tiene fallback temático para capítulos
+- El capítulo recibe título desde outline
+Recomendaciones:
+- Crear una fase BLUEPRINT_EDITORIAL antes de guardar el proyecto.
+- Generar 3 títulos candidatos y elegir uno por fuerza comercial, claridad y precisión.
+- Obligar a cada capítulo a tener entre 5 y 10 subtítulos internos.
+
+Prompts editoriales: 10/10 — EXCELENTE
+Fortalezas:
+- Prompt maestro editorial existe
+- Reglas contra instrucciones internas
+- Reglas de no inventar datos
+- Reglas específicas para historia
+- Reglas específicas para personajes / biografía
+- Reglas específicas para finanzas
+- Reglas de análisis profundo
+- Reglas de bibliografía no inventada
+- Temperatura reducida para no ficción
+Recomendaciones:
+- Dividir prompts en: investigación, blueprint, dossier, capítulo, revisión factual y reescritura.
+- Usar temperatura baja para historia, biografía, finanzas y política.
+- Crear prompts distintos por género editorial.
+
+Control factual y anti-invención: 9.5/10 — EXCELENTE
+Fortalezas:
+- Clasifica dominio editorial
+- Construye reglas factuales por dominio
+- Lee research_context o verified_facts
+- Distingue hechos, inferencias y controversias
+- Prohíbe citas inventadas
+- Prohíbe cifras falsas o sin contexto
+- No afirma scraping si no hay fuentes
+- Tiene sanitización editorial posterior
+Debilidades:
+- Tiene fact-check de capítulo separado
+Recomendaciones:
+- Agregar tarea FACT_CHECK_CHAPTER después de cada capítulo.
+- Guardar afirmaciones importantes como claims verificables.
+- Bloquear cifras exactas si no hay fuente o contexto.
+
+Investigación, scraping y fuentes reales: 2/10 — CRÍTICO
+Fortalezas:
+- Existe concepto de research_context
+Debilidades:
+- Existen tablas o funciones research_sources
+- Existen tablas o funciones research_facts
+- Existe tarea COLLECT_SOURCES
+- Existe tarea EXTRACT_FACTS
+- Existe tarea VERIFY_FACTS
+- Hay fetch real desde backend
+- Hay extracción HTML o parsing de páginas
+- Hay scoring de confiabilidad de fuentes
+Recomendaciones:
+- Este es el punto más importante si quieres libros históricos o financieros serios.
+- Crear tablas research_sources y research_facts en Supabase.
+- Crear endpoint /api/research que busque, extraiga y resuma fuentes.
+- Pasar research_context real a Gemini antes de generar capítulos.
+
+Ruteo JSON / texto plano: 10/10 — EXCELENTE
+Fortalezas:
+- Distingue acciones largas de texto
+- Propuesta se genera como texto plano
+- Introducción se genera como texto plano
+- Capítulos se generan como texto plano
+- Dossier conserva JSON
+- Tiene safeJsonParse
+- Tiene reparación de JSON
+- Tiene fallback si JSON del dossier falla
+- No fuerza JSON global para todo
+Recomendaciones:
+- Mantener JSON solo para dossier o respuestas estructurales cortas.
+- Nunca pedir JSON para capítulos largos.
+- Registrar preview del modelo cuando falle el parseo.
+
+Coherencia de capítulos: 9.2/10 — EXCELENTE
+Fortalezas:
+- Existe outline_12 como fuente de estructura
+- Obtiene hints del outline
+- Usa puntos clave
+- Usa subtítulos sugeridos
+- Tiene master_document reconstruible
+- No repite encabezado Capítulo al inicio
+- Tiene continuación automática por palabras
+- Evita repetir texto al continuar
+Debilidades:
+- Tiene validación de capítulos generados
+Recomendaciones:
+- Agregar validador de capítulo que compare texto contra outline.
+- Penalizar capítulos sin subtítulos internos.
+- Reescribir automáticamente capítulos con baja coherencia.
+
+Estado limpio entre libros: 9.2/10 — EXCELENTE
+Fortalezas:
+- Crea seedState para libro nuevo
+- Normaliza estado de proyecto
+- Tiene project_id en estado
+- Evita mezclar proyectos por id
+- Actualiza proyecto por id
+- Tiene lock de generación única
+- No parece reutilizar stateAnterior directamente
+- Limpia capítulos al crear nuevo libro
+Debilidades:
+- Tiene función explícita createFreshBookState
+Recomendaciones:
+- Crear función única createFreshBookState y usarla siempre.
+- Nunca iniciar un nuevo libro con spread de un proyecto anterior.
+- Loguear project_id, title y outline al crear cada libro.
+
+Persistencia y base de datos: 8.5/10 — MUY BUENO
+Fortalezas:
+- Usa Supabase
+- Lista proyectos
+- Crea proyectos
+- Actualiza proyectos
+- Guarda secciones
+- Guarda versiones de secciones
+- Guarda snapshots de master
+- Persistencia de metadata del proyecto
+Debilidades:
+- Persistencia de research_sources / research_facts
+Recomendaciones:
+- Agregar persistencia de investigación: sources, facts, claims y fact_checks.
+- Guardar blueprint editorial antes de generar capítulos.
+- Guardar scoring por capítulo.
+
+Seguridad y control de acceso: 8.8/10 — MUY BUENO
+Fortalezas:
+- Usa GEMINI_API_KEY privada en API
+- Tiene COMPOSER_SHARED_SECRET
+- Bloquea métodos no POST
+- Valida content-type
+- Tiene allowlist de modelos
+- No expone GEMINI_API_KEY privada en cliente
+- Tiene control de acceso por perfil
+- Tiene control de dispositivo / sesión
+Debilidades:
+- Tiene rate limit propio de API
+Recomendaciones:
+- Agregar rate limiting real por usuario/IP en /api/composer.
+- No usar VITE_GEMINI_API_KEY en producción.
+- Registrar consumo de tokens por usuario.
+
+Robustez de producción: 9.3/10 — EXCELENTE
+Fortalezas:
+- Tiene retry para 429/503
+- Detecta cuota agotada
+- Tiene fallback de modelos
+- Tiene reparación de JSON
+- Tiene respuesta segura si dossier falla
+- Controla maxOutputTokens
+- Tiene build script
+- Build ejecutado correctamente en esta evaluación
+Debilidades:
+- Tiene tests automatizados
+Recomendaciones:
+- Agregar npm test con pruebas de título, outline, JSON/texto plano y estado limpio.
+- Crear healthcheck /api/health.
+- Agregar logs estructurados por project_id y action.
+
+DICTAMEN
+El sistema está en nivel alto. Ya puede producir libros con estructura seria, pero debe reforzarse con investigación real para temas históricos, biográficos y financieros.
+El punto más urgente es investigación real: scraping, fuentes, extracción de hechos y almacenamiento en Supabase.

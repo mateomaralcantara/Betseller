@@ -387,11 +387,7 @@ function buildProductionPlainPrompt(task: any, state: any): string {
   );
 
   const factualRules = [
-    'REGLAS FACTUALES ELITE:',
-    '- ELITE_API_RULES_V1: no inventes hechos, fechas, cifras, citas ni fuentes.',
-    '- Usa subtítulos internos, tesis de capítulo, puntos clave y datos requeridos cuando estén disponibles.',
-    '- Si no hay research_context, reduce certeza y evita detalles falsamente específicos.',
-    '- Todo capítulo debe tener análisis, contexto, consecuencias, contradicciones y límites de evidencia.',
+    'REGLAS FACTUALES:',
     '- No inventes fechas, cifras, citas, fuentes, cargos, premios, leyes, estudios ni acontecimientos.',
     '- Distingue hechos, inferencias, interpretaciones, controversias y datos no verificados.',
     '- No afirmes que realizaste búsquedas web o scraping si no recibiste fuentes.',

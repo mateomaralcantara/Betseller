@@ -1,0 +1,454 @@
+{
+  "date": "2026-08-10T21:15:14.565Z",
+  "root": "C:\\Users\\martin\\Desktop\\VSC\\BestS\\geneBestSeller",
+  "benchmark": {
+    "description": "Benchmark interno contra plataformas premium de escritura, IA editorial, investigación, SaaS y generación de libros largos.",
+    "perfect10": [
+      "Blueprint editorial antes de escribir.",
+      "Títulos, subtítulos, capítulos y subtítulos internos creados con IA.",
+      "Investigación real con fuentes verificables.",
+      "Separación entre hechos, inferencias, opiniones y controversias.",
+      "Generación larga en texto plano, no JSON forzado.",
+      "Fact-check automático posterior por capítulo.",
+      "Versionado, snapshots y recuperación.",
+      "UX clara para crear, revisar, editar, aprobar y exportar libros.",
+      "Seguridad SaaS con control de acceso, rate limit y uso por usuario.",
+      "Escalabilidad para múltiples usuarios, costos controlados y monetización.",
+      "Diferenciación clara frente a apps genéricas de IA."
+    ]
+  },
+  "runOptions": {
+    "build": true,
+    "tsc": true,
+    "audit": true
+  },
+  "missingFiles": [],
+  "overall": 9.1,
+  "label": "EXCELENTE / LISTA PARA COMPETIR FUERTE",
+  "marketGap": {
+    "gapToPerfect10": 1,
+    "marketReadinessPercent": 91,
+    "summary": "Está cerca de competir al más alto nivel."
+  },
+  "sections": [
+    {
+      "name": "Producto y propuesta premium",
+      "weight": 1.1,
+      "score": 10,
+      "label": "CLASE MUNDIAL / NIVEL DOMINANTE",
+      "marketExpectation": "Las mejores apps no son solo chat: tienen flujo, proyectos, estructura, edición, revisión y exportación.",
+      "passed": [
+        "Tiene identidad de producto clara BestSeller",
+        "Tiene flujo de creación de libro nuevo",
+        "Tiene área de chat o interacción editorial",
+        "Tiene vista de libro",
+        "Tiene tabla de contenido",
+        "Tiene dashboard de generación",
+        "Tiene settings o configuración de palabras por capítulo",
+        "Tiene control de aprobación / acceso",
+        "Tiene flujo multi-proyecto",
+        "Tiene diferenciación editorial avanzada, no solo chat genérico"
+      ],
+      "failed": [],
+      "critical": [],
+      "recommendations": [
+        "Agregar onboarding comercial: tipo de libro, audiencia, objetivo, tono, nivel de investigación y extensión.",
+        "Agregar modo 'Libro Premium' con pasos visibles: Blueprint → Investigación → Dossier → Capítulos → Revisión → Exportación.",
+        "Agregar pantalla de comparación de calidad por libro."
+      ]
+    },
+    {
+      "name": "Motor IA editorial",
+      "weight": 1.2,
+      "score": 10,
+      "label": "CLASE MUNDIAL / NIVEL DOMINANTE",
+      "marketExpectation": "Las mejores apps tienen tareas separadas, memoria de proyecto, generación larga robusta, reintentos y control por tipo de contenido.",
+      "passed": [
+        "Usa Gemini / motor IA",
+        "Tiene tareas editoriales diferenciadas",
+        "Tiene dossier inicial",
+        "Genera capítulos largos como texto plano",
+        "Tiene continuación automática para alcanzar palabras",
+        "Evita repetición al continuar",
+        "Tiene fallback de modelos",
+        "Tiene retry para 429/503",
+        "Tiene prompts por dominio editorial",
+        "Tiene capa Elite separada de prompts"
+      ],
+      "failed": [],
+      "critical": [],
+      "recommendations": [
+        "Conectar formalmente buildEliteBlueprintPrompt al flujo real antes de createProject.",
+        "Agregar generación en cola para proyectos largos.",
+        "Agregar selector de modelo según tarea: barato para outline, fuerte para capítulos y auditoría."
+      ]
+    },
+    {
+      "name": "Blueprint, títulos y subtítulos",
+      "weight": 1.25,
+      "score": 10,
+      "label": "CLASE MUNDIAL / NIVEL DOMINANTE",
+      "marketExpectation": "Una app de élite no improvisa el libro: primero diseña título, subtítulo, tesis, capítulos, subtítulos, fuentes y riesgos.",
+      "passed": [
+        "Extrae título desde idea del usuario",
+        "Extrae títulos explícitos de capítulos",
+        "Tiene subtítulos internos subheads_h2",
+        "Tiene blueprint editorial",
+        "Genera candidatos de título",
+        "Genera candidatos de subtítulo",
+        "Normaliza blueprint",
+        "Tiene quality score para títulos",
+        "Penaliza títulos genéricos",
+        "Capítulos tienen tesis, objetivo, puntos, subtítulos y datos requeridos"
+      ],
+      "failed": [],
+      "critical": [],
+      "recommendations": [
+        "Hacer obligatorio el Blueprint antes de guardar el libro.",
+        "Bloquear generación si el outline obtiene menos de 8/10.",
+        "Mostrar al usuario 3 títulos y subtítulos para aprobar o regenerar."
+      ]
+    },
+    {
+      "name": "Investigación real, scraping y fuentes",
+      "weight": 1.45,
+      "score": 8.4,
+      "label": "MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN",
+      "marketExpectation": "Para superar el mercado en historia, biografía y finanzas, la app necesita fuentes reales, extracción, clasificación y verificación.",
+      "passed": [
+        "Tiene concepto de research_context",
+        "Tiene contrato de investigación",
+        "Tiene tabla research_sources",
+        "Tiene tabla research_facts",
+        "Tiene scoring de confiabilidad",
+        "Tiene estados VERIFIED / DISPUTED / UNVERIFIED",
+        "Tiene búsqueda web o API de fuentes",
+        "Compacta fuentes para el prompt"
+      ],
+      "failed": [
+        "Tiene endpoint o módulo real para investigar fuentes",
+        "Tiene scraping/parsing real de páginas"
+      ],
+      "critical": [
+        "Tiene endpoint o módulo real para investigar fuentes",
+        "Tiene scraping/parsing real de páginas"
+      ],
+      "recommendations": [
+        "Crear /api/research con búsqueda web, extracción de páginas y resumen de fuentes.",
+        "Guardar cada fuente en research_sources y cada afirmación en research_facts.",
+        "Pasar research_context por capítulo, no solo a nivel de libro."
+      ]
+    },
+    {
+      "name": "Control factual y QA anti-invención",
+      "weight": 1.35,
+      "score": 10,
+      "label": "CLASE MUNDIAL / NIVEL DOMINANTE",
+      "marketExpectation": "Las mejores apps de no ficción deben verificar capítulos, no solo confiar en el prompt inicial.",
+      "passed": [
+        "Reglas de no inventar datos",
+        "Distingue hechos, inferencias y controversias",
+        "Tiene reglas específicas para historia",
+        "Tiene reglas específicas para biografía",
+        "Tiene reglas específicas para finanzas",
+        "Tiene fact-check prompt",
+        "Tiene tabla de reportes de calidad por capítulo",
+        "Detecta unsupported_claims",
+        "Detecta hallucinations",
+        "Ejecuta fact-check automáticamente después de cada capítulo"
+      ],
+      "failed": [],
+      "critical": [],
+      "recommendations": [
+        "Después de GENERATE_CHAPTER ejecutar FACT_CHECK_CHAPTER automáticamente.",
+        "Si score < 8, reescribir capítulo con instrucciones del auditor.",
+        "Marcar visualmente datos no verificados dentro del editor."
+      ]
+    },
+    {
+      "name": "Calidad de capítulos y reescritura",
+      "weight": 1.2,
+      "score": 8.5,
+      "label": "MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN",
+      "marketExpectation": "Un sistema superior no solo escribe; mide, corrige y reescribe hasta llegar al estándar.",
+      "passed": [
+        "Tiene score de capítulo",
+        "Evalúa longitud mínima",
+        "Evalúa subtítulos internos",
+        "Evita bibliografía dentro del capítulo",
+        "Sanitiza contenido editorial",
+        "Reconstruye master_document desde estado",
+        "Tiene recomputeGenerationProgress",
+        "Tiene modo de reescritura si la calidad es baja",
+        "Evalúa repetición de párrafos"
+      ],
+      "failed": [
+        "Tiene quality gate conectado al flujo real de generación"
+      ],
+      "critical": [
+        "Tiene quality gate conectado al flujo real de generación"
+      ],
+      "recommendations": [
+        "Conectar scoreEliteChapterText después de cada capítulo.",
+        "Guardar el score en chapter_quality_reports.",
+        "Crear botón 'Mejorar a 10/10' por capítulo."
+      ]
+    },
+    {
+      "name": "UX/UI y flujo profesional",
+      "weight": 1,
+      "score": 8.1,
+      "label": "MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN",
+      "marketExpectation": "El mercado premium exige claridad: dónde estoy, qué falta, qué calidad tiene y cómo exporto.",
+      "passed": [
+        "Tiene chat/interface",
+        "Tiene lector de libro",
+        "Tiene tabla de contenido",
+        "Tiene dashboard de generación",
+        "Tiene indicadores de progreso",
+        "Tiene mensajes de error al usuario",
+        "Tiene bloqueo mientras genera",
+        "Tiene aprobación manual o control del flujo",
+        "Tiene exportación profesional PDF/DOCX/EPUB"
+      ],
+      "failed": [
+        "Tiene flujo visual de Blueprint / Investigación / Revisión"
+      ],
+      "critical": [],
+      "recommendations": [
+        "Agregar pantalla de pipeline: Blueprint → Research → Outline → Writing → Fact-check → Export.",
+        "Agregar botones: Regenerar título, Aprobar outline, Mejorar capítulo, Exportar.",
+        "Agregar exportación DOCX, PDF y EPUB."
+      ]
+    },
+    {
+      "name": "Persistencia, recuperación y trabajo largo",
+      "weight": 1.05,
+      "score": 8.6,
+      "label": "MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN",
+      "marketExpectation": "Una app de libros largos debe recuperar estado, versiones, snapshots, investigación y jobs largos.",
+      "passed": [
+        "Usa Supabase",
+        "Crea proyectos",
+        "Lista proyectos",
+        "Actualiza proyectos",
+        "Guarda secciones",
+        "Guarda versiones",
+        "Guarda snapshots",
+        "Tiene recuperación de proyecto completo",
+        "Tiene persistencia de investigación"
+      ],
+      "failed": [
+        "Tiene cola o job system para generaciones largas"
+      ],
+      "critical": [
+        "Tiene cola o job system para generaciones largas"
+      ],
+      "recommendations": [
+        "Agregar tabla generation_jobs para colas de capítulos.",
+        "Permitir pausar/reanudar generación.",
+        "Agregar historial de versiones visible por sección."
+      ]
+    },
+    {
+      "name": "Seguridad, SaaS y control de costos",
+      "weight": 1.1,
+      "score": 8.6,
+      "label": "MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN",
+      "marketExpectation": "La diferencia entre prototipo y SaaS premium está en seguridad, límites, costos, usuarios y facturación.",
+      "passed": [
+        "Tiene auth Supabase",
+        "Tiene perfiles con has_access",
+        "Tiene control de sesión/dispositivo",
+        "API usa GEMINI_API_KEY privada",
+        "Endpoint protegido con shared secret",
+        "Valida método POST",
+        "Tiene allowlist de modelos",
+        "Tiene manejo de cuota y rate errors",
+        "Tiene medición de consumo/costos por usuario"
+      ],
+      "failed": [
+        "Tiene rate limit propio por usuario/IP"
+      ],
+      "critical": [
+        "Tiene rate limit propio por usuario/IP"
+      ],
+      "recommendations": [
+        "Agregar tabla usage_events con tokens, modelo, costo estimado, usuario y proyecto.",
+        "Agregar rate limit por usuario y por IP en /api/composer.",
+        "Eliminar uso de VITE_GEMINI_API_KEY en producción."
+      ]
+    },
+    {
+      "name": "Producción, pruebas y escalabilidad técnica",
+      "weight": 1.1,
+      "score": 8.8,
+      "label": "MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN",
+      "marketExpectation": "Las mejores apps tienen build limpio, tests, auditoría, logs, colas, observabilidad y despliegue estable.",
+      "passed": [
+        "Tiene package.json",
+        "Tiene script build",
+        "Tiene TypeScript",
+        "Tiene Vite build",
+        "Tiene validación/parsing robusto de JSON",
+        "Tiene fallback si falla el dossier",
+        "Tiene tests automatizados reales",
+        "Build pasó en esta evaluación",
+        "TypeScript pasó en esta evaluación"
+      ],
+      "failed": [
+        "Audit high pasó en esta evaluación"
+      ],
+      "critical": [],
+      "recommendations": [
+        "Agregar suite de tests para títulos, outline, JSON/texto plano, estado limpio y calidad.",
+        "Agregar logs estructurados por project_id, action y user_id.",
+        "Agregar healthcheck y monitoreo de errores."
+      ],
+      "commandResults": {
+        "build": {
+          "ok": true,
+          "command": "npm run build",
+          "output": "\n> bestseller-ai@0.0.0 build\n> vite build\n\n\u001b[36mvite v6.4.1 \u001b[32mbuilding for production...\u001b[36m\u001b[39m\ntransforming...\n\u001b[32m✓\u001b[39m 561 modules transformed.\nrendering chunks...\ncomputing gzip size...\n\u001b[2mdist/\u001b[22m\u001b[32mindex.html                    \u001b[39m\u001b[1m\u001b[2m    1.53 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:   0.66 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[35massets/index-B5TDvly3.css     \u001b[39m\u001b[1m\u001b[2m   69.83 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  10.32 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/purify.es-BIqS8gfI.js  \u001b[39m\u001b[1m\u001b[2m   21.87 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:   8.70 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/index.es-C7LFq9Rr.js   \u001b[39m\u001b[1m\u001b[2m  159.12 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  53.33 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/index-DgWHGrKk.js      \u001b[39m\u001b[1m\u001b[2m  252.70 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  50.03 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/index-DdSJze1x.js      \u001b[39m\u001b[1m\u001b[33m1,556.79 kB\u001b[39m\u001b[22m\u001b[2m │ gzip: 451.80 kB\u001b[22m\n\u001b[32m✓ built in 21.38s\u001b[39m\n",
+          "error": ""
+        },
+        "tsc": {
+          "ok": true,
+          "command": "npx tsc --noEmit",
+          "output": "",
+          "error": ""
+        },
+        "audit": {
+          "ok": false,
+          "command": "npm audit --audit-level=high",
+          "output": "T_ALLOWED_TAGS` / `DEFAULT_ALLOWED_ATTR` - https://github.com/advisories/GHSA-76mc-f452-cxcm\nDOMPurify's ADD_TAGS function form bypasses FORBID_TAGS due to short-circuit evaluation - https://github.com/advisories/GHSA-39q2-94rc-95cp\nDOMPurify ADD_ATTR predicate skips URI validation - https://github.com/advisories/GHSA-cjmm-f4jc-qw8r\nDOMPurify USE_PROFILES prototype pollution allows event handlers - https://github.com/advisories/GHSA-cj63-jhhr-wcxv\nDOMPurify is vulnerable to mutation-XSS via Re-Contextualization  - https://github.com/advisories/GHSA-h8r8-wccr-v5f2\nDOMPurify: IN_PLACE hook removal leaves a detached subtree executable, causing XSS - https://github.com/advisories/GHSA-55q2-fjhq-7xh7\nfix available via `npm audit fix --force`\nWill install jspdf@4.2.1, which is a breaking change\nnode_modules/dompurify\n  jspdf  <=4.2.0\n  Depends on vulnerable versions of dompurify\n  node_modules/jspdf\n\n\nminimatch  9.0.0 - 9.0.6\nSeverity: high\nminimatch has a ReDoS via repeated wildcards with non-matching literal in pattern - https://github.com/advisories/GHSA-3ppc-4f35-3m26\nminimatch has ReDoS: matchOne() combinatorial backtracking via multiple non-adjacent GLOBSTAR segments - https://github.com/advisories/GHSA-7r86-cg39-jmmj\nminimatch ReDoS: nested *() extglobs generate catastrophically backtracking regular expressions - https://github.com/advisories/GHSA-23c5-xmqv-rm74\nfix available via `npm audit fix`\nnode_modules/minimatch\n\nnanoid  <=3.3.16 || 4.0.0 - 5.1.15\nSeverity: high\nnanoid: non-secure generators can loop indefinitely with negative size - https://github.com/advisories/GHSA-28wg-ghj8-5hjv\nnanoid: non-secure generators can loop indefinitely with negative size - https://github.com/advisories/GHSA-28wg-ghj8-5hjv\nnanoid: custom generators can loop indefinitely when size is zero - https://github.com/advisories/GHSA-2v37-7h3g-55p8\nfix available via `npm audit fix`\nnode_modules/nanoid\nnode_modules/postcss/node_modules/nanoid\n\npicomatch  4.0.0 - 4.0.3\nSeverity: high\nPicomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching - https://github.com/advisories/GHSA-3v7f-55p6-f55p\nPicomatch has a ReDoS vulnerability via extglob quantifiers - https://github.com/advisories/GHSA-c2c7-rcm5-vvqj\nfix available via `npm audit fix`\nnode_modules/picomatch\n\npostcss  <=8.5.22\nSeverity: high\nPostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure - https://github.com/advisories/GHSA-r28c-9q8g-f849\nPostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset - https://github.com/advisories/GHSA-fxqj-rqcc-2cmp\nfix available via `npm audit fix`\nnode_modules/postcss\n\nrollup  4.0.0 - 4.58.0\nSeverity: high\nRollup 4 has Arbitrary File Write via Path Traversal - https://github.com/advisories/GHSA-mw96-cpmx-2vgc\nfix available via `npm audit fix`\nnode_modules/rollup\n\nvite  <=6.4.2\nSeverity: high\nVite Vulnerable to Path Traversal in Optimized Deps `.map` Handling - https://github.com/advisories/GHSA-4w7w-66w2-5vf9\nVite Vulnerable to Arbitrary File Read via Vite Dev Server WebSocket - https://github.com/advisories/GHSA-p9ff-h696-f583\nlaunch-editor: NTLMv2 hash disclosure via UNC path handling on Windows - https://github.com/advisories/GHSA-v6wh-96g9-6wx3\nvite: `server.fs.deny` bypass on Windows alternate paths - https://github.com/advisories/GHSA-fx2h-pf6j-xcff\nfix available via `npm audit fix`\nnode_modules/vite\n\nws  8.0.0 - 8.20.1\nSeverity: high\nws: Uninitialized memory disclosure - https://github.com/advisories/GHSA-58qx-3vcg-4xpx\nws: Memory exhaustion DoS from tiny fragments and data chunks - https://github.com/advisories/GHSA-96hv-2xvq-fx4p\nfix available via `npm audit fix`\nnode_modules/ws\n\n11 vulnerabilities (1 low, 1 moderate, 8 high, 1 critical)\n\nTo address issues that do not require attention, run:\n  npm audit fix\n\nTo address all issues (including breaking changes), run:\n  npm audit fix --force\n",
+          "error": "\nCommand failed: npm audit --audit-level=high"
+        }
+      }
+    },
+    {
+      "name": "Monetización, operación y SaaS",
+      "weight": 1,
+      "score": 7.4,
+      "label": "BUENA / BASE COMERCIAL SERIA",
+      "marketExpectation": "Para superar el mercado no basta generar texto: hay que cobrar, limitar, medir, exportar y operar.",
+      "passed": [
+        "Tiene usuarios y acceso",
+        "Tiene solicitudes de acceso",
+        "Tiene settings por usuario",
+        "Tiene control de créditos o planes",
+        "Tiene roles admin/usuario",
+        "Tiene control de dispositivo como diferencial",
+        "Tiene exportación como producto vendible"
+      ],
+      "failed": [
+        "Tiene límites por plan",
+        "Tiene pricing o monetización",
+        "Tiene métricas de uso"
+      ],
+      "critical": [
+        "Tiene límites por plan",
+        "Tiene pricing o monetización"
+      ],
+      "recommendations": [
+        "Agregar planes: Básico, Pro, Agencia, Editorial.",
+        "Agregar créditos por libro/capítulo y consumo de tokens.",
+        "Agregar Stripe o sistema local de pagos."
+      ]
+    },
+    {
+      "name": "Diferenciación frente al mercado",
+      "weight": 1.25,
+      "score": 10,
+      "label": "CLASE MUNDIAL / NIVEL DOMINANTE",
+      "marketExpectation": "La app puede ganarle a herramientas genéricas si combina libro largo + investigación + fact-check + exportación + flujo editorial.",
+      "passed": [
+        "No es solo chat: tiene estructura de libro",
+        "Tiene generación larga",
+        "Tiene control factual",
+        "Tiene investigación como arquitectura",
+        "Tiene blueprint editorial",
+        "Tiene quality gate",
+        "Tiene fact-check",
+        "Tiene enfoque por género",
+        "Tiene flujo de revisión y aprobación",
+        "Tiene ventajas que podrían superar apps genéricas"
+      ],
+      "failed": [],
+      "critical": [],
+      "recommendations": [
+        "Convertir la capa Elite en flujo real visible.",
+        "Agregar comparador de calidad 1/10 por capítulo.",
+        "Crear una promesa comercial clara: libros largos con fuentes, revisión y exportación."
+      ]
+    }
+  ],
+  "roadmap": [
+    {
+      "area": "Monetización, operación y SaaS",
+      "currentScore": 7.4,
+      "priority": "ALTA",
+      "actions": [
+        "Agregar planes: Básico, Pro, Agencia, Editorial.",
+        "Agregar créditos por libro/capítulo y consumo de tokens.",
+        "Agregar Stripe o sistema local de pagos."
+      ],
+      "criticalMissing": [
+        "Tiene límites por plan",
+        "Tiene pricing o monetización"
+      ]
+    },
+    {
+      "area": "UX/UI y flujo profesional",
+      "currentScore": 8.1,
+      "priority": "MEDIA",
+      "actions": [
+        "Agregar pantalla de pipeline: Blueprint → Research → Outline → Writing → Fact-check → Export.",
+        "Agregar botones: Regenerar título, Aprobar outline, Mejorar capítulo, Exportar.",
+        "Agregar exportación DOCX, PDF y EPUB."
+      ],
+      "criticalMissing": []
+    },
+    {
+      "area": "Investigación real, scraping y fuentes",
+      "currentScore": 8.4,
+      "priority": "MEDIA",
+      "actions": [
+        "Crear /api/research con búsqueda web, extracción de páginas y resumen de fuentes.",
+        "Guardar cada fuente en research_sources y cada afirmación en research_facts.",
+        "Pasar research_context por capítulo, no solo a nivel de libro."
+      ],
+      "criticalMissing": [
+        "Tiene endpoint o módulo real para investigar fuentes",
+        "Tiene scraping/parsing real de páginas"
+      ]
+    },
+    {
+      "area": "Calidad de capítulos y reescritura",
+      "currentScore": 8.5,
+      "priority": "MEDIA",
+      "actions": [
+        "Conectar scoreEliteChapterText después de cada capítulo.",
+        "Guardar el score en chapter_quality_reports.",
+        "Crear botón 'Mejorar a 10/10' por capítulo."
+      ],
+      "criticalMissing": [
+        "Tiene quality gate conectado al flujo real de generación"
+      ]
+    },
+    {
+      "area": "Persistencia, recuperación y trabajo largo",
+      "currentScore": 8.6,
+      "priority": "MEDIA",
+      "actions": [
+        "Agregar tabla generation_jobs para colas de capítulos.",
+        "Permitir pausar/reanudar generación.",
+        "Agregar historial de versiones visible por sección."
+      ],
+      "criticalMissing": [
+        "Tiene cola o job system para generaciones largas"
+      ]
+    }
+  ],
+  "verdict": "Puntuación general: 9.1/10 — EXCELENTE / LISTA PARA COMPETIR FUERTE.\nPuede competir contra soluciones premium con mejoras puntuales.\nPara competir como SaaS, falta control de planes, créditos, costos, uso y pagos.\nCon ejecución comercial, esta app puede posicionarse como producto premium especializado en libros largos."
+}

@@ -191,163 +191,12 @@ function getOutlineHints(state: any, n: number) {
   };
 }
 
-
-type EditorialDomain =
-  | "HISTORY"
-  | "BIOGRAPHY"
-  | "FINANCE"
-  | "POLITICS"
-  | "GENERAL_NONFICTION"
-  | "FICTION";
-
-function detectEditorialDomain(state: any): EditorialDomain {
-  const raw = [
-    state?.book_title,
-    state?.bookTitle,
-    state?.book_topic,
-    state?.bookTopic,
-    state?.category,
-    state?.genre,
-    state?.tone_style,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  if (/novela|ficci[oó]n|cuento|thriller|romance|terror|fantas[ií]a/.test(raw)) {
-    return "FICTION";
-  }
-
-  if (/historia|hist[oó]rico|cronolog[ií]a|archivo|origen|evoluci[oó]n|siglo|guerra|dictadura/.test(raw)) {
-    return "HISTORY";
-  }
-
-  if (/biograf[ií]a|trayectoria|personaje|comunicador|artista|pol[ií]tico|empresario|vida de/.test(raw)) {
-    return "BIOGRAPHY";
-  }
-
-  if (/finanzas|econom[ií]a|inversi[oó]n|dinero|riqueza|mercado|empresa|deuda|rentabilidad|patrimonio/.test(raw)) {
-    return "FINANCE";
-  }
-
-  if (/pol[ií]tica|gobierno|estado|elecciones|poder|partido|sociedad|institucional/.test(raw)) {
-    return "POLITICS";
-  }
-
-  return "GENERAL_NONFICTION";
-}
-
-function getResearchContext(state: any): string {
-  const candidates = [
-    state?.research_context,
-    state?.researchContext,
-    state?.research_pack,
-    state?.researchPack,
-    state?.verified_facts,
-    state?.verifiedFacts,
-    state?.sources_summary,
-    state?.sourcesSummary,
-  ];
-
-  for (const value of candidates) {
-    if (typeof value === "string" && value.trim()) {
-      return value.trim().slice(0, 30000);
-    }
-
-    if (value && typeof value === "object") {
-      try {
-        const serialized = JSON.stringify(value);
-        if (serialized.length > 2) return serialized.slice(0, 30000);
-      } catch {
-        // Ignorar contexto no serializable.
-      }
-    }
-  }
-
-  return "";
-}
-
-function buildFactualRules(state: any): string {
-  const domain = detectEditorialDomain(state);
-  const researchContext = getResearchContext(state);
-
-  const common = [
-    "DISCIPLINA FACTUAL:",
-    "- No inventes fechas, cifras, porcentajes, citas, cargos, premios, instituciones, leyes, estudios, fuentes ni acontecimientos.",
-    "- Distingue hechos confirmados, inferencias, interpretaciones, controversias y datos no verificados.",
-    "- Si no puedes respaldar un dato, omítelo o preséntalo explícitamente como hipótesis.",
-    "- No fabriques citas textuales ni bibliografía.",
-    "- No uses precisión falsa.",
-    "- No rellenes extensión con repeticiones ni datos dudosos.",
-    "- Profundiza mediante causas, contexto, comparación, consecuencias, contradicciones e impactos.",
-  ];
-
-  const domainRules: Record<EditorialDomain, string[]> = {
-    HISTORY: [
-      "REGLAS PARA HISTORIA:",
-      "- Construye cronología, antecedentes, causas, actores, consecuencias y contexto de época.",
-      "- Evita anacronismos y presentismo.",
-      "- Señala versiones contradictorias cuando existan.",
-      "- No conviertas una interpretación histórica en hecho incontrovertible.",
-    ],
-    BIOGRAPHY: [
-      "REGLAS PARA PERSONAJES:",
-      "- Separa trayectoria comprobada, imagen pública, controversias verificadas y rumores.",
-      "- No inventes pensamientos, escenas privadas, conversaciones ni motivaciones internas.",
-      "- No atribuyas relaciones, trabajos o polémicas sin respaldo.",
-      "- Usa lenguaje de inferencia cuando analices motivaciones.",
-    ],
-    FINANCE: [
-      "REGLAS PARA FINANZAS:",
-      "- Toda cifra debe indicar año, moneda, país o período cuando esté disponible.",
-      "- Distingue ingreso, beneficio, patrimonio, valoración, deuda, flujo de caja y proyección.",
-      "- Expón supuestos, riesgos, límites y escenarios.",
-      "- No presentes rendimientos futuros como garantías.",
-    ],
-    POLITICS: [
-      "REGLAS PARA POLÍTICA Y SOCIEDAD:",
-      "- Diferencia hechos institucionales, discursos, acusaciones y opiniones.",
-      "- Explica actores, intereses, incentivos, correlaciones de fuerza y consecuencias.",
-      "- No atribuyas delitos, intenciones o responsabilidades sin respaldo.",
-    ],
-    GENERAL_NONFICTION: [
-      "REGLAS PARA NO FICCIÓN:",
-      "- Prioriza precisión, explicación, ejemplos plausibles y análisis.",
-      "- No conviertas ejemplos hipotéticos en sucesos reales.",
-    ],
-    FICTION: [
-      "REGLAS PARA FICCIÓN:",
-      "- La creatividad está permitida, pero no presentes elementos ficticios como hechos reales.",
-      "- Si usas personajes reales, evita atribuirles delitos, pensamientos o actos no documentados.",
-    ],
-  };
-
-  const research = researchContext
-    ? [
-        "",
-        "EXPEDIENTE DE INVESTIGACIÓN DISPONIBLE:",
-        researchContext,
-        "",
-        "Usa el expediente anterior como base factual prioritaria.",
-        "No contradigas ese expediente sin explicar la discrepancia.",
-      ]
-    : [
-        "",
-        "NO HAY EXPEDIENTE DE INVESTIGACIÓN ADJUNTO.",
-        "No afirmes que realizaste búsquedas web, scraping o consulta de fuentes externas.",
-        "Reduce el nivel de certeza cuando falte respaldo.",
-      ];
-
-  return [...common, "", ...domainRules[domain], ...research].join("\n");
-}
-
 function buildPlainPrompt(action: LongAction, task: ComposerTask, state: any): { prompt: string; minWords: number } {
   const title = getBookTitle(state);
   const topic = getBookTopic(state);
   const audience = ensureString(state?.audience, "");
   const tone = ensureString(state?.tone_style, "editorial, claro, profundo y profesional");
   const targetWords = Math.max(800, Math.floor(Number((task as any)?.target_length_words ?? 0) || 0));
-  const factualRules = buildFactualRules(state);
 
   if (action === "GENERATE_PROPOSAL") {
     const minWords = Math.max(2000, targetWords);
@@ -369,14 +218,7 @@ Libro:
 Reglas:
 - Nada de placeholders.
 - No termines a mitad de frase.
-- ELITE_GENERATION_RULES_V1: usa subtítulos internos cuando existan en subheads_h2.
-- Cada sección debe aportar análisis, contexto, datos prudentes, consecuencias y profundidad.
-- No inventes datos para llenar palabras.
-- Si falta evidencia, explica los límites de la evidencia.
-- Evita títulos genéricos, repeticiones y relleno.
 - No escribas "Propuesta editorial" como encabezado.
-
-${factualRules}
 `.trim(),
     };
   }
@@ -401,14 +243,7 @@ Libro:
 Reglas:
 - Nada de placeholders.
 - No termines a mitad de frase.
-- ELITE_GENERATION_RULES_V1: usa subtítulos internos cuando existan en subheads_h2.
-- Cada sección debe aportar análisis, contexto, datos prudentes, consecuencias y profundidad.
-- No inventes datos para llenar palabras.
-- Si falta evidencia, explica los límites de la evidencia.
-- Evita títulos genéricos, repeticiones y relleno.
 - No escribas "Introducción" como encabezado.
-
-${factualRules}
 `.trim(),
     };
   }
@@ -447,16 +282,6 @@ Reglas duras:
 - Puedes usar subtítulos internos con ###.
 - Nada de placeholders.
 - No termines a mitad de frase.
-- ELITE_GENERATION_RULES_V1: usa subtítulos internos cuando existan en subheads_h2.
-- Cada sección debe aportar análisis, contexto, datos prudentes, consecuencias y profundidad.
-- No inventes datos para llenar palabras.
-- Si falta evidencia, explica los límites de la evidencia.
-- Evita títulos genéricos, repeticiones y relleno.
-- No incluyas bloques de bibliografía dentro del capítulo.
-- Cuando menciones cifras o hechos específicos, contextualízalos.
-- Separa claramente hechos, inferencias e interpretación.
-
-${factualRules}
 `.trim(),
   };
 }
@@ -666,10 +491,7 @@ async function callLongSectionPlainDev(opts: ComposerCallOpts): Promise<EngineRe
     model: opts.model,
     prompt,
     maxOutputTokens,
-    temperature:
-      detectEditorialDomain(opts.state) === "FICTION"
-        ? action === "GENERATE_CHAPTER" ? 0.82 : 0.68
-        : action === "GENERATE_CHAPTER" ? 0.48 : 0.38,
+    temperature: action === "GENERATE_CHAPTER" ? 0.82 : 0.68,
   });
 
   // 2) auto-continue hasta llegar al mínimo (y si target=6000, llega a 6000)
@@ -680,10 +502,7 @@ async function callLongSectionPlainDev(opts: ComposerCallOpts): Promise<EngineRe
     currentText: firstText,
     minWords: required,
     maxSteps: action === "GENERATE_CHAPTER" ? 6 : 4,
-    temperature:
-      detectEditorialDomain(opts.state) === "FICTION"
-        ? action === "GENERATE_CHAPTER" ? 0.82 : 0.68
-        : action === "GENERATE_CHAPTER" ? 0.48 : 0.38,
+    temperature: action === "GENERATE_CHAPTER" ? 0.82 : 0.68,
   });
 
   return buildEngineResultFromText(action, opts.task, opts.state ?? {}, completedText);

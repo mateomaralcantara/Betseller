@@ -1,0 +1,277 @@
+BESTSELLER AI — MARKET PERFECTION SCORE
+====================================================
+Fecha: 2026-08-10T21:15:14.565Z
+Proyecto: C:\Users\martin\Desktop\VSC\BestS\geneBestSeller
+Puntuación general: 9.1/10 — EXCELENTE / LISTA PARA COMPETIR FUERTE
+Preparación frente al mercado: 91%
+Brecha hasta 10/10: 1
+
+DICTAMEN
+Puntuación general: 9.1/10 — EXCELENTE / LISTA PARA COMPETIR FUERTE.
+Puede competir contra soluciones premium con mejoras puntuales.
+Para competir como SaaS, falta control de planes, créditos, costos, uso y pagos.
+Con ejecución comercial, esta app puede posicionarse como producto premium especializado en libros largos.
+
+PUNTUACIÓN POR ÁREA
+
+Producto y propuesta premium: 10/10 — CLASE MUNDIAL / NIVEL DOMINANTE
+Estándar de mercado: Las mejores apps no son solo chat: tienen flujo, proyectos, estructura, edición, revisión y exportación.
+Fortalezas:
+✅ Tiene identidad de producto clara BestSeller
+✅ Tiene flujo de creación de libro nuevo
+✅ Tiene área de chat o interacción editorial
+✅ Tiene vista de libro
+✅ Tiene tabla de contenido
+✅ Tiene dashboard de generación
+✅ Tiene settings o configuración de palabras por capítulo
+✅ Tiene control de aprobación / acceso
+✅ Tiene flujo multi-proyecto
+✅ Tiene diferenciación editorial avanzada, no solo chat genérico
+Recomendaciones:
+🔧 Agregar onboarding comercial: tipo de libro, audiencia, objetivo, tono, nivel de investigación y extensión.
+🔧 Agregar modo 'Libro Premium' con pasos visibles: Blueprint → Investigación → Dossier → Capítulos → Revisión → Exportación.
+🔧 Agregar pantalla de comparación de calidad por libro.
+
+Motor IA editorial: 10/10 — CLASE MUNDIAL / NIVEL DOMINANTE
+Estándar de mercado: Las mejores apps tienen tareas separadas, memoria de proyecto, generación larga robusta, reintentos y control por tipo de contenido.
+Fortalezas:
+✅ Usa Gemini / motor IA
+✅ Tiene tareas editoriales diferenciadas
+✅ Tiene dossier inicial
+✅ Genera capítulos largos como texto plano
+✅ Tiene continuación automática para alcanzar palabras
+✅ Evita repetición al continuar
+✅ Tiene fallback de modelos
+✅ Tiene retry para 429/503
+✅ Tiene prompts por dominio editorial
+✅ Tiene capa Elite separada de prompts
+Recomendaciones:
+🔧 Conectar formalmente buildEliteBlueprintPrompt al flujo real antes de createProject.
+🔧 Agregar generación en cola para proyectos largos.
+🔧 Agregar selector de modelo según tarea: barato para outline, fuerte para capítulos y auditoría.
+
+Blueprint, títulos y subtítulos: 10/10 — CLASE MUNDIAL / NIVEL DOMINANTE
+Estándar de mercado: Una app de élite no improvisa el libro: primero diseña título, subtítulo, tesis, capítulos, subtítulos, fuentes y riesgos.
+Fortalezas:
+✅ Extrae título desde idea del usuario
+✅ Extrae títulos explícitos de capítulos
+✅ Tiene subtítulos internos subheads_h2
+✅ Tiene blueprint editorial
+✅ Genera candidatos de título
+✅ Genera candidatos de subtítulo
+✅ Normaliza blueprint
+✅ Tiene quality score para títulos
+✅ Penaliza títulos genéricos
+✅ Capítulos tienen tesis, objetivo, puntos, subtítulos y datos requeridos
+Recomendaciones:
+🔧 Hacer obligatorio el Blueprint antes de guardar el libro.
+🔧 Bloquear generación si el outline obtiene menos de 8/10.
+🔧 Mostrar al usuario 3 títulos y subtítulos para aprobar o regenerar.
+
+Investigación real, scraping y fuentes: 8.4/10 — MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN
+Estándar de mercado: Para superar el mercado en historia, biografía y finanzas, la app necesita fuentes reales, extracción, clasificación y verificación.
+Fortalezas:
+✅ Tiene concepto de research_context
+✅ Tiene contrato de investigación
+✅ Tiene tabla research_sources
+✅ Tiene tabla research_facts
+✅ Tiene scoring de confiabilidad
+✅ Tiene estados VERIFIED / DISPUTED / UNVERIFIED
+✅ Tiene búsqueda web o API de fuentes
+✅ Compacta fuentes para el prompt
+Debilidades:
+❌ Tiene endpoint o módulo real para investigar fuentes
+❌ Tiene scraping/parsing real de páginas
+Faltantes críticos:
+🚨 Tiene endpoint o módulo real para investigar fuentes
+🚨 Tiene scraping/parsing real de páginas
+Recomendaciones:
+🔧 Crear /api/research con búsqueda web, extracción de páginas y resumen de fuentes.
+🔧 Guardar cada fuente en research_sources y cada afirmación en research_facts.
+🔧 Pasar research_context por capítulo, no solo a nivel de libro.
+
+Control factual y QA anti-invención: 10/10 — CLASE MUNDIAL / NIVEL DOMINANTE
+Estándar de mercado: Las mejores apps de no ficción deben verificar capítulos, no solo confiar en el prompt inicial.
+Fortalezas:
+✅ Reglas de no inventar datos
+✅ Distingue hechos, inferencias y controversias
+✅ Tiene reglas específicas para historia
+✅ Tiene reglas específicas para biografía
+✅ Tiene reglas específicas para finanzas
+✅ Tiene fact-check prompt
+✅ Tiene tabla de reportes de calidad por capítulo
+✅ Detecta unsupported_claims
+✅ Detecta hallucinations
+✅ Ejecuta fact-check automáticamente después de cada capítulo
+Recomendaciones:
+🔧 Después de GENERATE_CHAPTER ejecutar FACT_CHECK_CHAPTER automáticamente.
+🔧 Si score < 8, reescribir capítulo con instrucciones del auditor.
+🔧 Marcar visualmente datos no verificados dentro del editor.
+
+Calidad de capítulos y reescritura: 8.5/10 — MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN
+Estándar de mercado: Un sistema superior no solo escribe; mide, corrige y reescribe hasta llegar al estándar.
+Fortalezas:
+✅ Tiene score de capítulo
+✅ Evalúa longitud mínima
+✅ Evalúa subtítulos internos
+✅ Evita bibliografía dentro del capítulo
+✅ Sanitiza contenido editorial
+✅ Reconstruye master_document desde estado
+✅ Tiene recomputeGenerationProgress
+✅ Tiene modo de reescritura si la calidad es baja
+✅ Evalúa repetición de párrafos
+Debilidades:
+❌ Tiene quality gate conectado al flujo real de generación
+Faltantes críticos:
+🚨 Tiene quality gate conectado al flujo real de generación
+Recomendaciones:
+🔧 Conectar scoreEliteChapterText después de cada capítulo.
+🔧 Guardar el score en chapter_quality_reports.
+🔧 Crear botón 'Mejorar a 10/10' por capítulo.
+
+UX/UI y flujo profesional: 8.1/10 — MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN
+Estándar de mercado: El mercado premium exige claridad: dónde estoy, qué falta, qué calidad tiene y cómo exporto.
+Fortalezas:
+✅ Tiene chat/interface
+✅ Tiene lector de libro
+✅ Tiene tabla de contenido
+✅ Tiene dashboard de generación
+✅ Tiene indicadores de progreso
+✅ Tiene mensajes de error al usuario
+✅ Tiene bloqueo mientras genera
+✅ Tiene aprobación manual o control del flujo
+✅ Tiene exportación profesional PDF/DOCX/EPUB
+Debilidades:
+❌ Tiene flujo visual de Blueprint / Investigación / Revisión
+Recomendaciones:
+🔧 Agregar pantalla de pipeline: Blueprint → Research → Outline → Writing → Fact-check → Export.
+🔧 Agregar botones: Regenerar título, Aprobar outline, Mejorar capítulo, Exportar.
+🔧 Agregar exportación DOCX, PDF y EPUB.
+
+Persistencia, recuperación y trabajo largo: 8.6/10 — MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN
+Estándar de mercado: Una app de libros largos debe recuperar estado, versiones, snapshots, investigación y jobs largos.
+Fortalezas:
+✅ Usa Supabase
+✅ Crea proyectos
+✅ Lista proyectos
+✅ Actualiza proyectos
+✅ Guarda secciones
+✅ Guarda versiones
+✅ Guarda snapshots
+✅ Tiene recuperación de proyecto completo
+✅ Tiene persistencia de investigación
+Debilidades:
+❌ Tiene cola o job system para generaciones largas
+Faltantes críticos:
+🚨 Tiene cola o job system para generaciones largas
+Recomendaciones:
+🔧 Agregar tabla generation_jobs para colas de capítulos.
+🔧 Permitir pausar/reanudar generación.
+🔧 Agregar historial de versiones visible por sección.
+
+Seguridad, SaaS y control de costos: 8.6/10 — MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN
+Estándar de mercado: La diferencia entre prototipo y SaaS premium está en seguridad, límites, costos, usuarios y facturación.
+Fortalezas:
+✅ Tiene auth Supabase
+✅ Tiene perfiles con has_access
+✅ Tiene control de sesión/dispositivo
+✅ API usa GEMINI_API_KEY privada
+✅ Endpoint protegido con shared secret
+✅ Valida método POST
+✅ Tiene allowlist de modelos
+✅ Tiene manejo de cuota y rate errors
+✅ Tiene medición de consumo/costos por usuario
+Debilidades:
+❌ Tiene rate limit propio por usuario/IP
+Faltantes críticos:
+🚨 Tiene rate limit propio por usuario/IP
+Recomendaciones:
+🔧 Agregar tabla usage_events con tokens, modelo, costo estimado, usuario y proyecto.
+🔧 Agregar rate limit por usuario y por IP en /api/composer.
+🔧 Eliminar uso de VITE_GEMINI_API_KEY en producción.
+
+Producción, pruebas y escalabilidad técnica: 8.8/10 — MUY BUENA / PRODUCTO PREMIUM EN FORMACIÓN
+Estándar de mercado: Las mejores apps tienen build limpio, tests, auditoría, logs, colas, observabilidad y despliegue estable.
+Fortalezas:
+✅ Tiene package.json
+✅ Tiene script build
+✅ Tiene TypeScript
+✅ Tiene Vite build
+✅ Tiene validación/parsing robusto de JSON
+✅ Tiene fallback si falla el dossier
+✅ Tiene tests automatizados reales
+✅ Build pasó en esta evaluación
+✅ TypeScript pasó en esta evaluación
+Debilidades:
+❌ Audit high pasó en esta evaluación
+Recomendaciones:
+🔧 Agregar suite de tests para títulos, outline, JSON/texto plano, estado limpio y calidad.
+🔧 Agregar logs estructurados por project_id, action y user_id.
+🔧 Agregar healthcheck y monitoreo de errores.
+
+Monetización, operación y SaaS: 7.4/10 — BUENA / BASE COMERCIAL SERIA
+Estándar de mercado: Para superar el mercado no basta generar texto: hay que cobrar, limitar, medir, exportar y operar.
+Fortalezas:
+✅ Tiene usuarios y acceso
+✅ Tiene solicitudes de acceso
+✅ Tiene settings por usuario
+✅ Tiene control de créditos o planes
+✅ Tiene roles admin/usuario
+✅ Tiene control de dispositivo como diferencial
+✅ Tiene exportación como producto vendible
+Debilidades:
+❌ Tiene límites por plan
+❌ Tiene pricing o monetización
+❌ Tiene métricas de uso
+Faltantes críticos:
+🚨 Tiene límites por plan
+🚨 Tiene pricing o monetización
+Recomendaciones:
+🔧 Agregar planes: Básico, Pro, Agencia, Editorial.
+🔧 Agregar créditos por libro/capítulo y consumo de tokens.
+🔧 Agregar Stripe o sistema local de pagos.
+
+Diferenciación frente al mercado: 10/10 — CLASE MUNDIAL / NIVEL DOMINANTE
+Estándar de mercado: La app puede ganarle a herramientas genéricas si combina libro largo + investigación + fact-check + exportación + flujo editorial.
+Fortalezas:
+✅ No es solo chat: tiene estructura de libro
+✅ Tiene generación larga
+✅ Tiene control factual
+✅ Tiene investigación como arquitectura
+✅ Tiene blueprint editorial
+✅ Tiene quality gate
+✅ Tiene fact-check
+✅ Tiene enfoque por género
+✅ Tiene flujo de revisión y aprobación
+✅ Tiene ventajas que podrían superar apps genéricas
+Recomendaciones:
+🔧 Convertir la capa Elite en flujo real visible.
+🔧 Agregar comparador de calidad 1/10 por capítulo.
+🔧 Crear una promesa comercial clara: libros largos con fuentes, revisión y exportación.
+
+ROADMAP PARA LLEGAR A 10/10
+
+ALTA — Monetización, operación y SaaS (7.4/10)
+- Agregar planes: Básico, Pro, Agencia, Editorial.
+- Agregar créditos por libro/capítulo y consumo de tokens.
+- Agregar Stripe o sistema local de pagos.
+
+MEDIA — UX/UI y flujo profesional (8.1/10)
+- Agregar pantalla de pipeline: Blueprint → Research → Outline → Writing → Fact-check → Export.
+- Agregar botones: Regenerar título, Aprobar outline, Mejorar capítulo, Exportar.
+- Agregar exportación DOCX, PDF y EPUB.
+
+MEDIA — Investigación real, scraping y fuentes (8.4/10)
+- Crear /api/research con búsqueda web, extracción de páginas y resumen de fuentes.
+- Guardar cada fuente en research_sources y cada afirmación en research_facts.
+- Pasar research_context por capítulo, no solo a nivel de libro.
+
+MEDIA — Calidad de capítulos y reescritura (8.5/10)
+- Conectar scoreEliteChapterText después de cada capítulo.
+- Guardar el score en chapter_quality_reports.
+- Crear botón 'Mejorar a 10/10' por capítulo.
+
+MEDIA — Persistencia, recuperación y trabajo largo (8.6/10)
+- Agregar tabla generation_jobs para colas de capítulos.
+- Permitir pausar/reanudar generación.
+- Agregar historial de versiones visible por sección.

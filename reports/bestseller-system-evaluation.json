@@ -1,0 +1,358 @@
+{
+  "date": "2026-08-02T15:46:34.026Z",
+  "root": "C:\\Users\\martin\\Desktop\\VSC\\BestS\\geneBestSeller",
+  "missingFiles": [],
+  "overall": 8.5,
+  "label": "MUY BUENO",
+  "sections": [
+    {
+      "name": "Títulos, capítulos y subtítulos",
+      "weight": 1.15,
+      "score": 10,
+      "label": "EXCELENTE",
+      "passed": [
+        "Tiene extractor de título principal",
+        "Detecta TÍTULO DEL LIBRO / TITLE / NOMBRE DEL LIBRO",
+        "Tiene limpieza contra prompt-leak en títulos",
+        "Extrae títulos explícitos de capítulos",
+        "Usa subheads_h2 para subtítulos internos",
+        "Genera outline variable por cantidad de capítulos",
+        "Evita títulos genéricos como única salida",
+        "Tiene fallback temático para capítulos",
+        "El capítulo recibe título desde outline"
+      ],
+      "failed": [],
+      "recommendations": [
+        "Crear una fase BLUEPRINT_EDITORIAL antes de guardar el proyecto.",
+        "Generar 3 títulos candidatos y elegir uno por fuerza comercial, claridad y precisión.",
+        "Obligar a cada capítulo a tener entre 5 y 10 subtítulos internos."
+      ]
+    },
+    {
+      "name": "Prompts editoriales",
+      "weight": 1.1,
+      "score": 10,
+      "label": "EXCELENTE",
+      "passed": [
+        "Prompt maestro editorial existe",
+        "Reglas contra instrucciones internas",
+        "Reglas de no inventar datos",
+        "Reglas específicas para historia",
+        "Reglas específicas para personajes / biografía",
+        "Reglas específicas para finanzas",
+        "Reglas de análisis profundo",
+        "Reglas de bibliografía no inventada",
+        "Temperatura reducida para no ficción"
+      ],
+      "failed": [],
+      "recommendations": [
+        "Dividir prompts en: investigación, blueprint, dossier, capítulo, revisión factual y reescritura.",
+        "Usar temperatura baja para historia, biografía, finanzas y política.",
+        "Crear prompts distintos por género editorial."
+      ]
+    },
+    {
+      "name": "Control factual y anti-invención",
+      "weight": 1.25,
+      "score": 9.5,
+      "label": "EXCELENTE",
+      "passed": [
+        "Clasifica dominio editorial",
+        "Construye reglas factuales por dominio",
+        "Lee research_context o verified_facts",
+        "Distingue hechos, inferencias y controversias",
+        "Prohíbe citas inventadas",
+        "Prohíbe cifras falsas o sin contexto",
+        "No afirma scraping si no hay fuentes",
+        "Tiene sanitización editorial posterior"
+      ],
+      "failed": [
+        "Tiene fact-check de capítulo separado"
+      ],
+      "recommendations": [
+        "Agregar tarea FACT_CHECK_CHAPTER después de cada capítulo.",
+        "Guardar afirmaciones importantes como claims verificables.",
+        "Bloquear cifras exactas si no hay fuente o contexto."
+      ]
+    },
+    {
+      "name": "Investigación, scraping y fuentes reales",
+      "weight": 1.35,
+      "score": 2,
+      "label": "CRÍTICO",
+      "passed": [
+        "Existe concepto de research_context"
+      ],
+      "failed": [
+        "Existen tablas o funciones research_sources",
+        "Existen tablas o funciones research_facts",
+        "Existe tarea COLLECT_SOURCES",
+        "Existe tarea EXTRACT_FACTS",
+        "Existe tarea VERIFY_FACTS",
+        "Hay fetch real desde backend",
+        "Hay extracción HTML o parsing de páginas",
+        "Hay scoring de confiabilidad de fuentes"
+      ],
+      "recommendations": [
+        "Este es el punto más importante si quieres libros históricos o financieros serios.",
+        "Crear tablas research_sources y research_facts en Supabase.",
+        "Crear endpoint /api/research que busque, extraiga y resuma fuentes.",
+        "Pasar research_context real a Gemini antes de generar capítulos."
+      ]
+    },
+    {
+      "name": "Ruteo JSON / texto plano",
+      "weight": 1.2,
+      "score": 10,
+      "label": "EXCELENTE",
+      "passed": [
+        "Distingue acciones largas de texto",
+        "Propuesta se genera como texto plano",
+        "Introducción se genera como texto plano",
+        "Capítulos se generan como texto plano",
+        "Dossier conserva JSON",
+        "Tiene safeJsonParse",
+        "Tiene reparación de JSON",
+        "Tiene fallback si JSON del dossier falla",
+        "No fuerza JSON global para todo"
+      ],
+      "failed": [],
+      "recommendations": [
+        "Mantener JSON solo para dossier o respuestas estructurales cortas.",
+        "Nunca pedir JSON para capítulos largos.",
+        "Registrar preview del modelo cuando falle el parseo."
+      ]
+    },
+    {
+      "name": "Coherencia de capítulos",
+      "weight": 1.1,
+      "score": 9.2,
+      "label": "EXCELENTE",
+      "passed": [
+        "Existe outline_12 como fuente de estructura",
+        "Obtiene hints del outline",
+        "Usa puntos clave",
+        "Usa subtítulos sugeridos",
+        "Tiene master_document reconstruible",
+        "No repite encabezado Capítulo al inicio",
+        "Tiene continuación automática por palabras",
+        "Evita repetir texto al continuar"
+      ],
+      "failed": [
+        "Tiene validación de capítulos generados"
+      ],
+      "recommendations": [
+        "Agregar validador de capítulo que compare texto contra outline.",
+        "Penalizar capítulos sin subtítulos internos.",
+        "Reescribir automáticamente capítulos con baja coherencia."
+      ]
+    },
+    {
+      "name": "Estado limpio entre libros",
+      "weight": 1,
+      "score": 9.2,
+      "label": "EXCELENTE",
+      "passed": [
+        "Crea seedState para libro nuevo",
+        "Normaliza estado de proyecto",
+        "Tiene project_id en estado",
+        "Evita mezclar proyectos por id",
+        "Actualiza proyecto por id",
+        "Tiene lock de generación única",
+        "No parece reutilizar stateAnterior directamente",
+        "Limpia capítulos al crear nuevo libro"
+      ],
+      "failed": [
+        "Tiene función explícita createFreshBookState"
+      ],
+      "recommendations": [
+        "Crear función única createFreshBookState y usarla siempre.",
+        "Nunca iniciar un nuevo libro con spread de un proyecto anterior.",
+        "Loguear project_id, title y outline al crear cada libro."
+      ]
+    },
+    {
+      "name": "Persistencia y base de datos",
+      "weight": 1,
+      "score": 8.5,
+      "label": "MUY BUENO",
+      "passed": [
+        "Usa Supabase",
+        "Lista proyectos",
+        "Crea proyectos",
+        "Actualiza proyectos",
+        "Guarda secciones",
+        "Guarda versiones de secciones",
+        "Guarda snapshots de master",
+        "Persistencia de metadata del proyecto"
+      ],
+      "failed": [
+        "Persistencia de research_sources / research_facts"
+      ],
+      "recommendations": [
+        "Agregar persistencia de investigación: sources, facts, claims y fact_checks.",
+        "Guardar blueprint editorial antes de generar capítulos.",
+        "Guardar scoring por capítulo."
+      ]
+    },
+    {
+      "name": "Seguridad y control de acceso",
+      "weight": 0.9,
+      "score": 8.8,
+      "label": "MUY BUENO",
+      "passed": [
+        "Usa GEMINI_API_KEY privada en API",
+        "Tiene COMPOSER_SHARED_SECRET",
+        "Bloquea métodos no POST",
+        "Valida content-type",
+        "Tiene allowlist de modelos",
+        "No expone GEMINI_API_KEY privada en cliente",
+        "Tiene control de acceso por perfil",
+        "Tiene control de dispositivo / sesión"
+      ],
+      "failed": [
+        "Tiene rate limit propio de API"
+      ],
+      "recommendations": [
+        "Agregar rate limiting real por usuario/IP en /api/composer.",
+        "No usar VITE_GEMINI_API_KEY en producción.",
+        "Registrar consumo de tokens por usuario."
+      ]
+    },
+    {
+      "name": "Robustez de producción",
+      "weight": 1,
+      "score": 9.3,
+      "label": "EXCELENTE",
+      "passed": [
+        "Tiene retry para 429/503",
+        "Detecta cuota agotada",
+        "Tiene fallback de modelos",
+        "Tiene reparación de JSON",
+        "Tiene respuesta segura si dossier falla",
+        "Controla maxOutputTokens",
+        "Tiene build script",
+        "Build ejecutado correctamente en esta evaluación"
+      ],
+      "failed": [
+        "Tiene tests automatizados"
+      ],
+      "recommendations": [
+        "Agregar npm test con pruebas de título, outline, JSON/texto plano y estado limpio.",
+        "Crear healthcheck /api/health.",
+        "Agregar logs estructurados por project_id y action."
+      ],
+      "buildOutput": "\n> bestseller-ai@0.0.0 build\n> vite build\n\n\u001b[36mvite v6.4.1 \u001b[32mbuilding for production...\u001b[36m\u001b[39m\ntransforming...\n\u001b[32m✓\u001b[39m 561 modules transformed.\nrendering chunks...\ncomputing gzip size...\n\u001b[2mdist/\u001b[22m\u001b[32mindex.html                    \u001b[39m\u001b[1m\u001b[2m    1.53 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:   0.66 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[35massets/index-DMR5x07o.css     \u001b[39m\u001b[1m\u001b[2m   69.80 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  10.32 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/purify.es-BIqS8gfI.js  \u001b[39m\u001b[1m\u001b[2m   21.87 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:   8.70 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/index.es-BZtbRiRn.js   \u001b[39m\u001b[1m\u001b[2m  159.12 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  53.33 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/index-DgWHGrKk.js      \u001b[39m\u001b[1m\u001b[2m  252.70 kB\u001b[22m\u001b[1m\u001b[22m\u001b[2m │ gzip:  50.03 kB\u001b[22m\n\u001b[2mdist/\u001b[22m\u001b[36massets/index-CLVj6bFA.js      \u001b[39m\u001b[1m\u001b[33m1,555.12 kB\u001b[39m\u001b[22m\u001b[2m │ gzip: 451.42 kB\u001b[22m\n\u001b[32m✓ built in 36.41s\u001b[39m\n"
+    }
+  ],
+  "strengths": [
+    {
+      "area": "Títulos, capítulos y subtítulos",
+      "score": 10,
+      "label": "EXCELENTE",
+      "passed": [
+        "Tiene extractor de título principal",
+        "Detecta TÍTULO DEL LIBRO / TITLE / NOMBRE DEL LIBRO",
+        "Tiene limpieza contra prompt-leak en títulos",
+        "Extrae títulos explícitos de capítulos",
+        "Usa subheads_h2 para subtítulos internos"
+      ]
+    },
+    {
+      "area": "Prompts editoriales",
+      "score": 10,
+      "label": "EXCELENTE",
+      "passed": [
+        "Prompt maestro editorial existe",
+        "Reglas contra instrucciones internas",
+        "Reglas de no inventar datos",
+        "Reglas específicas para historia",
+        "Reglas específicas para personajes / biografía"
+      ]
+    },
+    {
+      "area": "Ruteo JSON / texto plano",
+      "score": 10,
+      "label": "EXCELENTE",
+      "passed": [
+        "Distingue acciones largas de texto",
+        "Propuesta se genera como texto plano",
+        "Introducción se genera como texto plano",
+        "Capítulos se generan como texto plano",
+        "Dossier conserva JSON"
+      ]
+    },
+    {
+      "area": "Control factual y anti-invención",
+      "score": 9.5,
+      "label": "EXCELENTE",
+      "passed": [
+        "Clasifica dominio editorial",
+        "Construye reglas factuales por dominio",
+        "Lee research_context o verified_facts",
+        "Distingue hechos, inferencias y controversias",
+        "Prohíbe citas inventadas"
+      ]
+    }
+  ],
+  "weaknesses": [
+    {
+      "area": "Investigación, scraping y fuentes reales",
+      "score": 2,
+      "label": "CRÍTICO",
+      "failed": [
+        "Existen tablas o funciones research_sources",
+        "Existen tablas o funciones research_facts",
+        "Existe tarea COLLECT_SOURCES",
+        "Existe tarea EXTRACT_FACTS",
+        "Existe tarea VERIFY_FACTS"
+      ],
+      "recommendations": [
+        "Este es el punto más importante si quieres libros históricos o financieros serios.",
+        "Crear tablas research_sources y research_facts en Supabase.",
+        "Crear endpoint /api/research que busque, extraiga y resuma fuentes."
+      ]
+    },
+    {
+      "area": "Persistencia y base de datos",
+      "score": 8.5,
+      "label": "MUY BUENO",
+      "failed": [
+        "Persistencia de research_sources / research_facts"
+      ],
+      "recommendations": [
+        "Agregar persistencia de investigación: sources, facts, claims y fact_checks.",
+        "Guardar blueprint editorial antes de generar capítulos.",
+        "Guardar scoring por capítulo."
+      ]
+    },
+    {
+      "area": "Seguridad y control de acceso",
+      "score": 8.8,
+      "label": "MUY BUENO",
+      "failed": [
+        "Tiene rate limit propio de API"
+      ],
+      "recommendations": [
+        "Agregar rate limiting real por usuario/IP en /api/composer.",
+        "No usar VITE_GEMINI_API_KEY en producción.",
+        "Registrar consumo de tokens por usuario."
+      ]
+    },
+    {
+      "area": "Coherencia de capítulos",
+      "score": 9.2,
+      "label": "EXCELENTE",
+      "failed": [
+        "Tiene validación de capítulos generados"
+      ],
+      "recommendations": [
+        "Agregar validador de capítulo que compare texto contra outline.",
+        "Penalizar capítulos sin subtítulos internos.",
+        "Reescribir automáticamente capítulos con baja coherencia."
+      ]
+    }
+  ],
+  "verdict": "El sistema está en nivel alto. Ya puede producir libros con estructura seria, pero debe reforzarse con investigación real para temas históricos, biográficos y financieros.\nEl punto más urgente es investigación real: scraping, fuentes, extracción de hechos y almacenamiento en Supabase.",
+  "runBuild": true
+}
