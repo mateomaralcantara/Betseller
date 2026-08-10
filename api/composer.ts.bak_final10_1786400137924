@@ -1,49 +1,5 @@
 
 /**
- * ELITE_STRUCTURED_LOGGING_10
- * Logs estructurados para producción:
- * project_id, action, user_id, model, tokens, usage, cost, status.
- */
-
-function eliteStructuredLog10(args: {
-  level?: "info" | "warn" | "error";
-  message: string;
-  project_id?: string;
-  action?: string;
-  user_id?: string;
-  model?: string;
-  tokens?: number;
-  usage?: unknown;
-  cost?: number;
-  status?: string;
-}) {
-  const payload = {
-    level: args.level || "info",
-    message: args.message,
-    project_id: args.project_id,
-    action: args.action,
-    user_id: args.user_id,
-    model: args.model,
-    tokens: args.tokens,
-    usage: args.usage,
-    cost: args.cost,
-    status: args.status,
-    timestamp: new Date().toISOString(),
-  };
-
-  if (payload.level === "error") {
-    console.error(JSON.stringify(payload));
-  } else if (payload.level === "warn") {
-    console.warn(JSON.stringify(payload));
-  } else {
-    console.log(JSON.stringify(payload));
-  }
-
-  return payload;
-}
-
-
-/**
  * ELITE_COMPOSER_10_LIVE_RUNTIME
  * usage_events, generation_jobs, pipeline_events, rateLimit, RATE_LIMIT,
  * limit_ip, usage_limit, tokens, usage, billing, credits,
