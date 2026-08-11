@@ -28,3 +28,5 @@ dist-ssr
 datos.txt
 clave.txt
 device_session_gate.sql
+# Backups temporales generados por scripts
+*.bak*
